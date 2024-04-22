@@ -5,18 +5,13 @@ import { v7Idetifiers, v7removeException, deepImport } from "./utils/v7Idetifier
 (async () => {
     const libName:string = process.argv[2];
     //console.log('libName'+libName);
-    //const startDirectory:string = "../Sample";
     const startDirectory:string = "../reposv7.0.0success";
-    //const startDirectory:string = "../reposv7.0.0failure";
-    //const startDirectory:string = "../test";
 
     let n: number=0;
     try {
         //ディレクトリごとに求めたいため
         const alldirs:string[] = await getSubDir(startDirectory);
-        //console.log(alldirs.length);
         for (const subdir of alldirs) {
-            //console.log(subdir);
             let extract_pattern1:string[][] = [];
             let extract_pattern2:string[][] = [];
             const allFiles:string[] = await getAllFiles(subdir);
