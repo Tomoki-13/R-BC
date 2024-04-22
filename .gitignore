@@ -13,6 +13,7 @@ reposgv7failure
 reposv7.0.0success2
 scripts
 globbySample
+src/asttry
 src/*.js
 src/**/*.js
 package-lock.json

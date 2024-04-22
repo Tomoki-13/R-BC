@@ -10,8 +10,8 @@ import { useFunc } from "./utils/useFunc";
     try {
         const libName: string | undefined = process.argv[2];
         const alldirs: string[] = await getSubDir(startDirectory);
+        
         //各ディレクトリに対する処理
-
         for (const subdir of alldirs) {
             let extract_pattern: string[][] = [];
             let extract_pattern2: string[][] = [];
