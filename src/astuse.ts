@@ -1,6 +1,6 @@
 import { getSubDir } from "./utils/getSubDir";
 import { getAllFiles } from "./utils/getAllFiles";
-const {astsample} = require("./utils/astsample");
+const {analyzeAst} = require("./utils/analyzeAst");
 
 (async () => {
     const startDirectory: string = "../Sample";
@@ -13,7 +13,7 @@ const {astsample} = require("./utils/astsample");
         for (const subdir of alldirs) {
             let extract_pattern: string[]= [];
             const allFiles: string[] = await getAllFiles(subdir);
-            extract_pattern = await astsample(allFiles,libName);
+            extract_pattern = await analyzeAst(allFiles,libName);
             //成功したクライアントでパターンを持っているものを検出
             if (extract_pattern.length !== 0) {
                 console.log(subdir);
