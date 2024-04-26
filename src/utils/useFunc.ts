@@ -2,7 +2,7 @@ const fsPromises = require('fs').promises;
 const { funcNameIdentifiers, secfuncNameIdentifiers } = require("./funcNameIdentifiers");
 const { extractImportLines } = require("./extractImportLines");
 const { analyzeFile } = require("./analyzeFile");
-const { FisrstAnalyzeArgument } = require("./AnalyzeArgument");
+const { FisrstAnalyzeArgument } = require("./analyzeArgument");
 
 // クライアントの対象ファイルから変数名の使われ方の収集
 
