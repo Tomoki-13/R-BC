@@ -1,8 +1,8 @@
 const fsPromises = require('fs').promises;
 const { funcNameIdentifiers, secfuncNameIdentifiers } = require("./funcNameIdentifiers");
 const { extractImportLines } = require("./extractImportLines");
-const { AnalyzeFile } = require("./AnalyzeFile");
-const { FisrstAnalyzeArgument } = require("./AnalyzeArgument");
+const { analyzeFile } = require("./analyzeFile");
+const { FisrstAnalyzeArgument } = require("./analyzeArgument");
 
 // クライアントの対象ファイルから変数名の使われ方の収集
 
@@ -22,20 +22,20 @@ export const useFunc = async (allFiles: string[], libName: string): Promise<stri
                 let funcName:string[] = funcNameIdentifiers(line, libName);
 
                 if (funcName.length > 0) {
-                    const useFuncLines:string[] = AnalyzeFile(funcName, fileContent, libName);
+                    const useFuncLines:string[] = analyzeFile(funcName, fileContent, libName);
                     let secuseFuncLines: string[] = [];
 
                     if (funcName.length > 1) {
                         for (const oneFuncName of funcName) {
                             const secUseFuncnames = secfuncNameIdentifiers(oneFuncName, fileContent);
                             if (secUseFuncnames) {
-                                secuseFuncLines = secuseFuncLines.concat(AnalyzeFile(secUseFuncnames, fileContent));
+                                secuseFuncLines = secuseFuncLines.concat(analyzeFile(secUseFuncnames, fileContent));
                             }
                         }
                     } else {
                         const secUseFuncnames = secfuncNameIdentifiers(funcName, fileContent);
                         if (secUseFuncnames && secUseFuncnames.length > 0) {
-                            secuseFuncLines = AnalyzeFile(secUseFuncnames, fileContent);
+                            secuseFuncLines = analyzeFile(secUseFuncnames, fileContent);
                         }
                     }
 
@@ -80,7 +80,7 @@ export const useFunc1_v7 = async (allFiles: string[], libName: string): Promise<
                         funcName[0] = funcName[0] + '.';
                     }
 
-                    const useFuncLines = AnalyzeFile(funcName, fileContent);
+                    const useFuncLines = analyzeFile(funcName, fileContent);
                     if (useFuncLines !== '') {
                         pattern.push(useFuncLines);
                     }
@@ -112,20 +112,20 @@ export async function useFuncg7(allFiles: string[], libName: string): Promise<st
                 let funcName: string[] = funcNameIdentifiers(line, libName);
 
                 if (funcName && funcName.length > 0) {
-                    const useFuncLines = AnalyzeFile(funcName, fileContent, libName);
+                    const useFuncLines = analyzeFile(funcName, fileContent, libName);
                     let secuseFuncLines: string[] = [];
 
                     if (funcName.length > 1) {
                         for (const oneFuncName of funcName) {
                             const secUseFuncnames = secfuncNameIdentifiers(oneFuncName, fileContent);
                             if (secUseFuncnames) {
-                                secuseFuncLines = secuseFuncLines.concat(AnalyzeFile(secUseFuncnames, fileContent));
+                                secuseFuncLines = secuseFuncLines.concat(analyzeFile(secUseFuncnames, fileContent));
                             }
                         }
                     } else {
                         const secUseFuncnames = secfuncNameIdentifiers(funcName[0], fileContent);
                         if (secUseFuncnames && secUseFuncnames.length > 0) {
-                            secuseFuncLines = AnalyzeFile(secUseFuncnames, fileContent);
+                            secuseFuncLines = analyzeFile(secUseFuncnames, fileContent);
                         }
                     }
 

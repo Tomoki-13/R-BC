@@ -1,5 +1,5 @@
 //変数のファイル内での使用方法を収集
-export const AnalyzeFile = (funcNames:string[], code:string, libName:string):string[] => {
+export const analyzeFile = (funcNames:string[], code:string, libName:string):string[] => {
     //console.log(funcNames);
     const lines = code.split('\n').map(line => line.trim());
     let useFuncResult:string[] = [];
