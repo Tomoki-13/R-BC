@@ -27,13 +27,13 @@ export const useFunc = async (allFiles: string[], libName: string): Promise<stri
 
                     if (funcName.length > 1) {
                         for (const oneFuncName of funcName) {
-                            const secUseFuncnames = secfuncNameIdentifiers(oneFuncName, fileContent);
+                            const secUseFuncnames:string[] = secfuncNameIdentifiers(oneFuncName, fileContent);
                             if (secUseFuncnames) {
                                 secuseFuncLines = secuseFuncLines.concat(analyzeFile(secUseFuncnames, fileContent));
                             }
                         }
                     } else {
-                        const secUseFuncnames = secfuncNameIdentifiers(funcName, fileContent);
+                        const secUseFuncnames:string[] = secfuncNameIdentifiers(funcName, fileContent);
                         if (secUseFuncnames && secUseFuncnames.length > 0) {
                             secuseFuncLines = analyzeFile(secUseFuncnames, fileContent);
                         }
@@ -52,7 +52,6 @@ export const useFunc = async (allFiles: string[], libName: string): Promise<stri
             console.error('Error readFile:', err);
         }
     }
-
     return pattern;
 }
 
