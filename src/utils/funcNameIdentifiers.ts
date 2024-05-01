@@ -1,6 +1,5 @@
 //変数の呼び出した際の名前を取得
 export const funcNameIdentifiers = (line:string,libraryName:string): string[] => {
-    //console.log('libraryName'+libraryName);
     const pattern1: RegExp = new RegExp(`import\\s+(\\w+)\\s+from\\s+\\(*['"]${libraryName}[^-]*?['"]\\)*`);
     //_interopRequireDefault()を含む
     const pattern2: RegExp = new RegExp(`(?:var|const|let)*\\s*(\\w+)\\s*=\\s*require\\s*\\(\\s*['"]\\s*${libraryName}[^-]*?['"]\\s*\\)*`);
