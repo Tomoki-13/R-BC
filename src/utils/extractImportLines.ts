@@ -16,7 +16,7 @@ export const extractImportLines_uuid7 = (code: string, libName: string): string[
 
 export const extractImportLines = (code: string, libName: string): string[] => {
     const lines = code.split('\n');
-    const importAndRequireLines:string[] = lines.filter(line => /import|require/.test(line) && !/^\s*\/\//.test(line));
-    const uuid_importAndRequireLines:string[] = importAndRequireLines.filter(line => new RegExp(`${libName}`).test(line));
-    return uuid_importAndRequireLines;
+    let importAndRequireLines:string[] = lines.filter(line => /import|require/.test(line) && !/^\s*\/\//.test(line));
+    const resultimportAndRequireLines:string[] = importAndRequireLines.filter(line => new RegExp(`${libName}`).test(line));
+    return resultimportAndRequireLines;
 }

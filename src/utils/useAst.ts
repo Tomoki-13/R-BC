@@ -40,9 +40,19 @@ export const useAstSample = async (allFiles: string[], libName: string): Promise
         visitedFiles.add(filePath);
         
         try {
-            let funcName:string[] = await analyzetsAstFuncName(filePath, libName);
+            const fileContent = await fsPromises.readFile(filePath, 'utf8');
+            const lines = extractImportLines(fileContent,libName);
+            let funcName:string[] = [];
+            for (const line of lines) {
+
+                let name:string[] = funcNameIdentifiers(line, libName);
+                if (name.length > 0) {
+                    funcName = funcName.concat(name);
+                    //console.log(funcName);
+                }
+            }
             if (funcName.length > 0) {
-                //console.log(funcName);
+                //console.log('funcName:'+funcName);
                 for(const one of funcName){
                     //console.log(one);
                     let result = await analyzetsAst(filePath, libName, one);
