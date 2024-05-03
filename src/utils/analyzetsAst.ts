@@ -11,7 +11,7 @@ export const analyzetsAst = async(filePath:string,libName:string,funcName:string
         //ファイルの内容を取得
         if (filePath.endsWith('.js') || filePath.endsWith('.ts')) {
             const fileContent: string = await fsPromises.readFile(filePath, 'utf8');
-            const parsed = parser.parse(fileContent, { ecmaVersion: 2020, sourceType: 'module', plugins: ["typescript"] });
+            const parsed = parser.parse(fileContent, { ecmaVersion: 2020, sourceType: 'script', plugins: ["typescript"] });
             //const parsed = parser.parse(fileContent, { ecmaVersion: 2020, sourceType: 'script', plugins: ["typescript"] });
             traverse(parsed, {
                 ImportDeclaration(path: any) {
@@ -94,6 +94,7 @@ export const analyzetsAstFuncName = async(filePath:string,libName:string): Promi
             }
         } catch (error) {
             //console.log(`Failed to create AST for file: ${filePath}`);
+            //console.log('error', error);
         }
     return resultArray;
 }

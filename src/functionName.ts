@@ -3,29 +3,35 @@ const { getSubDir }  = require("./utils/getSubDir");
 const { getAllFiles }  = require("./utils/getAllFiles");
 const { funcNameIdentifiers }  = require("./utils/funcNameIdentifiers");
 const {extractImportLines} = require("./utils/extractImportLines");
+
+const add_funcName = async (allFiles: string[],libName:string): Promise<string[][]> => {
+    let pattern: string[][] = [];
+    for (const filePath of allFiles) {
+        try {
+            const fileContent = await fsPromises.readFile(filePath, 'utf8');
+            const lines = extractImportLines(fileContent,libName);
+            if(lines.length>0){
+                console.log('extractImportLines');
+                console.log(lines);
+            }
+            for (const line of lines) {
+                let funcNames = funcNameIdentifiers(line, libName);
+                if (funcNames.length > 0) {
+                    pattern.push(funcNames);
+                }
+            }
+        } catch (err) {
+            console.error('Error readFile:', err);
+        }
+    }
+    return pattern;
+}
+
 (async () => {
     const libName:string = process.argv[2];
-    const add_funcName = async (allFiles: string[]): Promise<string[][]> => {
-        let pattern: string[][] = [];
-        for (const filePath of allFiles) {
-            try {
-                const fileContent = await fsPromises.readFile(filePath, 'utf8');
-                const lines = extractImportLines(fileContent);
-                for (const line of lines) {
-                    let funcNames = funcNameIdentifiers(line, libName);
-                    if (funcNames.length > 0) {
-                        pattern.push(funcNames);
-                    }
-                }
-            } catch (err) {
-                console.error('Error readFile:', err);
-            }
-        }
-        return pattern;
-    }
 
     //const startDirectory:string = "../repos";
-    const startDirectory:string = "../Sample";
+    const startDirectory:string = "../reposv7.0.0failure";
     let n=0;
     try {
         //ディレクトリごとに求めたいため
@@ -38,7 +44,7 @@ const {extractImportLines} = require("./utils/extractImportLines");
             console.log(subdir);
             //デバック用
             const allFiles: string[] = await getAllFiles(subdir);
-            extract_pattern = await add_funcName(allFiles);
+            extract_pattern = await add_funcName(allFiles,libName);
 
             //パターンを持っていない場合クライアントの出力
             /* if(extract_pattern.length == 0){
