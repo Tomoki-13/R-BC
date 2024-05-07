@@ -26,8 +26,6 @@ export const getSubDir = async(directoryPath: string): Promise<string[]> => {
                 }
             }
         }
-        
-        //返す値
         return (allSecSubDirs);
     } catch (err) {
         console.error('Error:', err);
