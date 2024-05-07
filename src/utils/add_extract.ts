@@ -1,5 +1,5 @@
 import { promises as fsPromises } from 'fs';
-const { extractImportLines_uuid8, extractImportLines } = require('./extractImportLines');
+import { extractImportLines_uuid8, extractImportLines } from './extractImportLines';
 
 // ファイルごとの調査と結果の出力
 export const add_extract = async(allFiles: string[]): Promise<string[][]> => {

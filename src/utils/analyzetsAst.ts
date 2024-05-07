@@ -1,9 +1,7 @@
-
-const parser = require("@babel/parser");
+import parser from "@babel/parser";
 import { promises as fsPromises } from 'fs';
 import traverse from "@babel/traverse";
 import { funcNameIdentifiers } from "./funcNameIdentifiers";
-
 export const analyzetsAst = async(filePath:string,libName:string,funcName:string): Promise<string[][]> => {
     let resultArray:string[][]=[];
     try {
@@ -11,18 +9,9 @@ export const analyzetsAst = async(filePath:string,libName:string,funcName:string
         //ファイルの内容を取得
         if (filePath.endsWith('.js') || filePath.endsWith('.ts')) {
             const fileContent: string = await fsPromises.readFile(filePath, 'utf8');
-            const parsed = parser.parse(fileContent, { ecmaVersion: 2020, sourceType: 'script', plugins: ["typescript"] });
+            const parsed = parser.parse(fileContent, {sourceType: 'module', plugins: ["typescript"]});
             //const parsed = parser.parse(fileContent, { ecmaVersion: 2020, sourceType: 'script', plugins: ["typescript"] });
             traverse(parsed, {
-                ImportDeclaration(path: any) {
-                    const node = path.node;
-                    for (const specifier of node.specifiers) {
-                        if (specifier.local.type === 'Identifier' && specifier.local.name.includes(libName)) {
-                            const code:string = fileContent.substring(node.start, node.end);
-                            codes.push(code);
-                        }
-                    }
-                },
                 VariableDeclaration(path: any) {
                     const node = path.node;
                     for (const declaration of node.declarations) {
@@ -66,7 +55,7 @@ export const analyzetsAstFuncName = async(filePath:string,libName:string): Promi
             //ファイル指定とast処理
             if (filePath.endsWith('.js') || filePath.endsWith('.ts')) {
                 const fileContent: string = await fsPromises.readFile(filePath, 'utf8');
-                const parsed = parser.parse(fileContent, { ecmaVersion: 2020, sourceType: 'module', plugins: ["typescript"] });
+                const parsed = parser.parse(fileContent, {sourceType: 'script', plugins: ["typescript"] });
                 traverse(parsed, {
                     ImportDeclaration(path: any) {
                         const node = path.node;
@@ -93,7 +82,7 @@ export const analyzetsAstFuncName = async(filePath:string,libName:string): Promi
                 resultArray = resultArray.concat(...codes.map(code => funcNameIdentifiers(code, libName)).filter(funcName => funcName.length > 0));
             }
         } catch (error) {
-            //console.log(`Failed to create AST for file: ${filePath}`);
+            console.log(`Failed to create AST for file: ${filePath}`);
             //console.log('error', error);
         }
     return resultArray;

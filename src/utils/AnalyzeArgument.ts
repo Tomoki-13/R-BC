@@ -1,4 +1,4 @@
-const {getArgument} = require("./getArgument");
+import {getArgument} from "./getArgument";
 //patternにコードの配列
 export const FisrstAnalyzeArgument = (funcName:string, patterns:string[]):string[] => {
     let ArgumentResult:string[] = [];

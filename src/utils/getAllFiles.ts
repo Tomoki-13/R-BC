@@ -1,5 +1,5 @@
 import fs from 'fs';
-const path = require("path");
+import path from "path";
 //非同期でディレクトリ内のすべてのjsまたはtsファイルを再帰的に取得する関数
 
 export const getAllFiles = async (directoryPath: string): Promise<string[]> => {
@@ -29,8 +29,10 @@ export const getAllFiles = async (directoryPath: string): Promise<string[]> => {
                     allFiles.push(filePath);
                 } else if (file.isDirectory()) {
                     //サブディレクトリの場合は再帰的に処理
-                    const subDirectoryFiles: string[] = await getAllFiles(filePath);
-                    allFiles.push(...subDirectoryFiles);
+                    if (!filePath.includes('node_modules')) {
+                        const subDirectoryFiles: string[] = await getAllFiles(filePath);
+                        allFiles.push(...subDirectoryFiles);
+                    }
             }
         }
         resolve(allFiles);
