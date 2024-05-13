@@ -42,28 +42,55 @@ export const useAstSample = async (allFiles: string[], libName: string): Promise
         try {
             const fileContent = await fsPromises.readFile(filePath, 'utf8');
             const lines = extractImportLines(fileContent,libName);
+            //const lines = await analyzetsAstFuncName(filePath,libName);
+            if(lines.length>0){
+                // console.log(lines);
+                pattern.push(lines);
+            }
+            //関数の使用部分の抽出
             let funcName:string[] = [];
             for (const line of lines) {
-
                 let name:string[] = funcNameIdentifiers(line, libName);
                 if (name.length > 0) {
                     funcName = funcName.concat(name);
-                    //console.log(funcName);
-                }
-            }
-            if (funcName.length > 0) {
-                //console.log('funcName:'+funcName);
-                for(const one of funcName){
-                    //console.log(one);
-                    let result = await analyzetsAst(filePath, libName, one);
-                    if (result.length > 0) {
-                        //console.log(result);
-                        pattern.push(...result);
+                    for(const one of funcName){
+                        const secUseFuncnames = secfuncNameIdentifiers(one, fileContent);
+                        if(secUseFuncnames.length>0){
+                            funcName = funcName.concat(secUseFuncnames);
+                        }
                     }
                 }
             }
+            if (funcName.length > 0) {
+                //重複を削除
+                const uniquefuncName: string[] = [...new Set(funcName)];
+                //console.log('funcName:'+funcName);
+                // console.log('unifuncName:'+uniquefuncName);
+                for(const one of uniquefuncName){
+                    //console.log(one);
+                    let result = await analyzetsAst(filePath, libName, one);
+                    if (result.length > 0) {
+                        //console.log('result:'+result);
+                        //.mockImplementationの対策
+                        // const str1 = libName + '.mockImplementation';
+                        // result = result.filter(line => !line.includes(str1));
+                        pattern.push(...result);
+                    }
+                } 
+            }
+           
         } catch (err) {
             console.error('Error readFile:', err);
+        }
+
+        //文字数が以上に多いものを置き換え
+        for(let i=0;pattern.length>i;i++){
+            for(let j=0;pattern[i].length>j;j++){
+                if(pattern[i][j].length>150){
+                    //console.log('pattern:'+pattern[i][j]);
+                    pattern[i][j]= 'error';
+                }
+            }
         }
     }
     return pattern;

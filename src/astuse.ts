@@ -1,6 +1,5 @@
 import { getSubDir } from "./utils/getSubDir";
 import { getAllFiles } from "./utils/getAllFiles";
-import {analyzeAst} from "./utils/analyzeAst";
 import {analyzetsAst} from "./utils/analyzetsAst";
 import { useAst, useAstSample } from "./utils/useAst";
 
@@ -14,27 +13,25 @@ import { useAst, useAstSample } from "./utils/useAst";
         
         //各ディレクトリに対する処理
         for (const subdir of alldirs) {
-            //let extract_pattern1: string[][]= [];
+            let extract_pattern1: string[][]= [];
             let extract_pattern2: string[][]= [];
-            let extract_pattern3: string[][]= [];
             const allFiles: string[] = await getAllFiles(subdir);
-            //extract_pattern1 = await analyzeAst(allFiles,libName);
-            extract_pattern2 = await useAst(allFiles,libName);
-            extract_pattern3 = await useAstSample(allFiles,libName);
+            extract_pattern1 = await useAst(allFiles,libName);
+            extract_pattern2 = await useAstSample(allFiles,libName);
             //成功したクライアントでパターンを持っているものを検出
             // if (extract_pattern1.length !== 0) {
             //     console.log(subdir);
             //     console.log(extract_pattern1);
             //     n++;
             //}
-            if (extract_pattern3.length > 0) {
-                // console.log(subdir);
-                // console.log(extract_pattern3);
-                // n++;
-            }else{
+            if (extract_pattern2.length > 0) {
                 console.log(subdir);
-                console.log('else');
+                console.log(extract_pattern2);
                 n++;
+            }else{
+                // console.log(subdir);
+                // console.log('else');
+                // n++;
             }
         }
         console.log(alldirs.length);
