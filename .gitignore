@@ -21,3 +21,4 @@ Dockerfile
 dockercompose.yml
 .dockerignore
 Sample
+.babelrc
