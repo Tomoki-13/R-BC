@@ -5,7 +5,7 @@ import { v7Idetifiers, v7removeException, deepImport } from "./utils/v7Idetifier
 (async () => {
     const libName:string = process.argv[2];
     //console.log('libName'+libName);
-    const startDirectory:string = "../reposv7.0.0success";
+    const startDirectory:string = "../reposv7.0.0failure";
 
     let n: number=0;
     try {

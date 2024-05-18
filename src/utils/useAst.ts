@@ -44,7 +44,6 @@ export const useAstSample = async (allFiles: string[], libName: string): Promise
             const lines = extractImportLines(fileContent,libName);
             //const lines = await analyzetsAstFuncName(filePath,libName);
             if(lines.length>0){
-                // console.log(lines);
                 pattern.push(lines);
             }
             //関数の使用部分の抽出
@@ -64,10 +63,7 @@ export const useAstSample = async (allFiles: string[], libName: string): Promise
             if (funcName.length > 0) {
                 //重複を削除
                 const uniquefuncName: string[] = [...new Set(funcName)];
-                //console.log('funcName:'+funcName);
-                // console.log('unifuncName:'+uniquefuncName);
                 for(const one of uniquefuncName){
-                    //console.log(one);
                     let result = await analyzetsAst(filePath, libName, one);
                     if (result.length > 0) {
                         //console.log('result:'+result);
@@ -76,8 +72,10 @@ export const useAstSample = async (allFiles: string[], libName: string): Promise
                         // result = result.filter(line => !line.includes(str1));
                         pattern.push(...result);
                     }
-                } 
+                }
+                console.log('uniquefuncName'+uniquefuncName);
             }
+
            
         } catch (err) {
             console.error('Error readFile:', err);

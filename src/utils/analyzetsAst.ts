@@ -35,7 +35,6 @@ export const analyzetsAst = async(filePath:string,libName:string,funcName:string
         //     console.log('console.log(codes.length);'+codes.length);
         // }
         if(codes.length > 0){
-            //console.log(codes);
             resultArray.push(codes);
         }
     } catch (error) {
