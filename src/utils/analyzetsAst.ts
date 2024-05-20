@@ -2,6 +2,8 @@ const parser = require("@babel/parser");
 import { promises as fsPromises } from 'fs';
 import traverse from "@babel/traverse";
 import { funcNameIdentifiers } from "./funcNameIdentifiers";
+import * as t from "@babel/types";
+
 export const analyzetsAst = async(filePath:string,libName:string,funcName:string): Promise<string[][]> => {
     let resultArray:string[][]=[];
     try {
@@ -16,17 +18,28 @@ export const analyzetsAst = async(filePath:string,libName:string,funcName:string
                     const node = path.node;
                     //関数の呼び出しを見つける
                     //console.log(' node.callee.name:'+node.callee.name);
-                    if (node.callee.type === 'Identifier' && node.callee.name.includes(funcName)) {
-                        //UUID関数の呼び出しを見つけたら、そのノードを文字列に変換して保存
-                        const code: string = fileContent.substring(node.start, node.end);
-                        codes.push(code);
+                    if (node.callee.type === 'Identifier') {
+                        if(node.callee.name.includes(funcName)){
+                            const code: string = fileContent.substring(node.start, node.end);
+                            codes.push(code);
+                        }else if(node.callee.name.includes('_interopRequireDefault')){
+                            if(node.arguments && node.arguments.some((arg: t.Expression | t.Identifier) => t.isIdentifier(arg) && arg.name.includes(funcName))){
+                                const code:string = fileContent.substring(node.start!, node.end!);
+                                codes.push(code);
+                            }
+                        }
                     } else if (node.callee.type === 'MemberExpression') {
                         if (node.callee.object && node.callee.object.type === 'Identifier' && node.callee.object.name.includes(funcName)) {
                             const code: string = fileContent.substring(node.start, node.end);
                             codes.push(code);
+                        }else if (node.callee.object && node.callee.object.type === 'MemberExpression' &&
+                         node.callee.object.object.name.includes(funcName)) {
+                            //~~.default.~~()の取得
+                            const code: string = fileContent.substring(node.start, node.end);
+                            codes.push(code);
                         }
                     }
-                }
+                },
             });
         }
         // if(codes.length>0){
