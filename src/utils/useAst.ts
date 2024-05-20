@@ -2,7 +2,7 @@ import fsPromises from 'fs/promises';
 import { funcNameIdentifiers, secfuncNameIdentifiers } from "./funcNameIdentifiers";
 import { extractImportLines } from "./extractImportLines";
 import { analyzeFile } from "./analyzeFile";
-import { analyzetsAst, analyzetsAstFuncName } from "./analyzetsAst";
+import { analyzetsAst } from "./analyzetsAst";
 
 export const useAst = async (allFiles: string[], libName: string): Promise<string[][]> =>{
     const pattern: string[][] = [];
@@ -73,7 +73,6 @@ export const useAstSample = async (allFiles: string[], libName: string): Promise
                         pattern.push(...result);
                     }
                 }
-                console.log('uniquefuncName'+uniquefuncName);
             }
 
            
