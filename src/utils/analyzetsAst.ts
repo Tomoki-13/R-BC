@@ -2,6 +2,8 @@ const parser = require("@babel/parser");
 import { promises as fsPromises } from 'fs';
 import traverse from "@babel/traverse";
 import { funcNameIdentifiers } from "./funcNameIdentifiers";
+import * as t from "@babel/types";
+
 export const analyzetsAst = async(filePath:string,libName:string,funcName:string): Promise<string[][]> => {
     let resultArray:string[][]=[];
     try {
@@ -12,28 +14,46 @@ export const analyzetsAst = async(filePath:string,libName:string,funcName:string
             const parsed = parser.parse(fileContent, {sourceType: 'unambiguous', plugins: ["typescript",'decorators-legacy']});
             //const parsed = parser.parse(fileContent, { ecmaVersion: 2020, sourceType: 'script', plugins: ["typescript"] });
             traverse(parsed, {
+                VariableDeclarator(path:any) {
+                    const node = path.node;
+                    const declarationNode = path.findParent((p: any) => t.isVariableDeclaration(p.node));
+                    if(t.isIdentifier(node.init?.callee) && node.init.callee.name === '_interopRequireDefault'){
+                        const init = node.init;
+                        if(init.arguments && init.arguments.some((arg: t.Expression | t.Identifier) => t.isIdentifier(arg) && arg.name.includes(funcName))){
+                            const code:string = fileContent.substring(declarationNode.node.start, declarationNode.node.end);
+                            codes.push(code);
+                        }
+                    }else if (t.isMemberExpression(node.init) && node.init.property.name === 'default') {
+                        //.default対応
+                        const code = fileContent.substring(declarationNode.node.start, declarationNode.node.end);
+                        codes.push(code);
+                    }
+                },
                 CallExpression(path: any) {
                     const node = path.node;
                     //関数の呼び出しを見つける
-                    //console.log(' node.callee.name:'+node.callee.name);
-                    if (node.callee.type === 'Identifier' && node.callee.name.includes(funcName)) {
-                        //UUID関数の呼び出しを見つけたら、そのノードを文字列に変換して保存
-                        const code: string = fileContent.substring(node.start, node.end);
-                        codes.push(code);
-                    } else if (node.callee.type === 'MemberExpression') {
-                        if (node.callee.object && node.callee.object.type === 'Identifier' && node.callee.object.name.includes(funcName)) {
+                    if (node.callee.type === 'Identifier') {
+                        if(node.callee.name.includes(funcName)){
                             const code: string = fileContent.substring(node.start, node.end);
                             codes.push(code);
                         }
+                    } else if (node.callee.type === 'MemberExpression') {
+                        if (node.callee.object?.type === 'Identifier' && node.callee.object.name.includes(funcName)) {
+                            const code: string = fileContent.substring(node.start, node.end);
+                            codes.push(code);
+                        } else if (node.callee.object && node.callee.object.type === 'MemberExpression'){
+                            //~~.default.~~()の取得
+                            if(node.callee.object.object && node.callee.object.object.type === 'Identifier'){
+                                if(node.callee.object.object.name.includes(funcName)) {
+                                    const code: string = fileContent.substring(node.start, node.end);
+                                    codes.push(code);
+                                }
+                            }
+                        }
                     }
-                }
+                },
             });
         }
-        // if(codes.length>0){
-        //     console.log('fun:'+funcName);
-        //     console.log('codes:'+codes);
-        //     console.log('console.log(codes.length);'+codes.length);
-        // }
         if(codes.length > 0){
             resultArray.push(codes);
         }
