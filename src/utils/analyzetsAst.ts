@@ -40,6 +40,10 @@ export const analyzetsAst = async(filePath:string,libName:string,funcName:string
                     } else if (node.callee.type === 'MemberExpression') {
                         if (node.callee.object?.type === 'Identifier' && node.callee.object.name.includes(funcName)) {
                             const code: string = fileContent.substring(node.start, node.end);
+                            //mockを行で削除
+                            // if(!code.includes('mockImplementation')){
+                            //     codes.push(code);
+                            // }
                             codes.push(code);
                         } else if (node.callee.object && node.callee.object.type === 'MemberExpression'){
                             //~~.default.~~()の取得
