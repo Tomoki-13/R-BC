@@ -4,7 +4,7 @@ import traverse from "@babel/traverse";
 import { funcNameIdentifiers } from "./funcNameIdentifiers";
 import * as t from "@babel/types";
 
-export const analyzetsAst = async(filePath:string,libName:string,funcName:string): Promise<string[][]> => {
+export const analyzeAst = async(filePath:string,funcName:string): Promise<string[][]> => {
     let resultArray:string[][]=[];
     try {
         let codes: string[] = [];
@@ -64,7 +64,7 @@ export const analyzetsAst = async(filePath:string,libName:string,funcName:string
     return resultArray;
 }
 //機能名を返す
-export const analyzetsAstFuncName = async(filePath:string,libName:string): Promise<string[]> => {
+export const analyzeAstFuncName = async(filePath:string,libName:string): Promise<string[]> => {
     let resultArray:string[]=[];
         try {
             let codes: string[] = [];
