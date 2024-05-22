@@ -1,11 +1,11 @@
 import { getSubDir } from "./utils/getSubDir";
 import { getAllFiles } from "./utils/getAllFiles";
-import {analyzetsAst} from "./utils/analyzetsAst";
+import {analyzeAst} from "./utils/analyzeAst";
 import { useAst, useAstSample } from "./utils/useAst";
 
 (async () => {
-    //const startDirectory: string = "../reposv7.0.0failure";
     const startDirectory: string = "../reposv7.0.0failure";
+    //const startDirectory: string = "../reposgv7failure";
     let n: number = 0;
     try {
         const libName: string  = process.argv[2];

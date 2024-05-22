@@ -2,7 +2,7 @@ import fsPromises from 'fs/promises';
 import { funcNameIdentifiers, secfuncNameIdentifiers } from "./funcNameIdentifiers";
 import { extractImportLines } from "./extractImportLines";
 import { analyzeFile } from "./analyzeFile";
-import { analyzetsAst } from "./analyzetsAst";
+import { analyzeAst } from "./analyzeAst";
 
 export const useAst = async (allFiles: string[], libName: string): Promise<string[][]> =>{
     const pattern: string[][] = [];
@@ -20,7 +20,7 @@ export const useAst = async (allFiles: string[], libName: string): Promise<strin
                 let funcName:string[] = funcNameIdentifiers(line, libName);
                 if (funcName.length > 0) {
                     for(const one of funcName){
-                        analyzetsAst(fileContent,libName,one);
+                        analyzeAst(fileContent,one);
                     }
                 }
             }
@@ -42,7 +42,7 @@ export const useAstSample = async (allFiles: string[], libName: string): Promise
         try {
             const fileContent = await fsPromises.readFile(filePath, 'utf8');
             const lines = extractImportLines(fileContent,libName);
-            //const lines = await analyzetsAstFuncName(filePath,libName);
+            //const lines = await analyzeAstFuncName(filePath,libName);
             if(lines.length>0){
                 pattern.push(lines);
             }
@@ -64,7 +64,7 @@ export const useAstSample = async (allFiles: string[], libName: string): Promise
                 //重複を削除
                 const uniquefuncName: string[] = [...new Set(funcName)];
                 for(const one of uniquefuncName){
-                    let result = await analyzetsAst(filePath, libName, one);
+                    let result = await analyzeAst(filePath,one);
                     if (result.length > 0) {
                         //mockImplementationの対策 配列で削除
                         const chekcstr = 'mockImplementation';
