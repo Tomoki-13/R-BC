@@ -66,10 +66,16 @@ export const useAstSample = async (allFiles: string[], libName: string): Promise
                 for(const one of uniquefuncName){
                     let result = await analyzeAst(filePath,one);
                     if (result.length > 0) {
-                        //console.log('result:'+result);
-                        //.mockImplementationの対策
-                        // const str1 = libName + '.mockImplementation';
-                        // result = result.filter(line => !line.includes(str1));
+                        //mockImplementationの対策 配列で削除
+                        const chekcstr = 'mockImplementation';
+                        result = result.filter(subresult => {
+                            for (let str of subresult) {
+                                if (str.includes(chekcstr)) {
+                                    return false;
+                                }
+                            }
+                            return true;
+                        });
                         pattern.push(...result);
                     }
                 }
