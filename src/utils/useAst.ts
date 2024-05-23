@@ -42,9 +42,11 @@ export const useAstSample = async (allFiles: string[], libName: string): Promise
         try {
             const fileContent = await fsPromises.readFile(filePath, 'utf8');
             const lines = extractImportLines(fileContent,libName);
+            let returnStr:string[][] = [];
             //const lines = await analyzeAstFuncName(filePath,libName);
+            let inFileStr:string[]=[];
             if(lines.length>0){
-                pattern.push(lines);
+                inFileStr = inFileStr.concat(lines);
             }
             //関数の使用部分の抽出
             let funcName:string[] = [];
@@ -64,19 +66,16 @@ export const useAstSample = async (allFiles: string[], libName: string): Promise
                 //重複を削除
                 const uniquefuncName: string[] = [...new Set(funcName)];
                 for(const one of uniquefuncName){
-                    let result = await analyzeAst(filePath,one);
+                    let result:string[] = await analyzeAst(filePath,one);
                     if (result.length > 0) {
                         //mockImplementationの対策 配列で削除
-                        const chekcstr = 'mockImplementation';
-                        result = result.filter(subresult => {
-                            for (let str of subresult) {
-                                if (str.includes(chekcstr)) {
-                                    return false;
-                                }
-                            }
-                            return true;
-                        });
-                        pattern.push(...result);
+                        const checkstr = 'mockImplementation';
+                        result = result.filter(subresult => !subresult.includes(checkstr));
+                        inFileStr = inFileStr.concat(result);
+                        const uniqueInFileStr: string[] = [...new Set(inFileStr)];
+                        //重複を考慮
+                        returnStr.push(uniqueInFileStr);
+                        pattern.push(...returnStr);
                     }
                 }
             }

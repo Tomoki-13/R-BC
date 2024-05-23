@@ -4,8 +4,8 @@ import traverse from "@babel/traverse";
 import { funcNameIdentifiers } from "./funcNameIdentifiers";
 import * as t from "@babel/types";
 
-export const analyzeAst = async(filePath:string,funcName:string): Promise<string[][]> => {
-    let resultArray:string[][]=[];
+export const analyzeAst = async(filePath:string,funcName:string): Promise<string[]> => {
+    let resultArray:string[]=[];
     try {
         let codes: string[] = [];
         //ファイルの内容を取得
@@ -59,7 +59,7 @@ export const analyzeAst = async(filePath:string,funcName:string): Promise<string
             });
         }
         if(codes.length > 0){
-            resultArray.push(codes);
+            resultArray = resultArray.concat(codes);
         }
     } catch (error) {
         console.log(`Failed to create AST for file: ${filePath}`);

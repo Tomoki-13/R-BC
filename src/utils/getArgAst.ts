@@ -20,7 +20,6 @@ export const getAstArg = async(filePath:string,funcName:string): Promise<string[
                         const init = node.init;
                         if (init.arguments && init.arguments.some((arg: t.Expression | t.Identifier) => t.isIdentifier(arg) && arg.name.includes(funcName))) {
                             const code: string = fileContent.substring(declarationNode.node.start, declarationNode.node.end);
-                            console.log('code1:'+code);
                             codes.push(code);
                         }
                     } else if (t.isMemberExpression(node.init) && node.init.property.name === 'default') {
