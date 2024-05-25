@@ -1,11 +1,11 @@
 import { getSubDir } from "./utils/getSubDir";
 import { getAllFiles } from "./utils/getAllFiles";
 import {analyzeAst} from "./utils/analyzeAst";
-import { useAst, useAstSample } from "./utils/useAst";
+import {useAst } from "./utils/useAst";
 
 (async () => {
-    const startDirectory: string = "../reposv7.0.0failure";
-    //const startDirectory: string = "../reposgv7failure";
+    //const startDirectory: string = "../reposv7.0.0failure";
+    const startDirectory: string = "../reposgv7failure";
     let n: number = 0;
     try {
         const libName: string  = process.argv[2];
@@ -17,16 +17,15 @@ import { useAst, useAstSample } from "./utils/useAst";
             let extract_pattern2: string[][]= [];
             const allFiles: string[] = await getAllFiles(subdir);
             extract_pattern1 = await useAst(allFiles,libName);
-            extract_pattern2 = await useAstSample(allFiles,libName);
             //成功したクライアントでパターンを持っているものを検出
             // if (extract_pattern1.length !== 0) {
             //     console.log(subdir);
             //     console.log(extract_pattern1);
             //     n++;
             //}
-            if (extract_pattern2.length > 0) {
+            if (extract_pattern1.length > 0) {
                 console.log(subdir);
-                console.log(extract_pattern2);
+                console.log(extract_pattern1);
                 n++;
             }else{
                 // console.log(subdir);

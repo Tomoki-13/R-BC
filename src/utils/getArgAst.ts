@@ -3,7 +3,7 @@ import { promises as fsPromises } from 'fs';
 import traverse from "@babel/traverse"; 
 import * as t from "@babel/types";
 //引数追跡　１段階
-export const getAstArg = async(filePath:string,funcName:string): Promise<string[][]> => {
+export const getArgAst = async(filePath:string,funcName:string): Promise<string[][]> => {
     let resultArray:string[][]=[];
     try {
         let codes: string[] = [];
