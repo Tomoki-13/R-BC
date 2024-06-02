@@ -13,21 +13,6 @@ export const getArgAst = async(filePath:string,funcName:string): Promise<string[
             const parsed = parser.parse(fileContent, {sourceType: 'unambiguous', plugins: ["typescript",'decorators-legacy']});
             //const parsed = parser.parse(fileContent, { ecmaVersion: 2020, sourceType: 'script', plugins: ["typescript"] });
             traverse(parsed, {
-                VariableDeclarator(path: any) {
-                    const node = path.node;
-                    const declarationNode = path.findParent((p: any) => t.isVariableDeclaration(p.node));
-                    if (t.isIdentifier(node.init?.callee) && node.init.callee.name === '_interopRequireDefault') {
-                        const init = node.init;
-                        if (init.arguments && init.arguments.some((arg: t.Expression | t.Identifier) => t.isIdentifier(arg) && arg.name.includes(funcName))) {
-                            const code: string = fileContent.substring(declarationNode.node.start, declarationNode.node.end);
-                            codes.push(code);
-                        }
-                    } else if (t.isMemberExpression(node.init) && node.init.property.name === 'default') {
-                        //.default対応
-                        const code = fileContent.substring(declarationNode.node.start, declarationNode.node.end);;
-                        codes.push(code);
-                    }
-                },
                 CallExpression(path: any) {
                     const node = path.node;
                     // 関数の呼び出しを見つける
