@@ -3,6 +3,7 @@ import { promises as fsPromises } from 'fs';
 import traverse from "@babel/traverse";
 import { funcNameIdentifiers } from "./funcNameIdentifiers";
 import * as t from "@babel/types";
+import { traceArg } from "./traceArg";
 
 export const analyzeAst = async(filePath:string,funcName:string): Promise<string[]> => {
     let resultArray:string[]=[];
@@ -106,5 +107,110 @@ export const analyzeAstFuncName = async(filePath:string,libName:string): Promise
             console.log(`Failed to create AST for file: ${filePath}`);
             //console.log('error', error);
         }
+    return resultArray;
+}
+
+//置き換え処理追加後
+export const argplace = async(filePath:string,funcName:string): Promise<string[]> => {
+    let resultArray:string[]=[];
+    try {
+        let codes: string[] = [];
+        //ファイルの内容を取得
+        if (filePath.endsWith('.js') || filePath.endsWith('.ts')) {
+            const fileContent: string = await fsPromises.readFile(filePath, 'utf8');
+            const parsed = parser.parse(fileContent, {sourceType: 'unambiguous', plugins: ["typescript",'decorators-legacy']});
+            //const parsed = parser.parse(fileContent, { ecmaVersion: 2020, sourceType: 'script', plugins: ["typescript"] });
+            traverse(parsed, {
+                VariableDeclarator(path:any) {
+                    const node = path.node;
+                    const declarationNode = path.findParent((p: any) => t.isVariableDeclaration(p.node));
+                    if(t.isIdentifier(node.init?.callee) && node.init.callee.name === '_interopRequireDefault'){
+                        const init = node.init;
+                        if(init.arguments && init.arguments.some((arg: t.Expression | t.Identifier) => t.isIdentifier(arg) && arg.name.includes(funcName))){
+                            const code:string = fileContent.substring(declarationNode.node.start, declarationNode.node.end);
+                            codes.push(code);
+                        }
+                    }else if (t.isMemberExpression(node.init) && node.init.property.name === 'default') {
+                        //.default対応
+                        const code = fileContent.substring(declarationNode.node.start, declarationNode.node.end);
+                        codes.push(code);
+                    }
+                },
+                CallExpression(path: any) {
+                    const node = path.node;
+                    // 関数の呼び出しを見つける
+                    if (node.callee.type === 'Identifier' && node.callee.name.includes(funcName)) {
+                        let code = fileContent.substring(node.start, node.end);
+                        if (node.arguments.length > 0) {
+                            //~~()の部分
+                            let placeword:string = fileContent.substring(node.arguments[0].start, node.arguments[node.arguments.length - 1].end);
+                            //置き換え先
+                            let toplaceword:string = placeword;
+                            for(let i = 0;i < node.arguments.length - 1;i++){
+                                const variableName:string = fileContent.substring(node.arguments[i].start, node.arguments[i].end);
+                                //a to name
+                                let toword:string = traceArg(parsed,variableName,fileContent,node.arguments[i].start);
+                                if(toword.length>0){
+                                    //置き換え
+                                    toplaceword = toplaceword.replace(new RegExp(variableName), toword);
+                                }
+                            }
+                            if(placeword != toplaceword){
+                                code = code.replace(new RegExp(placeword), toplaceword);
+                            }
+                        }
+                        codes.push(code);
+                    } else if (node.callee.type === 'MemberExpression') {
+                        if (node.callee.object?.type === 'Identifier' && node.callee.object.name.includes(funcName)) {
+                            let code = fileContent.substring(node.start, node.end);
+                            if (node.arguments.length > 0) {
+                                let placeword:string = fileContent.substring(node.arguments[0].start, node.arguments[node.arguments.length - 1].end);
+                                let toplaceword:string = placeword;
+                                for(let i = 0;i < node.arguments.length - 1;i++){
+                                    const variableName:string = fileContent.substring(node.arguments[i].start, node.arguments[i].end);
+                                    let toword:string = traceArg(parsed,variableName,fileContent,node.arguments[i].start);
+                                    if(toword.length>0){
+                                        toplaceword = toplaceword.replace(new RegExp(variableName), toword);
+                                    }
+                                }
+                                if(placeword != toplaceword){
+                                    code = code.replace(new RegExp(placeword), toplaceword);
+                                }
+                            }
+                            codes.push(code);
+                        } else if (node.callee.object && node.callee.object.type === 'MemberExpression') {
+                            // ~~.default.~~()の取得
+                            if (node.callee.object.object && node.callee.object.object.type === 'Identifier') {
+                                if (node.callee.object.object.name.includes(funcName)) {
+                                    let code = fileContent.substring(node.start, node.end);
+                                    if (node.arguments.length > 0) {
+                                        let placeword:string = fileContent.substring(node.arguments[0].start, node.arguments[node.arguments.length - 1].end);
+                                        let toplaceword:string = placeword;
+                                        for(let i = 0;i < node.arguments.length - 1;i++){
+                                            const variableName:string = fileContent.substring(node.arguments[i].start, node.arguments[i].end);
+                                            let toword:string = traceArg(parsed,variableName,fileContent,node.arguments[i].start);
+                                            if(toword.length>0){
+                                                toplaceword = toplaceword.replace(new RegExp(variableName), toword);
+                                            }
+                                        }
+                                        if(placeword != toplaceword){
+                                            code = code.replace(new RegExp(placeword), toplaceword);
+                                        }
+                                    }
+                                    codes.push(code);
+                                }
+                            }
+                        }
+                    }
+                },
+            });
+        }
+        if(codes.length > 0){
+            resultArray = resultArray.concat(codes);
+        }
+    } catch (error) {
+        console.log(`Failed to create AST for file: ${filePath}`);
+        //console.log(error);
+    }
     return resultArray;
 }
