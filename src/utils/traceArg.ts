@@ -15,6 +15,9 @@ export const traceArg = (parsed: any, variableName: string, fileContent: string,
                 if (typeof start === 'number' && typeof end === 'number' && end < nodestart) {
                     str = fileContent.substring(start, end);
                 }
+                // if(typeof start === 'number' && typeof end === 'number' && str === ''){
+                //     str = fileContent.substring(start, end);
+                // }
             }
         }
     });
