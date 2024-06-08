@@ -42,6 +42,7 @@ export const useAst = async (allFiles: string[], libName: string): Promise<strin
                 for(const one of uniquefuncName){
                     let result:string[] = await analyzeAst(filePath,one);
                     //let result:string[] = await argplace(filePath,one);
+                    //文字列が使用された場合のみ最終結果に追加
                     if (result.length > 0) {
                         //mockImplementationの対策 配列で削除
                         const checkstr = 'mockImplementation';
