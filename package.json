@@ -8,7 +8,7 @@
     "test": "test"
   },
   "scripts": {
-    "test": "jest ./src/__tests__/getArgAst.test.ts"
+    "test": "jest ./src/__tests__/"
   },
   "keywords": [],
   "author": "",
