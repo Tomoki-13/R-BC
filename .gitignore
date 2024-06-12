@@ -23,3 +23,4 @@ dockercompose.yml
 Sample
 .babelrc
 src/__tests__/InputFile
+src/__tests__/ast.test.ts
