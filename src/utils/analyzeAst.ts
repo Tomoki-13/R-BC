@@ -328,6 +328,35 @@ export const analyzeExpression = async(filePath:string,libfuncName:string): Prom
                     }
                 },
             });
+            //他のエクスポートに対応
+            traverse(parsed, {
+                ExportNamedDeclaration(path) {
+                    const node = path.node;
+                    if (node.specifiers.length>0){
+                        for(const specifier of node.specifiers){
+                            if(t.isIdentifier(specifier.exported)){
+                                const funcname:string = specifier.exported.name;
+                                for (const obj of resultArray) {
+                                    if (obj.name.includes(funcname)) {
+                                        obj.isExported = true;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                ExportDefaultDeclaration(path){
+                    const node = path.node;
+                    if (t.isIdentifier(node.declaration) && node.declaration.loc?.identifierName) {
+                        const funcname:string = node.declaration.loc?.identifierName;
+                        for (const obj of resultArray) {
+                            if (obj.name.includes(funcname)) {
+                                obj.isExported = true;
+                            }
+                        }
+                    }
+                },
+            });
         }
     } catch (error) {
         console.log(`Failed to create AST for file: ${filePath}`);
