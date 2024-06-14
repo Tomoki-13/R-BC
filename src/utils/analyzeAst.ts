@@ -4,7 +4,7 @@ import traverse from "@babel/traverse";
 import { funcNameIdentifiers } from "./funcNameIdentifiers";
 import * as t from "@babel/types";
 import { traceArg } from "./traceArg";
-
+import { FunctionInfo, ExportFunctionInfo} from '../types/FunctionInfo';
 export const analyzeAst = async(filePath:string,funcName:string): Promise<string[]> => {
     let resultArray:string[]=[];
     try {
@@ -207,6 +207,156 @@ export const argplace = async(filePath:string,funcName:string): Promise<string[]
         }
         if(codes.length > 0){
             resultArray = resultArray.concat(codes);
+        }
+    } catch (error) {
+        console.log(`Failed to create AST for file: ${filePath}`);
+        //console.log(error);
+    }
+    return resultArray;
+}
+
+export const analyzeExpression = async(filePath:string,libfuncName:string): Promise<FunctionInfo[]> => {
+    let resultArray: FunctionInfo[] = [];
+    try {
+        //ファイルの内容を取得
+        if (filePath.endsWith('.js') || filePath.endsWith('.ts')) {
+            const fileContent: string = await fsPromises.readFile(filePath, 'utf8');
+            const parsed = parser.parse(fileContent, {sourceType: 'unambiguous', plugins: ["typescript",'decorators-legacy']});
+        
+            let exportedFunctions = new Set<ExportFunctionInfo>();
+        
+            const isExportedFunction = (func: ExportFunctionInfo): boolean => {
+                for (const exportedFunc of exportedFunctions) {
+                    if (exportedFunc.name === func.name && exportedFunc.args.join(',') === func.args.join(',')) {
+                        return true;
+                    }
+                }
+                return false;
+            };
+        
+            const serializeFunction = (name: string, args: string[]): ExportFunctionInfo => {
+                return { name, args };
+            };
+        
+            traverse(parsed, {
+                ExpressionStatement(path){
+                    const node = path.node;
+                    if (t.isCallExpression(node.expression)) {
+                        const callee = node.expression.callee;
+                        if (t.isIdentifier(callee)) {
+                            const funcName: string = callee.name;
+                            const args: string[] = node.expression.arguments.map(arg => {
+                                if (t.isIdentifier(arg)) {
+                                    return arg.name;
+                                } else if (t.isLiteral(arg)) {
+                                    const literal = arg as t.StringLiteral | t.NumericLiteral | t.BooleanLiteral;
+                                    return String(literal.value);
+                                } else {
+                                    return '';
+                                }
+                            });
+                            const serializedFunc: ExportFunctionInfo = serializeFunction(funcName, args);
+                            exportedFunctions.add(serializedFunc);
+                        }
+                    }
+                },
+                ExportNamedDeclaration(path) {
+                    const node = path.node;
+                    if (t.isFunctionDeclaration(node.declaration) && node.declaration.id) {
+                        const funcName: string = node.declaration.id.name;
+                        const params: string[] = node.declaration.params.map(param => (t.isIdentifier(param) ? param.name : ''));
+                        exportedFunctions.add(serializeFunction(funcName, params));
+                    } else if (t.isVariableDeclaration(node.declaration)) {
+                        const declarations = node.declaration.declarations;
+                        for (const declarator of declarations) {
+                            if (t.isVariableDeclarator(declarator) && t.isIdentifier(declarator.id) && declarator.init && t.isArrowFunctionExpression(declarator.init)) {
+                                const funcName = declarator.id.name;
+                                const params = declarator.init.params.map(param => (t.isIdentifier(param) ? param.name : ''));
+                                const serializedFunc = serializeFunction(funcName, params);
+                                exportedFunctions.add(serializedFunc);
+                            }
+                        }
+                    }
+                },
+                ExportDefaultDeclaration(path){
+                    const node = path.node;
+                    if (t.isFunctionDeclaration(node.declaration) && node.declaration.id) {
+                        const funcName: string = node.declaration.id.name;
+                        const params: string[] = node.declaration.params.map(param => (t.isIdentifier(param) ? param.name : ''));
+                        exportedFunctions.add(serializeFunction(funcName, params));
+                    } else if (t.isFunctionExpression(node.declaration) || t.isArrowFunctionExpression(node.declaration)) {
+                        exportedFunctions.add({ name: 'default', args: [''] });
+                    }
+                },
+                FunctionDeclaration(path){
+                    const node = path.node;
+                    if (node.id) {
+                        const funcName: string = node.id.name;
+                        const params: string[] = node.params.map(param => (t.isIdentifier(param) ? param.name : ''));
+                        const serializedFunc: ExportFunctionInfo = serializeFunction(funcName, params);
+                        resultArray.push({ name: funcName, args: params, isExported: isExportedFunction(serializedFunc) });
+                    }
+                },
+                VariableDeclarator(path){
+                    const node = path.node;
+                    if (t.isIdentifier(node.id) && node.init && (t.isFunctionExpression(node.init) || t.isArrowFunctionExpression(node.init))) {
+                        const funcName: string = node.id.name;
+                        const params: string[] = node.init.params.map(param => (t.isIdentifier(param) ? param.name : ''));
+                        const serializedFunc: ExportFunctionInfo = serializeFunction(funcName, params);
+                        resultArray.push({ name: funcName, args: params, isExported: isExportedFunction(serializedFunc) });
+                    }
+                },
+                AssignmentExpression(path){
+                    const node = path.node;
+                    if (t.isFunctionExpression(node.right) || t.isArrowFunctionExpression(node.right)) {
+                        let funcName: string | undefined;
+                        let params: string[] = node.right.params.map(param => (t.isIdentifier(param) ? param.name : ''));
+        
+                        if (t.isMemberExpression(node.left) && !node.left.computed && t.isIdentifier(node.left.property)) {
+                            funcName = node.left.property.name;
+                            if (t.isIdentifier(node.left.object) && (node.left.object.name === 'exports' || node.left.object.name === 'module')) {
+                                exportedFunctions.add(serializeFunction(funcName, params));
+                            }
+                        } else if (t.isIdentifier(node.left)) {
+                            funcName = node.left.name;
+                        }
+                        
+                        if (funcName) {
+                            const serializedFunc: ExportFunctionInfo = serializeFunction(funcName, params);
+                            resultArray.push({ name: funcName, args: params, isExported: isExportedFunction(serializedFunc) });
+                        }
+                    }
+                },
+            });
+            //他のエクスポートに対応
+            traverse(parsed, {
+                ExportNamedDeclaration(path) {
+                    const node = path.node;
+                    if (node.specifiers.length>0){
+                        for(const specifier of node.specifiers){
+                            if(t.isIdentifier(specifier.exported)){
+                                const funcname:string = specifier.exported.name;
+                                for (const obj of resultArray) {
+                                    if (obj.name.includes(funcname)) {
+                                        obj.isExported = true;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                ExportDefaultDeclaration(path){
+                    const node = path.node;
+                    if (t.isIdentifier(node.declaration) && node.declaration.loc?.identifierName) {
+                        const funcname:string = node.declaration.loc?.identifierName;
+                        for (const obj of resultArray) {
+                            if (obj.name.includes(funcname)) {
+                                obj.isExported = true;
+                            }
+                        }
+                    }
+                },
+            });
         }
     } catch (error) {
         console.log(`Failed to create AST for file: ${filePath}`);
