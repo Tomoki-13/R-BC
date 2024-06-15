@@ -1,4 +1,5 @@
-import {analyzeAst,analyzeExpression} from '../utils/analyzeAst';
+import {analyzeAst} from '../utils/analyzeAst';
+import {analyzeExpression} from '../utils/analyzeExpression';
 import { FunctionInfo} from '../types/FunctionInfo';
 describe('analyzeAst.ts test', () => {
     test('Function usage', async () => {
