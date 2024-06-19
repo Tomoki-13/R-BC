@@ -24,6 +24,22 @@ export const analyzeExpression = async(filePath:string,funcName:string): Promise
             const serializeFunction = (name: string, args: string[]): ExportFunctionInfo => {
                 return { name, args };
             };
+            const checkRange = (location: number[][], start: number, end: number): boolean => {
+                try {
+                    let isContained = false;
+                    //locationの各要素についてループする
+                    for (const [locStart, locEnd] of location) {
+                        if (start <= locStart && end >= locEnd) {
+                            isContained = true;
+                            break;
+                        }
+                    }
+                    return isContained;
+                } catch (error) {
+                    console.error('Error checkRange:', error);
+                    return false;
+                }
+            };
             const location: number[][] = await funcLocation(parsed, funcName);
             if(location.length>0){
                 traverse(parsed, {
@@ -74,7 +90,7 @@ export const analyzeExpression = async(filePath:string,funcName:string): Promise
                         }
                     },
                     FunctionDeclaration(path){
-                        if (path.node.id) {
+                        if (path.node.id &&checkRange(location, path.node?.start ?? 0, path.node.end ?? 0)) {
                             const name: string = path.node.id.name;
                             const params: string[] = path.node.params.map(param => (t.isIdentifier(param) ? param.name : ''));
                             const serializedFunc: ExportFunctionInfo = serializeFunction(name, params);
@@ -82,7 +98,7 @@ export const analyzeExpression = async(filePath:string,funcName:string): Promise
                         }
                     },
                     VariableDeclarator(path){
-                        if (t.isIdentifier(path.node.id) && path.node.init && (t.isFunctionExpression(path.node.init) || t.isArrowFunctionExpression(path.node.init))) {
+                        if (t.isIdentifier(path.node.id) && path.node.init && (t.isFunctionExpression(path.node.init) || t.isArrowFunctionExpression(path.node.init))&& checkRange(location, path.node?.start ?? 0, path.node.end ?? 0)) {
                             const name: string = path.node.id.name;
                             const params: string[] = path.node.init.params.map(param => (t.isIdentifier(param) ? param.name : ''));
                             const serializedFunc: ExportFunctionInfo = serializeFunction(name, params);
@@ -103,7 +119,7 @@ export const analyzeExpression = async(filePath:string,funcName:string): Promise
                                 name = path.node.left.name;
                             }
                             
-                            if (name) {
+                            if (name&&checkRange(location, path.node?.start ?? 0, path.node.end ?? 0)) {
                                 const serializedFunc: ExportFunctionInfo = serializeFunction(name, params);
                                 resultArray.push({ name: name, args: params, isExported: isExportedFunction(serializedFunc) });
                             }
@@ -142,7 +158,7 @@ export const analyzeExpression = async(filePath:string,funcName:string): Promise
         }
     } catch (error) {
         console.log(`Failed to create AST for file: ${filePath}`);
-        //console.log(error);
+        console.log(error);
     }
     return resultArray;
 }
