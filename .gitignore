@@ -7,15 +7,10 @@ reposv8.0.0failure
 reposv8.0.0success
 Sampleuuid
 .DS_Store
-runnner
 test
 reposgv7failure
-reposv7.0.0success2
 scripts
-Sampleglo
 src/asttry
-src/*.js
-src/**/*.js
 package-lock.json
 Dockerfile
 dockercompose.yml
