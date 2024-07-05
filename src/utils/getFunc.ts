@@ -3,7 +3,7 @@ import { promises as fsPromises } from 'fs';
 import traverse from "@babel/traverse";
 import * as t from "@babel/types";
 import { FunctionInfo, ExportFunctionInfo} from '../types/FunctionInfo';
-export const analyzeExpression = async(filePath:string,funcName:string): Promise<FunctionInfo[]> => {
+export const getFunc = async(filePath:string,funcName:string): Promise<FunctionInfo[]> => {
     let resultArray: FunctionInfo[] = [];
     try {
         //ファイルの内容を取得
@@ -40,6 +40,7 @@ export const analyzeExpression = async(filePath:string,funcName:string): Promise
                     return false;
                 }
             };
+            //位置の追跡
             const location: number[][] = await funcLocation(parsed, funcName);
             if(location.length>0){
                 traverse(parsed, {
