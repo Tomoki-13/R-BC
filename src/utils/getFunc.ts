@@ -95,7 +95,7 @@ export const getFunc = async(filePath:string,funcName:string): Promise<FunctionI
                             const name: string = path.node.id.name;
                             const params: string[] = path.node.params.map(param => (t.isIdentifier(param) ? param.name : ''));
                             const serializedFunc: ExportFunctionInfo = serializeFunction(name, params);
-                            resultArray.push({ name: name, args: params, isExported: isExportedFunction(serializedFunc) });
+                            resultArray.push({ name: name, args: params, isExported: isExportedFunction(serializedFunc) , start: path.node.start ?? 0, end: path.node.end ?? 0 });
                         }
                     },
                     VariableDeclarator(path){
@@ -103,7 +103,7 @@ export const getFunc = async(filePath:string,funcName:string): Promise<FunctionI
                             const name: string = path.node.id.name;
                             const params: string[] = path.node.init.params.map(param => (t.isIdentifier(param) ? param.name : ''));
                             const serializedFunc: ExportFunctionInfo = serializeFunction(name, params);
-                            resultArray.push({ name: name, args: params, isExported: isExportedFunction(serializedFunc) });
+                            resultArray.push({ name: name, args: params, isExported: isExportedFunction(serializedFunc), start: path.node.start ?? 0, end: path.node.end ?? 0 });
                         }
                     },
                     AssignmentExpression(path){
@@ -122,7 +122,7 @@ export const getFunc = async(filePath:string,funcName:string): Promise<FunctionI
                             
                             if (name&&checkRange(location, path.node?.start ?? 0, path.node.end ?? 0)) {
                                 const serializedFunc: ExportFunctionInfo = serializeFunction(name, params);
-                                resultArray.push({ name: name, args: params, isExported: isExportedFunction(serializedFunc) });
+                                resultArray.push({ name: name, args: params, isExported: isExportedFunction(serializedFunc), start: path.node.start ?? 0, end: path.node.end ?? 0 });
                             }
                         }
                     },
