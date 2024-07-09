@@ -29,6 +29,6 @@ export const getSubDir = async(directoryPath: string): Promise<string[]> => {
         return (allSecSubDirs);
     } catch (err) {
         console.error('Error:', err);
-        throw err; // エラーを投げ直すことで、呼び出し元でエラーハンドリングできるようにします
+        throw err; 
     }
 }
