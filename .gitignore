@@ -19,4 +19,5 @@ Sample
 .babelrc
 src/__tests__/InputFile
 src/__tests__/ast.test.ts
+src/__tests__/integrate.test.ts
 output

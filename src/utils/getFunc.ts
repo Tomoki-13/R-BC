@@ -158,8 +158,8 @@ export const getFunc = async(filePath:string,funcName:string): Promise<FunctionI
             }
         }
     } catch (error) {
-        console.log(`Failed to create AST for file: ${filePath}`);
-        console.log(error);
+        console.log(`getFunc Failed to create AST for file: ${filePath}`);
+        //console.log(error);
     }
     return resultArray;
 }

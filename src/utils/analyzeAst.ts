@@ -1,9 +1,9 @@
 const parser = require("@babel/parser");
 import { promises as fsPromises } from 'fs';
 import traverse from "@babel/traverse";
-import { funcNameIdentifiers } from "./funcNameIdentifiers";
 import * as t from "@babel/types";
 import { traceArg } from "./traceArg";
+import {FunctionInfo} from '../types/FunctionInfo';
 export const analyzeAst = async (filePath: string, funcName: string): Promise<string[]> => {
     let resultArray: string[] = [];
     try {
@@ -57,7 +57,7 @@ export const analyzeAst = async (filePath: string, funcName: string): Promise<st
             resultArray = resultArray.concat(codes);
         }
     } catch (error) {
-        console.log(`Failed to create AST for file: ${filePath}`);
+        console.log(`analyzeAst: Failed to create AST for file: ${filePath}`);
         //console.log(error);
     }
     return resultArray;
@@ -145,7 +145,7 @@ export const argplace = async (filePath: string, funcName: string): Promise<stri
             resultArray = resultArray.concat(codes);
         }
     } catch (error) {
-        console.log(`Failed to create AST for file: ${filePath}`);
+        console.log(`analyzeAst: Failed to create AST for file: ${filePath}`);
         //console.log(error);
     }
     return resultArray;

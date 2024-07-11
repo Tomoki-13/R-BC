@@ -41,7 +41,7 @@ export const getArgAst = async(filePath:string,funcName:string): Promise<string[
             });
         }
     } catch (error) {
-        console.log(`Failed to create AST for file: ${filePath}`);
+        console.log(`getArgAst Failed to create AST for file: ${filePath}`);
         //console.log(error);
     }
     return resultArray;

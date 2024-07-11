@@ -7,7 +7,6 @@ export const traceArg = (parsed: any, variableName: string, fileContent: string,
     traverse(parsed, {
         VariableDeclarator(path) {
             const node = path.node;
-    
             if (t.isIdentifier(node.id) && node.id.name === variableName && node.init) {
                 const start = node.init.start;
                 const end = node.init.end;

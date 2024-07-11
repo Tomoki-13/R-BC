@@ -17,7 +17,6 @@ export const useAst = async (allFiles: string[], libName: string): Promise<strin
             const fileContent = await fsPromises.readFile(filePath, 'utf8');
             const lines = extractImportLines(fileContent,libName);
             let returnStr:string[][] = [];
-            //const lines = await analyzeAstFuncName(filePath,libName);
             let inFileStr:string[]=[];
             if(lines.length>0){
                 inFileStr = inFileStr.concat(lines);
