@@ -16,7 +16,6 @@ export const useAst = async (allFiles: string[], libName: string): Promise<strin
         try {
             const fileContent = await fsPromises.readFile(filePath, 'utf8');
             const lines = extractImportLines(fileContent,libName);
-            let returnStr:string[][] = [];
             let inFileStr:string[]=[];
             if(lines.length>0){
                 inFileStr = inFileStr.concat(lines);
@@ -47,15 +46,29 @@ export const useAst = async (allFiles: string[], libName: string): Promise<strin
                         const checkstr = 'mockImplementation';
                         result = result.filter(subresult => !subresult.includes(checkstr));
                         inFileStr = inFileStr.concat(result);
-                        const uniqueInFileStr: string[] = [...new Set(inFileStr)];
-                        //重複を考慮
-                        returnStr.push(uniqueInFileStr);
-                        pattern.push(...returnStr);
                     }
                 }
+                //重複を考慮
+                if(inFileStr.length > 0){
+                    // console.log(uniquefuncName);
+                    // console.log(inFileStr);
+                    const base = "---";
+                    let j = 1;
+                    let uniqueInFileStr: string[] = [...new Set(inFileStr)];
+                    //抽象
+                    let sortUniquefuncName = uniquefuncName.sort((a, b) => b.length - a.length);
+                    console.log(uniquefuncName.length);
+                    console.log(uniquefuncName);
+                    for(const one of sortUniquefuncName){
+                        let replaceString: string = base  + j.toString();
+                        const regex = new RegExp(`(?<!["'])${one}(?!["'])`, 'g');
+                        uniqueInFileStr = uniqueInFileStr.map(str => str.replace(regex, replaceString));
+                        j++;
+                    }
+                    pattern.push(uniqueInFileStr);
+                    //pattern.push(inFileStr);
+                }
             }
-
-           
         } catch (err) {
             console.error('Error readFile:', err);
         }
