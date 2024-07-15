@@ -57,8 +57,8 @@ export const useAst = async (allFiles: string[], libName: string): Promise<strin
                     let uniqueInFileStr: string[] = [...new Set(inFileStr)];
                     //抽象
                     let sortUniquefuncName = uniquefuncName.sort((a, b) => b.length - a.length);
-                    console.log(uniquefuncName.length);
-                    console.log(uniquefuncName);
+                    // console.log(uniquefuncName.length);
+                    // console.log(uniquefuncName);
                     for(const one of sortUniquefuncName){
                         let replaceString: string = base  + j.toString();
                         const regex = new RegExp(`(?<!["'])${one}(?!["'])`, 'g');
