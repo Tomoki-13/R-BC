@@ -5,7 +5,7 @@ export const regex = (pattern:string[][]):RegExp[][]=>{
     }
     return returnpattern;
 }
-//単純な正規表現変換
+//配列用
 function convertToRegexArray(inputs: string[]): RegExp[] {
     let regexArray:RegExp[] = [];
     for(const input of inputs){
