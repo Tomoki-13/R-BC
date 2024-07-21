@@ -6,9 +6,10 @@ import { analyzeAst,argplace } from "./analyzeAst";
 import { getArgAst } from './getArgAst';
 
 export const useAst = async (allFiles: string[], libName: string): Promise<string[][]> =>{
-    const pattern: string[][] = [];
+    let pattern: string[][] = [];
     const visitedFiles:Set<string> = new Set<string>();
-
+    //抽象化時の番号　ファイルを超えても区別するため
+    let j = 1;
     for (const filePath of allFiles) {
         if (visitedFiles.has(filePath)) continue;
         visitedFiles.add(filePath);
@@ -50,10 +51,77 @@ export const useAst = async (allFiles: string[], libName: string): Promise<strin
                 }
                 //重複を考慮
                 if(inFileStr.length > 0){
+                    const base = "---";
+                    let uniqueInFileStr: string[] = [...new Set(inFileStr)];
+                    pattern.push(uniqueInFileStr);
+                    //pattern.push(inFileStr);
+                }
+            }
+        } catch (err) {
+            console.error('Error readFile:', err);
+        }
+
+        //文字数が以上に多いものを置き換え
+        for(let i=0;pattern.length>i;i++){
+            for(let j=0;pattern[i].length>j;j++){
+                if(pattern[i][j].length>150){
+                    //console.log('pattern:'+pattern[i][j]);
+                    pattern[i][j]= 'error';
+                }
+            }
+        }
+    }
+    return pattern;
+}
+export const abstuseAst = async (allFiles: string[], libName: string): Promise<string[][]> =>{
+    let pattern: string[][] = [];
+    const visitedFiles:Set<string> = new Set<string>();
+    //抽象化時の番号　ファイルを超えても区別するため
+    let j = 1;
+    for (const filePath of allFiles) {
+        if (visitedFiles.has(filePath)) continue;
+        visitedFiles.add(filePath);
+        
+        try {
+            const fileContent = await fsPromises.readFile(filePath, 'utf8');
+            const lines = extractImportLines(fileContent,libName);
+            let inFileStr:string[]=[];
+            if(lines.length>0){
+                inFileStr = inFileStr.concat(lines);
+            }
+            //関数の使用部分の抽出
+            let funcName:string[] = [];
+            for (const line of lines) {
+                let name:string[] = funcNameIdentifiers(line, libName);
+                if (name.length > 0) {
+                    funcName = funcName.concat(name);
+                    for(const one of funcName){
+                        const secUseFuncnames = secfuncNameIdentifiers(one, fileContent);
+                        if(secUseFuncnames.length>0){
+                            funcName = funcName.concat(secUseFuncnames);
+                        }
+                    }
+                }
+            }
+            if (funcName.length > 0) {
+                //重複を削除
+                const uniquefuncName: string[] = [...new Set(funcName)];
+                for(const one of uniquefuncName){
+                    let result:string[] = await analyzeAst(filePath,one);
+                    //let result:string[] = await argplace(filePath,one);
+                    //文字列が使用された場合のみ最終結果に追加
+                    if (result.length > 0) {
+                        //mockImplementationの対策 配列で削除 
+                        const checkstr = 'mockImplementation';
+                        result = result.filter(subresult => !subresult.includes(checkstr));
+                        inFileStr = inFileStr.concat(result);
+                    }
+                }
+                //重複を考慮
+                if(inFileStr.length > 0){
                     // console.log(uniquefuncName);
                     // console.log(inFileStr);
                     const base = "---";
-                    let j = 1;
                     let uniqueInFileStr: string[] = [...new Set(inFileStr)];
                     //抽象
                     let sortUniquefuncName = uniquefuncName.sort((a, b) => b.length - a.length);
@@ -73,15 +141,22 @@ export const useAst = async (allFiles: string[], libName: string): Promise<strin
             console.error('Error readFile:', err);
         }
 
-        //文字数が以上に多いものを置き換え
-        for(let i=0;pattern.length>i;i++){
-            for(let j=0;pattern[i].length>j;j++){
-                if(pattern[i][j].length>150){
-                    //console.log('pattern:'+pattern[i][j]);
-                    pattern[i][j]= 'error';
+        //文字数が異常に多いものを削除
+        for (let i = 0; i < pattern.length; i++) {
+            for (let j = pattern[i].length - 1; j >= 0; j--) {
+                if (pattern[i][j].length > 150) {
+                    //要素を削除
+                    pattern[i].splice(j, 1);
                 }
             }
         }
+        //空のサブ配列を削除
+        pattern = pattern.filter(subArray => subArray.length > 0);
     }
+    //空白削除　/t等も削除
+    for (let i = 0;i < pattern.length;i++) {
+        pattern[i] = pattern[i].map(item => item.trim());
+    }
+    //patternに関して---ごとに分類必要かも
     return pattern;
 }

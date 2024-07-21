@@ -1,6 +1,6 @@
 import { getSubDir } from "./utils/getSubDir";
 import { getAllFiles } from "./utils/getAllFiles";
-import { useAst } from "./utils/useAst";
+import { useAst,abstuseAst } from "./utils/useAst";
 import fs from 'fs';
 import path from 'path';
 import { Result } from './types/Result';
@@ -9,7 +9,7 @@ import { patternMatch } from "./utils/patternMatch";
 (async () => {
     const startDirectory: string = "../reposv8.0.0failure";
     //const startDirectory: string = "../reposgv7failure";
-    const matchStartdir:string="";
+    const matchStartdir:string="../reposv8.0.0success";
     let n: number = 0;
     try {
         const libName: string  = process.argv[2];
@@ -20,7 +20,9 @@ import { patternMatch } from "./utils/patternMatch";
         for (const subdir of alldirs) {
             let extract_pattern1: string[][] = [];
             const allFiles: string[] = await getAllFiles(subdir);
-            extract_pattern1 = await useAst(allFiles, libName);
+            //extract_pattern1 = await useAst(allFiles, libName);
+            extract_pattern1 = await abstuseAst(allFiles, libName);
+
 
             if(extract_pattern1.length > 0) {
                 // console.log(subdir);
@@ -60,8 +62,8 @@ import { patternMatch } from "./utils/patternMatch";
             outputFileName = path.join(outputDirectory, `${path.basename(startDirectory)}_output_${formattedDate}.csv`);
         }
         //fs.writeFileSync(outputFileName, csvRows.join('\n'), 'utf8');
-        console.log(alldirs.length);
-        console.log(n);
+        // console.log(alldirs.length);
+        // console.log(n);
         //console.log(respattern);
         //第２処理
         const matchAlldirs: string[] = await getSubDir(matchStartdir);
@@ -74,6 +76,7 @@ import { patternMatch } from "./utils/patternMatch";
                 // console.log(match_extract_pattern);
 
                 let judge: boolean = false;
+                //match_extract_pattern確認用　respattern作成下パターン
                 judge = await patternMatch(match_extract_pattern, libName, respattern);
             }
         }
