@@ -157,6 +157,13 @@ export const abstuseAst = async (allFiles: string[], libName: string): Promise<s
     for (let i = 0;i < pattern.length;i++) {
         pattern[i] = pattern[i].map(item => item.trim());
     }
-    //patternに関して---ごとに分類必要かも
+    //語尾の;の削除
+    for (let i = 0; i < pattern.length; i++) {
+        for (let j = 0; j < pattern[i].length; j++) {
+            if (pattern[i][j].endsWith(';')) {
+                pattern[i][j] = pattern[i][j].slice(0, -1);
+            }
+        }
+    }
     return pattern;
 }

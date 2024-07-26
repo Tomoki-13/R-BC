@@ -1,36 +1,46 @@
-export const patternMatch = async (userpatterns: string[][], libName: string, search_patterns: string[][][]): Promise<boolean> => {
+export const patternMatch = async (userpatterns: string[][], search_patterns: string[][][]): Promise<boolean> => {
     //検出用を回す
     for (const search_pattern of search_patterns) {
         //現在の search_pattern が全て userpatterns に一致するかどうかを示すフラグ
-        let patternMatched = true;
+        //let patternMatched = true;
 
         //現在の search_pattern 内の各パターンを処理する
         for (const search_one of search_pattern) {
             //現在の search_one が userpatterns に一致するかどうかを示すフラグ
-            let matched = false;
-            
-            for (const userpattern of userpatterns) {
-                let serp: string[] = prep_repl(search_one);
-                //variable数字の部分を処理　
-                const variableMap: { [key: string]: string[] } = {};
-                for (const str of serp) {
-                    const match = str.match(/variable(\d+)/g);
-                    if (match) {
-                        const key = match[0];
-                        if (!variableMap[key]) {
-                            variableMap[key] = [];
-                        }
-                        variableMap[key].push(str);
+            //let matched = false;
+            let serp: string[] = prep_repl(search_one);
+            //variable数字の部分を処理　
+            const variableMap: { [key: string]: string[] } = {};
+            for (const str of serp) {
+                const match = str.match(/variable(\d+)/g);
+                if (match) {
+                    const key = match[0];
+                    if (!variableMap[key]) {
+                        variableMap[key] = [];
                     }
+                    variableMap[key].push(str);
                 }
-
+            }
+            //console.log(variableMap);
+            //判定用
+            const variableMapJudge: { [key: string]: boolean } = {};
+            for (const key in variableMap) {
+                if (variableMap.hasOwnProperty(key)) {
+                    variableMapJudge[key] = false;
+                }
+            }
+            //console.log(variableMapJudge);
+            for (const userpattern of userpatterns) {
                 // console.log("variableMap:");
                 // console.log(variableMap);
 
                 //variableMap 内の全てのパターンが一致するか確認する
                 for (const key in variableMap) {
                     if (variableMap.hasOwnProperty(key)) {
+                        //variableMap[key][0]は決め打ちだから注意
                         const regex1: RegExp = new RegExp(escapeFunc(variableMap[key][0]));
+                        // console.log("1:"+variableMap[key][0]);
+                        // console.log("2:"+escapeFunc(variableMap[key][0]));
                         let importMatch: RegExpMatchArray | null = null;
                         let num: number = 0;
                         for (const line of userpattern) {
@@ -43,8 +53,23 @@ export const patternMatch = async (userpatterns: string[][], libName: string, se
                             }
                         }
 
-                        console.log(importMatch);
+                        //console.log(importMatch);
                         if (importMatch && importMatch?.groups) {
+                            const importName = importMatch.groups[key];
+                            // console.log(key);
+                            // console.log("インポートされた名前:", importName);
+                            // console.log('pre variableMap');
+                            // console.log(variableMap);
+                            for (const key1 in variableMap) {
+                                for(let i = 0; i < variableMap[key1].length; i++){
+                                    if(!(key1 == key && i == 0)){
+                                        variableMap[key1][i] = variableMap[key1][i].replace(key, importName);
+                                    }
+                                    
+                                }
+                            }
+                            // console.log('post variableMap');
+                            // console.log(variableMap);
                             const keys = Object.keys(variableMap);
                             if (keys.length === 1) {
                                 const key = keys[0];
@@ -52,20 +77,19 @@ export const patternMatch = async (userpatterns: string[][], libName: string, se
                                 if (variableMap[key].length === 1) {
                                     return true;
                                 }
+                            }else if(variableMap[key].length === 1){
+                                variableMapJudge[key] = true;
                             }
-                            const importName = importMatch.groups[key];
-                            console.log(key);
-                            console.log("インポートされた名前:", importName);
                             //追加のパターンを動的に作成して一致するか確認する
                             for (let i = 1; i < variableMap[key].length; i++) {
                                 //動的に関数呼び出しのパターンを作成
                                 const functionCallPatternStr = variableMap[key][i].replace(key, importName);
-                                const functionCallPattern = new RegExp(functionCallPatternStr);
-                                
+                                const functionCallPattern = new RegExp(escapeFunc(functionCallPatternStr));
+                                let matched = false;
                                 //userpattern の残りの行で動的に作成したパターンに一致するか確認する
                                 for (let j = num; j < userpattern.length; j++) {
-                                    console.log("j:" + j);
-                                    console.log("userpattern[j]:" + userpattern[j]);
+                                    // console.log("j:" + j);
+                                    // console.log("userpattern[j]:" + userpattern[j]);
                                     const functionCallMatch = userpattern[j].match(functionCallPattern);
                                     if (functionCallMatch) {
                                         //一致が見つかった場合
@@ -76,39 +100,47 @@ export const patternMatch = async (userpatterns: string[][], libName: string, se
                                         break;
                                     } else {
                                         //一致が見つからない場合
-                                        console.log("２つ目以降マッチなし");
+                                        //console.log("２つ目以降マッチなし");
                                         matched = false;
                                     }
                                 }
                                 if (!matched) {
+                                    variableMapJudge[key] = false;
                                     break;
                                 }
+                                if(i == variableMap[key].length-1 && matched){
+                                    variableMapJudge[key] = true;
+                                }
                             }
+                            //console.log(variableMapJudge);
                         } else {
                             //呼び出しマッチが見つからない場合
-                            console.log("呼び出しマッチなし");
-                            matched = false;
+                            //console.log("呼び出しマッチなし");
+                            //matched = false;
+                            variableMapJudge[key] = false;
                         }
-                        console.log(matched);
-                        if (!matched) {
+                        // if (!matched) {
+                        //     break;
+                        // }
+                        if (variableMapJudge[key] == false) {
                             break;
                         }
                     }
                 }
-                if (matched) {
-                    break;
+                if (Object.values(variableMapJudge).every(value => value === true)) {
+                    return true;
                 }
             }
             //現在の search_one が一致しなかった場合
-            if (!matched) {
-                patternMatched = false;
-                break;
+            if (Object.values(variableMapJudge).every(value => value === true)) {
+                return true;
+                //break;
             }
         }
         //現在の search_pattern が一致した場合
-        if (patternMatched) {
-            return true;
-        }
+        // if (Object.values(variableMapJudge).every(value => value === true)) {
+        //     return true;
+        // }
     }
     return false;
 };
@@ -143,11 +175,10 @@ function escapeFunc(str: string): string {
     let insideQuote = false;
     let quoteChar = '';
     let insideSpecialPart = false;
-    let specialPartStart = /(?:\<|\?)(?:variable|[\w-]+)/;
-    let specialPartPattern = /(?:\<|\?)(?:variable|[\w-]+)[\w-]*\)/;
+    const specialPartStart = /\(\?\<[\w-]+\>/;
     while (i < length) {
         const char = str[i];
-        // 引用符の開始を検出
+        //引用符の開始を検出
         if (char === '"' || char === "'") {
             if (!insideQuote) {
                 insideQuote = true;
@@ -160,36 +191,29 @@ function escapeFunc(str: string): string {
             i++;
             continue;
         }
-        // 特定の部分の検出と処理
+        //特定の部分の検出と処理
         if (insideSpecialPart) {
-            // 特定の部分の処理
+            //特定の部分の処理
             if (char === ')') {
                 insideSpecialPart = false;
             }
             escapedStr += char;
         } else {
-            // 普通の括弧処理
+            //普通の括弧処理
             if (char === '(') {
                 //開き括弧のエスケープ
-                if (str.substring(i + 1).match(specialPartPattern)) {
+                if (str.substring(i).match(specialPartStart)) {
+                    insideSpecialPart = true;
                     escapedStr += char;
                 } else {
                     escapedStr += '\\(';
                 }
             } else if (char === ')') {
                 //閉じ括弧のエスケープ
-                if (str.substring(i - 1).match(specialPartPattern)) {
-                    escapedStr += char;
-                } else {
-                    escapedStr += '\\)';
-                }
+                escapedStr += '\\)';
             } else {
                 escapedStr += char;
             }
-        }
-        // 特定の部分を検出するための状態管理
-        if (str.substring(i).match(specialPartStart)) {
-            insideSpecialPart = true;
         }
 
         i++;
