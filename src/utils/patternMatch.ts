@@ -1,4 +1,4 @@
-export const patternMatch = async (userpatterns: string[][], search_patterns: string[][][]): Promise<boolean> => {
+export const patternMatch = async (userpatterns: string[][], search_patterns: string[][][]): Promise<[boolean, string[][] | null]> => {
     //検出用を回す
     for (const search_pattern of search_patterns) {
         //現在の search_pattern が全て userpatterns に一致するかどうかを示すフラグ
@@ -59,7 +59,7 @@ export const patternMatch = async (userpatterns: string[][], search_patterns: st
                             if (variableMap[key].length === 1) {
                                 // console.log('variableMapJudge');
                                 // console.log(variableMapJudge);
-                                return true;
+                                return [true, search_pattern];
                             }
                         } else if (variableMap[key].length === 1) {
                             variableMapJudge[key] = true;
@@ -99,17 +99,17 @@ export const patternMatch = async (userpatterns: string[][], search_patterns: st
             if (Object.values(variableMapJudge).every(value => value === true)) {
                 console.log('variableMapJudge');
                 console.log(variableMapJudge);
-                return true;
+                return [true, search_pattern];
             }
         }
 
         if (Object.values(variableMapJudge).every(value => value === true)) {
             console.log('variableMapJudge');
             console.log(variableMapJudge);
-            return true;
+            return [true, search_pattern];
         }
     }
-    return false;
+    return [false, null];
 };
 
 //置換処理

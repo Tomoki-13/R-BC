@@ -61,7 +61,7 @@ export const useAst = async (allFiles: string[], libName: string): Promise<strin
             console.error('Error readFile:', err);
         }
 
-        //文字数が以上に多いものを置き換え
+        //文字数が異常に多いものを置き換え
         for(let i=0;pattern.length>i;i++){
             for(let j=0;pattern[i].length>j;j++){
                 if(pattern[i][j].length>150){
@@ -70,6 +70,9 @@ export const useAst = async (allFiles: string[], libName: string): Promise<strin
                 }
             }
         }
+    }
+    for (let i = 0;i < pattern.length;i++) {
+        pattern[i] = pattern[i].map(item => item.trim());
     }
     return pattern;
 }
@@ -157,13 +160,14 @@ export const abstuseAst = async (allFiles: string[], libName: string): Promise<s
     for (let i = 0;i < pattern.length;i++) {
         pattern[i] = pattern[i].map(item => item.trim());
     }
-    //語尾の;の削除
-    for (let i = 0; i < pattern.length; i++) {
-        for (let j = 0; j < pattern[i].length; j++) {
-            if (pattern[i][j].endsWith(';')) {
-                pattern[i][j] = pattern[i][j].slice(0, -1);
-            }
-        }
-    }
+    //語尾の;の削除　).系にまでマッチするので残す
+    // for (let i = 0; i < pattern.length; i++) {
+    //     for (let j = 0; j < pattern[i].length; j++) {
+    //         if (pattern[i][j].endsWith(';')) {
+    //             pattern[i][j] = pattern[i][j].slice(0, -1);
+    //         }
+    //     }
+    // }
+
     return pattern;
 }

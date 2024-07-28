@@ -43,12 +43,12 @@ import path from 'path';
         if(!fs.existsSync(outputDirectory)) {
             fs.mkdirSync(outputDirectory);
         }
-        let outputFileName = path.join(outputDirectory, `${path.basename(startDirectory)}_preoutput.csv`);
+        let outputFileName = path.join(outputDirectory, `${path.basename(startDirectory)}_researchv8_output.csv`);
         //ファイルの重複阻止
         if(fs.existsSync(outputFileName)) {
             const date = new Date();
             const formattedDate = date.toISOString().slice(0, 19).replace(/[T:]/g, '-');
-            outputFileName = path.join(outputDirectory, `${path.basename(startDirectory)}_output_${formattedDate}.csv`);
+            outputFileName = path.join(outputDirectory, `${path.basename(startDirectory)}_researchv8_${formattedDate}.csv`);
         }
         fs.writeFileSync(outputFileName, csvRows.join('\n'), 'utf8');
         console.log(alldirs.length);

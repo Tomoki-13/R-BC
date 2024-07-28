@@ -15,7 +15,7 @@ import { patternMatch } from "./utils/patternMatch";
         const libName: string  = process.argv[2];
         const alldirs: string[] = await getSubDir(startDirectory);
         const csvRows: string[] = ['client,Patterns']; 
-        const matchcsvRows: string[] = ['client,Patterns']; 
+        const matchcsvRows: string[] = ['client,Patterns,matchedPattern']; 
         let respattern:string[][][] = []; 
         //各ディレクトリに対する処理
         for (const subdir of alldirs) {
@@ -74,14 +74,17 @@ import { patternMatch } from "./utils/patternMatch";
             const allFiles: string[] = await getAllFiles(subdir);
             match_extract_pattern = await useAst(allFiles, libName);
             if(match_extract_pattern.length > 0) {
-                let judge: boolean = false;
                 //match_extract_pattern確認用　respattern作成下パターン
-                judge = await patternMatch(match_extract_pattern, respattern);
-                if(judge){
+                const [isMatch, matchedPattern]: [boolean, string[][] | null] = await patternMatch(match_extract_pattern, respattern)
+                if(isMatch){
+                console.log("----------------------")
                 console.log(subdir);
                 console.log("match_extract_pattern");
                 console.log(match_extract_pattern);
-                    matchcsvRows.push(`"${subdir}","${match_extract_pattern}"`);
+                console.log("matchedPattern");
+                console.log(matchedPattern);
+                console.log("----------------------")
+                    matchcsvRows.push(`"${subdir}","${match_extract_pattern}","${matchedPattern}"`);
                 }
             }
         }
