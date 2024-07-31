@@ -7,20 +7,12 @@ module.exports = {
   ],
   testPathIgnorePatterns: [
     "/node_modules/",
-    "/reposgv7failure/",
-    "/reposv7\\.0\\.0failure/",
     "/src/__tests__/InputFile/", 
-    "/reposv7\\.0\\.0success/",
-    "/reposv8\\.0\\.0failure/",
-    "/reposv8\\.0\\.0success/",
-    "/Sample/"
+    "/Sample/",
+    "/allrepos/"
   ],
   modulePathIgnorePatterns: [
-    "<rootDir>/reposgv7failure/",
-    "<rootDir>/reposv7\\.0\\.0failure/",
-    "<rootDir>/reposv7\\.0\\.0success/",
-    "<rootDir>/reposv8\\.0\\.0failure/",
-    "<rootDir>/reposv8\\.0\\.0success/",
-    "<rootDir>/Sample/"
+    "<rootDir>/Sample/",
+    "<rootDir>/allrepos/"
   ],
 };
