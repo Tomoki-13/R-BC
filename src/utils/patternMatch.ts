@@ -1,3 +1,4 @@
+//パターンマッチング用関数
 export const patternMatch = async (userpatterns: string[][], search_patterns: string[][][]): Promise<[boolean, string[][] | null]> => {
     //検出用を回す
     for (const search_pattern of search_patterns) {
@@ -19,7 +20,7 @@ export const patternMatch = async (userpatterns: string[][], search_patterns: st
                 }
             }
         }
-        // console.log(variableMap);
+        //console.log(variableMap);
 
         //判定用
         const variableMapJudge: { [key: string]: boolean } = {};
@@ -97,8 +98,8 @@ export const patternMatch = async (userpatterns: string[][], search_patterns: st
             }
             //現在の search_pattern が一致
             if (Object.values(variableMapJudge).every(value => value === true)) {
-                console.log('variableMapJudge');
-                console.log(variableMapJudge);
+                // console.log('variableMapJudge');
+                // console.log(variableMapJudge);
                 return [true, search_pattern];
             }
         }

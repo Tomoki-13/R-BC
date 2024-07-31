@@ -3,7 +3,7 @@ import { promises as fsPromises } from 'fs';
 import traverse from "@babel/traverse";
 import * as t from "@babel/types";
 import { FunctionInfo, ExportFunctionInfo} from '../types/FunctionInfo';
-//コード内の機能取得
+//コード内の機能取得　user定義関数系
 export const getFunc = async(filePath:string,funcName:string): Promise<FunctionInfo[]> => {
     let resultArray: FunctionInfo[] = [];
     try {

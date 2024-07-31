@@ -7,14 +7,14 @@ import { Result } from './types/Result';
 import { patternMatch } from "./utils/patternMatch";
 
 (async () => {
-    const startDirectory: string = "../reposv8.0.0failure";
+    const startDirectory: string = "../allrepos/reposv7.0.0failure";
     //const startDirectory: string = "../reposgv7failure";
-    const matchStartdir:string="../reposv8.0.0success";
+    const matchStartdir:string="../allrepos/reposv7.0.0success";
     let n: number = 0;
     try {
         const libName: string  = process.argv[2];
         const alldirs: string[] = await getSubDir(startDirectory);
-        const csvRows: string[] = ['client,Patterns']; 
+        const csvRows: string[] = ['failureclient,detectPatterns']; 
         const matchcsvRows: string[] = ['client,Patterns,matchedPattern']; 
         let respattern:string[][][] = []; 
         //各ディレクトリに対する処理
@@ -26,8 +26,8 @@ import { patternMatch } from "./utils/patternMatch";
 
 
             if(extract_pattern1.length > 0) {
-                // console.log(subdir);
-                // console.log(extract_pattern1);
+                console.log(subdir);
+                console.log(extract_pattern1);
                 n++;
                 respattern.push(extract_pattern1); 
                 //CSV行に追加
@@ -66,7 +66,22 @@ import { patternMatch } from "./utils/patternMatch";
         // console.log(alldirs.length);
         // console.log(n);
         // console.log(respattern);
-        console.log("----------------------")
+        console.log("----------------------");
+        //呼び出しだけのもの削除
+        for (let i = respattern.length - 1; i >= 0; i--) {
+            if (respattern[i].length === 1) {
+                for (let j = respattern[i].length - 1; j >= 0; j--) {
+                    if (respattern[i][j].length === 1) {
+                        //console.log("1respattern[i]:"+respattern[i]);
+                        respattern[i].splice(j, 1);
+                    }
+                }
+            }
+            //空になった場合、respatternから削除
+            if (respattern[i].length === 0) {
+                respattern.splice(i, 1);
+            }
+        }
         // 第２処理
         const matchAlldirs: string[] = await getSubDir(matchStartdir);
         for (const subdir of matchAlldirs) {
@@ -74,17 +89,17 @@ import { patternMatch } from "./utils/patternMatch";
             const allFiles: string[] = await getAllFiles(subdir);
             match_extract_pattern = await useAst(allFiles, libName);
             if(match_extract_pattern.length > 0) {
-                //match_extract_pattern確認用　respattern作成下パターン
+                //match_extract_pattern確認用　respattern作成したパターン
                 const [isMatch, matchedPattern]: [boolean, string[][] | null] = await patternMatch(match_extract_pattern, respattern)
                 if(isMatch){
-                console.log("----------------------")
+                console.log("----------------------");
                 console.log(subdir);
                 console.log("match_extract_pattern");
                 console.log(match_extract_pattern);
                 console.log("matchedPattern");
                 console.log(matchedPattern);
-                console.log("----------------------")
-                    matchcsvRows.push(`"${subdir}","${match_extract_pattern}","${matchedPattern}"`);
+                console.log("----------------------");
+                matchcsvRows.push(`"${subdir}","${match_extract_pattern}","${matchedPattern}"`);
                 }
             }
         }
