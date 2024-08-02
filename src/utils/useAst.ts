@@ -43,9 +43,19 @@ export const useAst = async (allFiles: string[], libName: string): Promise<strin
                     //let result:string[] = await argplace(filePath,one);
                     //文字列が使用された場合のみ最終結果に追加
                     if (result.length > 0) {
-                        //mockImplementationの対策 配列で削除
+                        //mockImplementationの対策 配列で削除 除外
                         const checkstr = 'mockImplementation';
-                        result = result.filter(subresult => !subresult.includes(checkstr));
+                        //除外
+                        //result = result.filter(subresult => !subresult.includes(checkstr));
+                        
+                        for(const subresult of result){
+                            if(subresult.includes(checkstr)){
+                                //console.log('filePath'+filePath)
+                                // console.log('result');
+                                // console.log(result);
+                                return [];
+                            }
+                        }
                         inFileStr = inFileStr.concat(result);
                     }
                 }
@@ -116,6 +126,14 @@ export const abstuseAst = async (allFiles: string[], libName: string): Promise<s
                     if (result.length > 0) {
                         //mockImplementationの対策 配列で削除 
                         const checkstr = 'mockImplementation';
+                        for(const subresult of result){
+                            if(subresult.includes(checkstr)){
+                                console.log('filePath'+filePath)
+                                // console.log('result');
+                                // console.log(result);
+                                return [];
+                            }
+                        }
                         result = result.filter(subresult => !subresult.includes(checkstr));
                         inFileStr = inFileStr.concat(result);
                     }

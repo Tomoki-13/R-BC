@@ -66,7 +66,10 @@ export const patternMatch = async (userpatterns: string[][], search_patterns: st
                             variableMapJudge[key] = true;
                         }
                         for (let i = 1; i < variableMap[key].length; i++) {
-                            const functionCallPatternStr = variableMap[key][i].replace(key, importName);
+                            let functionCallPatternStr = variableMap[key][i].replace(key, importName);
+                            functionCallPatternStr = transformArgumrnt(functionCallPatternStr);
+                            //抽象化 
+                            //functionCallPatternStr = functionCallPatternStr.replace(/\((.*?)\)/g, (_, inner) => inner ? "(.*?)" : "()");
                             const functionCallPattern = new RegExp(escapeFunc(functionCallPatternStr));
                             let matched = false;
                             for (let j = num; j < userpattern.length; j++) {
@@ -189,4 +192,25 @@ function escapeFunc(str: string): string {
         i++;
     }
     return escapedStr;
+}
+//引数の抽象化
+function transformArgumrnt(str: string): string {
+    const match = str.match(/^(.*?)\((.*?)\)$/);
+    if (!match) return str;
+    //関数名と引数部分を取得
+    const functionName = match[1];
+    let args = match[2];
+    args = args.replace(/\[[^\]]*\]/g, '.');
+    //引数がカンマで区切られている場合
+    if (args.includes(',')) {
+        //引数をカンマで分割し、それぞれに [^,]* を適用
+        const parts = args.split(',');
+        const transformedArgs = parts.slice(0, -1).map(() => '[^,]*').concat('[^,]*').join(',');
+        return `${functionName}\\(${transformedArgs}\\)`;
+    } else if(args.length > 0){
+        //引数がカンマで区切られていない場合はそのまま返す
+        return `${functionName}\\([^,]*\\)`;
+    } else{
+        return str
+    }
 }

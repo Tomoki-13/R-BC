@@ -26,10 +26,16 @@ import { patternMatch } from "./utils/patternMatch";
 
 
             if(extract_pattern1.length > 0) {
-                console.log(subdir);
-                console.log(extract_pattern1);
+                // console.log(subdir);
+                // console.log(extract_pattern1);
                 n++;
                 respattern.push(extract_pattern1); 
+                if(respattern.length == 1){
+                    if(respattern[0].length ==1){
+                        console.log(subdir);
+                        console.log(extract_pattern1);
+                    }
+                }
                 //CSV行に追加
                 const patternString = JSON.stringify(extract_pattern1).replace(/"/g, '""');
                 csvRows.push(`"${subdir}","${patternString}"`);
@@ -82,6 +88,40 @@ import { patternMatch } from "./utils/patternMatch";
                 respattern.splice(i, 1);
             }
         }
+        //重複パターンの削除respattern[i][j]
+        // console.log(respattern.length);
+        for (let i = respattern.length - 1; i >= 0; i--) {
+            if (Array.isArray(respattern[i])) {
+                for (let j = respattern[i].length - 1; j >= 0; j--) {
+                    if (Array.isArray(respattern[i][j])) {
+                        const uniqueElements = [...new Set(respattern[i][j])];
+                        respattern[i][j] = uniqueElements;
+                        if (respattern[i][j].length === 0) {
+                            respattern[i].splice(j, 1);
+                        }
+                    }
+                }
+        
+                // 外部の配列が空なら削除
+                if (respattern[i].length === 0) {
+                    respattern.splice(i, 1);
+                }
+            }
+        }
+        // console.log("respattern");
+        // console.log(respattern);
+        //重複パターンの削除respattern[i]
+        const seen = new Map<string, string[][]>();
+        for (const subrespattern of respattern) {
+            const key = JSON.stringify(subrespattern);
+            //console.log(seen);
+            if (!seen.has(key)) {
+                seen.set(key, subrespattern);
+            }
+        }
+        respattern = Array.from(seen.values());
+        // console.log(respattern.length);
+
         // 第２処理
         const matchAlldirs: string[] = await getSubDir(matchStartdir);
         for (const subdir of matchAlldirs) {
@@ -92,14 +132,14 @@ import { patternMatch } from "./utils/patternMatch";
                 //match_extract_pattern確認用　respattern作成したパターン
                 const [isMatch, matchedPattern]: [boolean, string[][] | null] = await patternMatch(match_extract_pattern, respattern)
                 if(isMatch){
-                console.log("----------------------");
-                console.log(subdir);
-                console.log("match_extract_pattern");
-                console.log(match_extract_pattern);
-                console.log("matchedPattern");
-                console.log(matchedPattern);
-                console.log("----------------------");
-                matchcsvRows.push(`"${subdir}","${match_extract_pattern}","${matchedPattern}"`);
+                    // console.log("----------------------");
+                    // console.log(subdir);
+                    // console.log("match_extract_pattern");
+                    // console.log(match_extract_pattern);
+                    // console.log("matchedPattern");
+                    // console.log(matchedPattern);
+                    // console.log("----------------------");
+                    matchcsvRows.push(`"${subdir}","${match_extract_pattern}","${matchedPattern}"`);
                 }
             }
         }
