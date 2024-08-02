@@ -17,15 +17,16 @@ export const getAllFiles = async (directoryPath: string): Promise<string[]> => {
         for (const file of files) {
             const filePath: string = path.join(directoryPath, file.name);
 
-            //jsまたはtsファイルの場合は配列に追加
+            //jsまたはtsファイルの場合は配列に追加 
             if ((file.isFile()) &&
                 (file.name.endsWith(".js") ||
                 file.name.endsWith(".ts") ||
                 file.name.endsWith(".jsx") ||
-                file.name.endsWith(".tsx") ||
-                file.name.endsWith(".coffee") ||
-                file.name.endsWith(".md")) &&
-                !file.name.endsWith(".min.js")) {
+                file.name.endsWith(".tsx")) &&
+                !file.name.endsWith(".coffee") &&
+                !file.name.endsWith(".md") &&
+                !file.name.endsWith(".min.js") &&
+                !file.name.endsWith(".dev.js")) {
                     allFiles.push(filePath);
                 } else if (file.isDirectory()) {
                     //サブディレクトリの場合は再帰的に処理
