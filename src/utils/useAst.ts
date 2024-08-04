@@ -61,28 +61,39 @@ export const useAst = async (allFiles: string[], libName: string): Promise<strin
                 }
                 //重複を考慮
                 if(inFileStr.length > 0){
-                    const base = "---";
                     let uniqueInFileStr: string[] = [...new Set(inFileStr)];
                     pattern.push(uniqueInFileStr);
-                    //pattern.push(inFileStr);
                 }
             }
         } catch (err) {
             console.error('Error readFile:', err);
         }
 
-        //文字数が異常に多いものを置き換え
-        for(let i=0;pattern.length>i;i++){
-            for(let j=0;pattern[i].length>j;j++){
-                if(pattern[i][j].length>150){
-                    //console.log('pattern:'+pattern[i][j]);
-                    pattern[i][j]= 'error';
+        //文字数が異常に多いものを削除
+        for (let i = 0; i < pattern.length; i++) {
+            for (let j = pattern[i].length - 1; j >= 0; j--) {
+                if (pattern[i][j].length > 150) {
+                    //要素を削除
+                    pattern[i].splice(j, 1);
                 }
             }
         }
+        //空のサブ配列を削除
+        pattern = pattern.filter(subArray => subArray.length > 0);
     }
     for (let i = 0;i < pattern.length;i++) {
         pattern[i] = pattern[i].map(item => item.trim());
+    }
+    if (pattern.length > 0) {
+        for (let i = 0; i < pattern.length; i++) {
+            if (pattern[i] && pattern[i].length > 0) {
+                for (let j = 0; j < pattern[i].length; j++) {
+                    if (typeof pattern[i][j] === 'string') {
+                        pattern[i][j] = pattern[i][j].replace(/[\r\n]/g, '');
+                    }
+                }
+            }
+        }
     }
     return pattern;
 }
@@ -175,8 +186,19 @@ export const abstuseAst = async (allFiles: string[], libName: string): Promise<s
         pattern = pattern.filter(subArray => subArray.length > 0);
     }
     //空白削除　/t等も削除
-    for (let i = 0;i < pattern.length;i++) {
+    for (let i = 0; i < pattern.length; i++) {
         pattern[i] = pattern[i].map(item => item.trim());
+    }
+    if (pattern.length > 0) {
+        for (let i = 0; i < pattern.length; i++) {
+            if (pattern[i] && pattern[i].length > 0) {
+                for (let j = 0; j < pattern[i].length; j++) {
+                    if (typeof pattern[i][j] === 'string') {
+                        pattern[i][j] = pattern[i][j].replace(/[\r\n]/g, '');
+                    }
+                }
+            }
+        }
     }
     //語尾の;の削除　).系にまでマッチするので残す
     // for (let i = 0; i < pattern.length; i++) {

@@ -7,9 +7,9 @@ import { Result } from './types/Result';
 import { patternMatch } from "./utils/patternMatch";
 
 (async () => {
-    const startDirectory: string = "../allrepos/reposv7.0.0failure";
+    const startDirectory: string = "../allrepos/reposv2.0.0failure";
     //const startDirectory: string = "../reposgv7failure";
-    const matchStartdir:string="../allrepos/reposv7.0.0success";
+    const matchStartdir:string="../allrepos/reposv2.0.0success";
     let n: number = 0;
     try {
         const libName: string  = process.argv[2];
@@ -30,12 +30,12 @@ import { patternMatch } from "./utils/patternMatch";
                 // console.log(extract_pattern1);
                 n++;
                 respattern.push(extract_pattern1); 
-                if(respattern.length == 1){
-                    if(respattern[0].length ==1){
-                        console.log(subdir);
-                        console.log(extract_pattern1);
-                    }
-                }
+                // if(respattern.length == 1){
+                //     if(respattern[0].length ==1){
+                //         console.log(subdir);
+                //         console.log(extract_pattern1);
+                //     }
+                // }
                 //CSV行に追加
                 const patternString = JSON.stringify(extract_pattern1).replace(/"/g, '""');
                 csvRows.push(`"${subdir}","${patternString}"`);
@@ -68,9 +68,10 @@ import { patternMatch } from "./utils/patternMatch";
             const formattedDate = date.toISOString().slice(0, 19).replace(/[T:]/g, '-');
             outputFileName = path.join(outputDirectory, `${path.basename(startDirectory)}_output_${formattedDate}.csv`);
         }
-        //fs.writeFileSync(outputFileName, csvRows.join('\n'), 'utf8');
+        fs.writeFileSync(outputFileName, csvRows.join('\n'), 'utf8');
         // console.log(alldirs.length);
-        // console.log(n);
+        console.log('failure clientnum'+alldirs.length);
+        console.log('patern client'+n);
         // console.log(respattern);
         console.log("----------------------");
         //呼び出しだけのもの削除
@@ -128,6 +129,7 @@ import { patternMatch } from "./utils/patternMatch";
             let match_extract_pattern: string[][] = [];
             const allFiles: string[] = await getAllFiles(subdir);
             match_extract_pattern = await useAst(allFiles, libName);
+            //console.log(match_extract_pattern);
             if(match_extract_pattern.length > 0) {
                 //match_extract_pattern確認用　respattern作成したパターン
                 const [isMatch, matchedPattern]: [boolean, string[][] | null] = await patternMatch(match_extract_pattern, respattern)
@@ -143,14 +145,15 @@ import { patternMatch } from "./utils/patternMatch";
                 }
             }
         }
-        let outputFileName2 = path.join(outputDirectory, `${path.basename(matchStartdir)}_postoutput.csv`);
+        let outputFileName2 = path.join(outputDirectory, `${path.basename(matchStartdir)}_output.csv`);
         //ファイルの重複阻止
         if(fs.existsSync(outputFileName2)) {
             const date = new Date();
             const formattedDate = date.toISOString().slice(0, 19).replace(/[T:]/g, '-');
             outputFileName2 = path.join(outputDirectory, `${path.basename(matchStartdir)}_output_${formattedDate}.csv`);
         }
-        //fs.writeFileSync(outputFileName2, matchcsvRows.join('\n'), 'utf8');
+        fs.writeFileSync(outputFileName2, matchcsvRows.join('\n'), 'utf8');
+        console.log('success clientnum'+matchAlldirs.length);
     } catch (err) {
         console.error("Error:", err);
     }

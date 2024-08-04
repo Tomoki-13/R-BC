@@ -30,7 +30,7 @@ export const patternMatch = async (userpatterns: string[][], search_patterns: st
                     variableMapJudge[key] = false;
                 }
             }
-
+            
             for (const userpattern of userpatterns) {
                 //variableMap 内の全てのパターンが一致するか確認する
                 for (const key in variableMap) {
@@ -75,7 +75,8 @@ export const patternMatch = async (userpatterns: string[][], search_patterns: st
                                 let matched = false;
                                 for (let j = num; j < userpattern.length; j++) {
                                     //userpattern[j]に[]がある時の処理
-                                    let replaceuserpattern = userpattern[j].replace(/\[[^\]]*\]/g, 'argument');
+                                    let replaceuserpattern = userpattern[j].replace(/[\r\n]/g, '');
+                                    replaceuserpattern = userpattern[j].replace(/\[[^\]]*\]/g, 'argument');
                                     //userpattern[j]に{}がある時の処理
                                     replaceuserpattern = replaceuserpattern.replace(/\{[^}]*\}/g, 'argument');
                                     const functionCallMatch = replaceuserpattern.match(functionCallPattern);
@@ -113,8 +114,8 @@ export const patternMatch = async (userpatterns: string[][], search_patterns: st
             }
 
             if (Object.values(variableMapJudge).every(value => value === true)) {
-                console.log('variableMapJudge');
-                console.log(variableMapJudge);
+                // console.log('variableMapJudge');
+                // console.log(variableMapJudge);
                 return [true, search_pattern];
             }
         }
@@ -202,12 +203,13 @@ function escapeFunc(str: string): string {
 }
 //引数の抽象化
 function transformArgumrnt(str: string): string {
+    str = str.replace(/[\r\n]/g, '');
     const match = str.match(/^(.*?)\((.*?)\)$/);
     if (!match) return str;
     //関数名と引数部分を取得
     const functionName = match[1];
     let args = match[2];
-    args = args.replace(/\[[^\]]*\]/g, 'argument');
+    args = args.replace(/:\s*\[.*?\]/g, ':[]');
     args = args.replace(/\{[^}]*\}/g, 'argument');
     //引数がカンマで区切られている場合
     if (args.includes(',')) {
