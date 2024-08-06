@@ -82,7 +82,7 @@ export const useAst = async (allFiles: string[], libName: string): Promise<strin
         pattern = pattern.filter(subArray => subArray.length > 0);
     }
     for (let i = 0;i < pattern.length;i++) {
-        pattern[i] = pattern[i].map(item => item.trim());
+        pattern[i] = pattern[i].map(item => item.trim() .replace(/\s+/g, ' '));
     }
     if (pattern.length > 0) {
         for (let i = 0; i < pattern.length; i++) {
@@ -139,7 +139,7 @@ export const abstuseAst = async (allFiles: string[], libName: string): Promise<s
                         const checkstr = 'mockImplementation';
                         for(const subresult of result){
                             if(subresult.includes(checkstr)){
-                                console.log('filePath'+filePath)
+                                //console.log('filePath'+filePath)
                                 // console.log('result');
                                 // console.log(result);
                                 return [];
@@ -187,7 +187,7 @@ export const abstuseAst = async (allFiles: string[], libName: string): Promise<s
     }
     //空白削除　/t等も削除
     for (let i = 0; i < pattern.length; i++) {
-        pattern[i] = pattern[i].map(item => item.trim());
+        pattern[i] = pattern[i].map(item => item.trim() .replace(/\s+/g, ' '));
     }
     if (pattern.length > 0) {
         for (let i = 0; i < pattern.length; i++) {

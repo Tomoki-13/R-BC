@@ -1,6 +1,8 @@
 //パターンマッチング用関数
-export const patternMatch = async (userpatterns: string[][], search_patterns: string[][][]): Promise<[boolean, string[][] | null]> => {
+export const patternMatch = async (userpatterns: string[][], respattern: string[][][]): Promise<[boolean, string[][] | null]> => {
     //検出用を回す
+    //配列の要素を変えることを想定して
+    const search_patterns = JSON.parse(JSON.stringify(respattern));
     try {
         for (const search_pattern of search_patterns) {
             //現在の search_pattern が全て userpatterns に一致するかどうかを示すフラグ
@@ -126,7 +128,7 @@ export const patternMatch = async (userpatterns: string[][], search_patterns: st
 };
 
 //置換処理
-function prep_repl(inputs: string[]): string[] {
+export function prep_repl(inputs: string[]): string[] {
     const replLoc: RegExp = /---(\d+)/g;
     let replacedIndexes: { [key: string]: string } = {};
     let firstOccurrences: { [key: string]: boolean } = {};
@@ -202,7 +204,7 @@ function escapeFunc(str: string): string {
     return escapedStr;
 }
 //引数の抽象化
-function transformArgumrnt(str: string): string {
+export function transformArgumrnt(str: string): string {
     str = str.replace(/[\r\n]/g, '');
     const match = str.match(/^(.*?)\((.*?)\)$/);
     if (!match) return str;
@@ -223,4 +225,40 @@ function transformArgumrnt(str: string): string {
     } else{
         return str
     }
+}
+//パターンへの変換
+export function abstStr(respattern: string[][][]): string[][][] {
+    const copiedRespattern = JSON.parse(JSON.stringify(respattern));
+    for (let i = 0; copiedRespattern.length > i; i++) {
+        for (let j = 0; copiedRespattern[i].length > j; j++) {
+            copiedRespattern[i][j] = prep_repl(copiedRespattern[i][j]);
+            for (let k = 1; copiedRespattern[i][j].length > k; k++) {
+                if (typeof copiedRespattern[i][j][k] === 'string' &&(copiedRespattern[i][j][k].includes('require') ||copiedRespattern[i][j][k].includes('import') ||copiedRespattern[i][j][k].includes('_interopRequireDefault'))) {
+                    continue;
+                }
+                copiedRespattern[i][j][k] = transformArgumrnt(copiedRespattern[i][j][k]);
+            }
+        }
+    }
+    //重複パターンの削除copiedRespattern[i][j]
+    console.log(copiedRespattern.length);
+    for(let i = copiedRespattern.length - 1; i >= 0; i--) {
+        if(Array.isArray(copiedRespattern[i])) {
+            for(let j = copiedRespattern[i].length - 1; j >= 0; j--) {
+                if(Array.isArray(copiedRespattern[i][j])) {
+                    const uniqueElements = [...new Set(copiedRespattern[i][j])];
+                    copiedRespattern[i][j] = uniqueElements;
+                    if(copiedRespattern[i][j].length === 0) {
+                        copiedRespattern[i].splice(j, 1);
+                    }
+                }
+            }
+
+            // 外部の配列が空なら削除
+            if(copiedRespattern[i].length === 0) {
+                copiedRespattern.splice(i, 1);
+            }
+        }
+    }
+    return copiedRespattern;
 }

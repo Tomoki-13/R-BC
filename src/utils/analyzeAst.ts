@@ -50,6 +50,25 @@ export const analyzeAst = async (filePath: string, funcName: string): Promise<st
                             }
                         }
                     }
+                },NewExpression(path: any) {
+                    // NewExpression:returnにマッチ
+                    if (t.isIdentifier(path.node.callee)) {
+                        if (path.node.callee.name === funcName) {
+                            const code: string = fileContent.substring(path.node.start, path.node.end);
+                            codes.push(code);
+                        }
+                    } else if (t.isMemberExpression(path.node.callee)) {
+                        if (t.isIdentifier(path.node.callee.object) && path.node.callee.object.name === funcName) {
+                            const code: string = fileContent.substring(path.node.start, path.node.end);
+                            codes.push(code);
+                        } else if (path.node.callee.object && t.isMemberExpression(path.node.callee.object)) {
+                            //~~.default.~~の取得
+                            if (path.node.callee.object.object && t.isIdentifier(path.node.callee.object.object) && path.node.callee.object.object.name === funcName) {
+                                const code: string = fileContent.substring(path.node.start, path.node.end);
+                                codes.push(code);
+                            }
+                        }
+                    }
                 },
             });
         }
@@ -57,7 +76,7 @@ export const analyzeAst = async (filePath: string, funcName: string): Promise<st
             resultArray = resultArray.concat(codes);
         }
     } catch (error) {
-        console.log(`analyzeAst: Failed to create AST for file: ${filePath}`);
+        //console.log(`analyzeAst: Failed to create AST for file: ${filePath}`);
         //console.log(error);
     }
     return resultArray;
@@ -145,7 +164,7 @@ export const argplace = async (filePath: string, funcName: string): Promise<stri
             resultArray = resultArray.concat(codes);
         }
     } catch (error) {
-        console.log(`analyzeAst: Failed to create AST for file: ${filePath}`);
+       //console.log(`analyzeAst: Failed to create AST for file: ${filePath}`);
         //console.log(error);
     }
     return resultArray;
