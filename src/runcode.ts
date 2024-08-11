@@ -7,9 +7,9 @@ import { Result } from './types/Result';
 import { patternMatch,abstStr ,prep_repl,transformArgumrnt} from "./utils/patternMatch";
 
 (async () => {
-    const startDirectory: string = "../allrepos/reposuuidv8.0.0failure";
+    const startDirectory: string = "../allrepos/";
     //const startDirectory: string = "../reposgv7failure";
-    const matchStartdir: string = "../allrepos/reposuuidv8.0.0success";
+    const matchStartdir: string = "../allrepos/";
     let failurePattern1: number = 0;
     let lastPattern1: number = 0;
     const libName: string = process.argv[2];
@@ -75,41 +75,15 @@ import { patternMatch,abstStr ,prep_repl,transformArgumrnt} from "./utils/patter
     console.log("----------------------");
 
     //呼び出しだけのもの削除
-    for(let i = respattern.length - 1; i >= 0; i--) {
-        let judge = true;
-        //importしか持たないものを除外するための判定
-        let judge2 = true;
-        for(let j = respattern[i].length - 1; j >= 0; j--) {
-            if(respattern[i][j].length > 1) {
-                judge = false;
-            }
-            
-            for(let k = respattern[i][j].length - 1; k >= 0; k--){
-                if(!(respattern[i][j][k].includes("import") || respattern[i][j][k].includes("require") || respattern[i][j][k].includes("_interopRequireDefault"))){
-                    judge2 = false;
-                }
-                if(judge2 === false){
-                    break;
-                }
-            }
-        }
-        //該当パターンの削除
-        if(judge === true) {
-            respattern.splice(i, 1);
-        }
-        //該当パターンの削除
-        if(judge2 === true) {
-            respattern.splice(i, 1);
-        }
-    }
-    console.log('call only respattern1:respattern.length');
+    respattern = removeCallOnly(respattern);
     //包含関係のあるものは置き換え
     let newpatterns: string[][][] = [];
 
     //包含関係まとめ
-    //パターンの少ないものからマッチするように工夫
+    //パターンの短いからマッチするように工夫
     respattern = sortRespattern(respattern);
     for(const subrespattern of respattern) {
+        const tmppattern = JSON.parse(JSON.stringify(respattern));
         const [isMatch, matchedPattern]: [boolean, string[][] | null] = await patternMatch(subrespattern, respattern);
         if(isMatch && matchedPattern) {
             newpatterns.push(matchedPattern);
@@ -117,12 +91,14 @@ import { patternMatch,abstStr ,prep_repl,transformArgumrnt} from "./utils/patter
             newpatterns.push(subrespattern);
         }
     }
+    //respattern = newpatterns;
     let outputFileName1 = path.join(outputDirectory, `${path.basename(startDirectory)}_newpatterns_output.json`);
     if(fs.existsSync(outputFileName1)) {
         const date = new Date();
         const formattedDate = date.toISOString().slice(0, 19).replace(/[T:]/g, '-');
         outputFileName1 = path.join(outputDirectory, `${path.basename(startDirectory)}_newpatterns_output_${formattedDate}.json`);
     }
+    //pattern
     //fs.writeFileSync(outputFileName1, JSON.stringify(newpatterns, null, 4), 'utf8');
     
     // console.log("respattern3");
@@ -131,6 +107,7 @@ import { patternMatch,abstStr ,prep_repl,transformArgumrnt} from "./utils/patter
     //重複パターンの削除respattern[i][j]
     respattern = removecase(respattern);
     //console.log('respattern:'+respattern.length);
+    let countmatchedpatterns:string[][][] = [];
     //第２処理
     const matchAlldirs: string[] = await getSubDir(matchStartdir);
     for(const subdir of matchAlldirs) {
@@ -162,19 +139,36 @@ import { patternMatch,abstStr ,prep_repl,transformArgumrnt} from "./utils/patter
                         array[i][j] = transformArgumrnt(array[i][j]);
                     }
                 }
-                    for(let i = array.length - 1; i >= 0; i--) {
-                        if(Array.isArray(array[i])) {
-                            const uniquePatterns = [...new Set(array[i])];
-                            array[i] = uniquePatterns;
-                            if(array[i].length === 0) {
-                                array[i].splice(i, 1);
-                            }
+                for(let i = array.length - 1; i >= 0; i--) {
+                    if(Array.isArray(array[i])) {
+                        const uniquePatterns = [...new Set(array[i])];
+                        array[i] = uniquePatterns;
+                        if(array[i].length === 0) {
+                            array[i].splice(i, 1);
                         }
                     }
+                }
                 matchcsvRows.push(`"${subdir}","${match_extract_pattern}","${array}"`);
+                countmatchedpatterns.push(array);
             }
         }
     }
+    const search_patterns = JSON.parse(JSON.stringify(countmatchedpatterns));
+    let detecteduserpattern = countPatterns(search_patterns);
+    detecteduserpattern.sort((a, b) => b.count - a.count);
+
+    //Detectioncount
+    const totalCount = detecteduserpattern.reduce((acc, item) => acc + item.count, 0);
+    const output = { patterns: detecteduserpattern,totalCount: totalCount};
+    let outputFileName4 = path.join(outputDirectory, `${path.basename(matchStartdir)}_Detectioncount_output.json`);
+    if(fs.existsSync(outputFileName4)) {
+        const date = new Date();
+        const formattedDate = date.toISOString().slice(0, 19).replace(/[T:]/g, '-');
+        outputFileName4 = path.join(outputDirectory, `${path.basename(matchStartdir)}_Detectioncount_output_${formattedDate}.json`);
+    }
+    fs.writeFileSync(outputFileName4, JSON.stringify(output, null, 4));
+
+
     let outputFileName2 = path.join(outputDirectory, `${path.basename(matchStartdir)}_matchResults_output.csv`);
     if(fs.existsSync(outputFileName2)) {
         const date = new Date();
@@ -193,17 +187,23 @@ import { patternMatch,abstStr ,prep_repl,transformArgumrnt} from "./utils/patter
 
     //count の多い順にソート
     mergepattern.sort((a, b) => b.count - a.count);
-    let outputFileName3 = path.join(outputDirectory, `${path.basename(startDirectory)}_detectRows_output.json`);
+    //detectpatternlist
+    let outputFileName3 = path.join(outputDirectory, `${path.basename(startDirectory)}_detectpatternlist_output.json`);
     if(fs.existsSync(outputFileName3)) {
         const date = new Date();
         const formattedDate = date.toISOString().slice(0, 19).replace(/[T:]/g, '-');
-        outputFileName3 = path.join(outputDirectory, `${path.basename(startDirectory)}_detectRows_output_${formattedDate}.json`);
+        outputFileName3 = path.join(outputDirectory, `${path.basename(startDirectory)}_detectpatternlist_output_${formattedDate}.json`);
     }
-    
+    const totalCount2 = mergepattern.reduce((acc, item) => acc + item.count, 0);
+    const output2 = {patterns: mergepattern,totalCount: totalCount2};
     if (mergepattern) {
-        fs.writeFileSync(outputFileName3, JSON.stringify(mergepattern, null, 4), 'utf8');
-        const totalCount = mergepattern.reduce((acc, item) => acc + item.count, 0);
-        console.log('totalCount:'+totalCount);
+        fs.writeFileSync(outputFileName3, JSON.stringify(output2, null, 4), 'utf8');
+        //const totalCount = mergepattern.reduce((acc, item) => acc + item.count, 0);
+        // console.log('totalCount:'+totalCount);
+        // const top5 = mergepattern.slice(0, 5);
+        // top5.forEach((item, index) => {
+        //     console.log(`Rank ${index + 1}: Count = ${item.count}, Pattern = ${JSON.stringify(item.pattern)}`);
+        // });
     }
 })();
 
@@ -230,7 +230,7 @@ function sortRespattern(respattern: string[][][]): string[][][] {
     respattern.sort((a, b) => a.length - b.length);
     return respattern;
 }
-function removecase(pattern:string[][][]){
+function removecase(pattern:string[][][]): string[][][] {
     for(let i = pattern.length - 1; i >= 0; i--) {
         if(Array.isArray(pattern[i])) {
             for(let j = pattern[i].length - 1; j >= 0; j--) {
@@ -286,7 +286,7 @@ function removecase(pattern:string[][][]){
     pattern = Array.from(seen.values());
     return pattern;
 }
-function removeCallOnly(pattern:string[][][]){
+function removeCallOnly(pattern:string[][][]): string[][][] {
     //呼び出しだけのもの削除
     for(let i = pattern.length - 1; i >= 0; i--) {
         let judge = true;
@@ -315,4 +315,5 @@ function removeCallOnly(pattern:string[][][]){
             pattern.splice(i, 1);
         }
     }
+    return pattern;
 }

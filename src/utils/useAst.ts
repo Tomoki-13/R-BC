@@ -70,19 +70,19 @@ export const useAst = async (allFiles: string[], libName: string): Promise<strin
         }
 
         //文字数が異常に多いものを削除
-        for (let i = 0; i < pattern.length; i++) {
-            for (let j = pattern[i].length - 1; j >= 0; j--) {
-                if (pattern[i][j].length > 150) {
-                    //要素を削除
-                    pattern[i].splice(j, 1);
-                }
-            }
-        }
+        // for (let i = 0; i < pattern.length; i++) {
+        //     for (let j = pattern[i].length - 1; j >= 0; j--) {
+        //         if (pattern[i][j].length > 400) {
+        //             //要素を削除
+        //             pattern[i].splice(j, 1);
+        //         }
+        //     }
+        // }
         //空のサブ配列を削除
         pattern = pattern.filter(subArray => subArray.length > 0);
     }
     for (let i = 0;i < pattern.length;i++) {
-        pattern[i] = pattern[i].map(item => item.trim() .replace(/\s+/g, ' '));
+        pattern[i] = pattern[i].map(item => item.trim().replace(/\s+/g, ' '));
     }
     if (pattern.length > 0) {
         for (let i = 0; i < pattern.length; i++) {
@@ -90,6 +90,7 @@ export const useAst = async (allFiles: string[], libName: string): Promise<strin
                 for (let j = 0; j < pattern[i].length; j++) {
                     if (typeof pattern[i][j] === 'string') {
                         pattern[i][j] = pattern[i][j].replace(/[\r\n]/g, '');
+                        pattern[i][j] = pattern[i][j].replace(/^,|,$/g, '');
                     }
                 }
             }
@@ -173,21 +174,21 @@ export const abstuseAst = async (allFiles: string[], libName: string): Promise<s
             console.error('Error readFile:', err);
         }
 
-        //文字数が異常に多いものを削除
-        for (let i = 0; i < pattern.length; i++) {
-            for (let j = pattern[i].length - 1; j >= 0; j--) {
-                if (pattern[i][j].length > 150) {
-                    //要素を削除
-                    pattern[i].splice(j, 1);
-                }
-            }
-        }
+        // //文字数が異常に多いものを削除
+        // for (let i = 0; i < pattern.length; i++) {
+        //     for (let j = pattern[i].length - 1; j >= 0; j--) {
+        //         if (pattern[i][j].length > 400) {
+        //             //要素を削除
+        //             pattern[i].splice(j, 1);
+        //         }
+        //     }
+        // }
         //空のサブ配列を削除
         pattern = pattern.filter(subArray => subArray.length > 0);
     }
     //空白削除　/t等も削除
     for (let i = 0; i < pattern.length; i++) {
-        pattern[i] = pattern[i].map(item => item.trim() .replace(/\s+/g, ' '));
+        pattern[i] = pattern[i].map(item => item.trim().replace(/\s+/g, ' '));
     }
     if (pattern.length > 0) {
         for (let i = 0; i < pattern.length; i++) {
@@ -195,6 +196,7 @@ export const abstuseAst = async (allFiles: string[], libName: string): Promise<s
                 for (let j = 0; j < pattern[i].length; j++) {
                     if (typeof pattern[i][j] === 'string') {
                         pattern[i][j] = pattern[i][j].replace(/[\r\n]/g, '');
+                        pattern[i][j] = pattern[i][j].replace(/^,|,$/g, '');
                     }
                 }
             }
