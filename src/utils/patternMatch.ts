@@ -2,7 +2,8 @@
 export const patternMatch = async (userpatterns: string[][], respattern: string[][][]): Promise<[boolean, string[][] | null]> => {
     //検出用を回す
     //配列の要素を変えることを想定して
-    const search_patterns = JSON.parse(JSON.stringify(respattern));
+    let search_patterns = JSON.parse(JSON.stringify(respattern));
+    search_patterns = abstStr(search_patterns);
     try {
         for (const search_pattern of search_patterns) {
             //現在の search_pattern が全て userpatterns に一致するかどうかを示すフラグ
@@ -11,8 +12,7 @@ export const patternMatch = async (userpatterns: string[][], respattern: string[
             // search_pattern 全体の variableMap を作成
             const variableMap: { [key: string]: string[] } = {};
             for (const search_one of search_pattern) {
-                let serp: string[] = prep_repl(search_one);
-                for (const str of serp) {
+                for (const str of search_one) {
                     const match = str.match(/variable(\d+)/g);
                     if (match) {
                         const key = match[0];
@@ -70,7 +70,6 @@ export const patternMatch = async (userpatterns: string[][], respattern: string[
                             }
                             for (let i = 1; i < variableMap[key].length; i++) {
                                 let functionCallPatternStr = variableMap[key][i].replace(key, importName);
-                                functionCallPatternStr = transformArgumrnt(functionCallPatternStr);
                                 //抽象化 
                                 //functionCallPatternStr = functionCallPatternStr.replace(/\((.*?)\)/g, (_, inner) => inner ? "(.*?)" : "()");
                                 const functionCallPattern = new RegExp(escapeFunc(functionCallPatternStr));
@@ -241,7 +240,7 @@ export function abstStr(respattern: string[][][]): string[][][] {
         }
     }
     //重複パターンの削除copiedRespattern[i][j]
-    console.log(copiedRespattern.length);
+    //console.log(copiedRespattern.length);
     for(let i = copiedRespattern.length - 1; i >= 0; i--) {
         if(Array.isArray(copiedRespattern[i])) {
             for(let j = copiedRespattern[i].length - 1; j >= 0; j--) {
