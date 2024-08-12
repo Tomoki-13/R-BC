@@ -36,12 +36,9 @@ export const useAst = async (allFiles: string[], libName: string): Promise<strin
                 }
             }
             if (funcName.length > 0) {
-                //重複を削除
                 const uniquefuncName: string[] = [...new Set(funcName)];
                 for(const one of uniquefuncName){
                     let result:string[] = await analyzeAst(filePath,one);
-                    //let result:string[] = await argplace(filePath,one);
-                    //文字列が使用された場合のみ最終結果に追加
                     if (result.length > 0) {
                         //mockImplementationの対策 配列で削除 除外
                         const checkstr = 'mockImplementation';
@@ -50,9 +47,6 @@ export const useAst = async (allFiles: string[], libName: string): Promise<strin
                         
                         for(const subresult of result){
                             if(subresult.includes(checkstr)){
-                                //console.log('filePath'+filePath)
-                                // console.log('result');
-                                // console.log(result);
                                 return [];
                             }
                         }
@@ -70,14 +64,14 @@ export const useAst = async (allFiles: string[], libName: string): Promise<strin
         }
 
         //文字数が異常に多いものを削除
-        // for (let i = 0; i < pattern.length; i++) {
-        //     for (let j = pattern[i].length - 1; j >= 0; j--) {
-        //         if (pattern[i][j].length > 400) {
-        //             //要素を削除
-        //             pattern[i].splice(j, 1);
-        //         }
-        //     }
-        // }
+        for (let i = 0; i < pattern.length; i++) {
+            for (let j = pattern[i].length - 1; j >= 0; j--) {
+                if (pattern[i][j].length > 400) {
+                    //要素を削除
+                    pattern[i].splice(j, 1);
+                }
+            }
+        }
         //空のサブ配列を削除
         pattern = pattern.filter(subArray => subArray.length > 0);
     }
@@ -140,9 +134,6 @@ export const abstuseAst = async (allFiles: string[], libName: string): Promise<s
                         const checkstr = 'mockImplementation';
                         for(const subresult of result){
                             if(subresult.includes(checkstr)){
-                                //console.log('filePath'+filePath)
-                                // console.log('result');
-                                // console.log(result);
                                 return [];
                             }
                         }
@@ -152,14 +143,10 @@ export const abstuseAst = async (allFiles: string[], libName: string): Promise<s
                 }
                 //重複を考慮
                 if(inFileStr.length > 0){
-                    // console.log(uniquefuncName);
-                    // console.log(inFileStr);
                     const base = "---";
                     let uniqueInFileStr: string[] = [...new Set(inFileStr)];
                     //抽象
                     let sortUniquefuncName = uniquefuncName.sort((a, b) => b.length - a.length);
-                    // console.log(uniquefuncName.length);
-                    // console.log(uniquefuncName);
                     for(const one of sortUniquefuncName){
                         let replaceString: string = base  + j.toString();
                         const regex = new RegExp(`(?<!["'])${one}(?!["'])`, 'g');
@@ -174,15 +161,15 @@ export const abstuseAst = async (allFiles: string[], libName: string): Promise<s
             console.error('Error readFile:', err);
         }
 
-        // //文字数が異常に多いものを削除
-        // for (let i = 0; i < pattern.length; i++) {
-        //     for (let j = pattern[i].length - 1; j >= 0; j--) {
-        //         if (pattern[i][j].length > 400) {
-        //             //要素を削除
-        //             pattern[i].splice(j, 1);
-        //         }
-        //     }
-        // }
+        //文字数が異常に多いものを削除
+        for (let i = 0; i < pattern.length; i++) {
+            for (let j = pattern[i].length - 1; j >= 0; j--) {
+                if (pattern[i][j].length > 400) {
+                    //要素を削除
+                    pattern[i].splice(j, 1);
+                }
+            }
+        }
         //空のサブ配列を削除
         pattern = pattern.filter(subArray => subArray.length > 0);
     }
