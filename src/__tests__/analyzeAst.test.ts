@@ -1,4 +1,4 @@
-import {analyzeAst} from '../utils/analyzeAst';
+import {analyzeAst} from '../astRelated/analyzeAst';
 describe('analyzeAst.ts test', () => {
     test('Function usage', async () => {
         const expectedOutput:string[] = ['sum(a,b)','sum(b,c)'];

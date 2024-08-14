@@ -1,7 +1,7 @@
 import { getSubDir } from "./utils/getSubDir";
 import { getAllFiles } from "./utils/getAllFiles";
 const {add_extract,add_full_extract} = require("./utils/add_extract");
-import { useFunc } from "./utils/useFunc";
+import { useFunc } from "./combinations/useFunc";
 import fs from 'fs';
 import path from 'path';
 

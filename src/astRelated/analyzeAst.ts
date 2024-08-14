@@ -2,7 +2,7 @@ const parser = require("@babel/parser");
 import { promises as fsPromises } from 'fs';
 import traverse from "@babel/traverse";
 import * as t from "@babel/types";
-import { traceArg } from "./traceArg";
+import { traceArg } from "../utils/traceArg";
 import {FunctionInfo} from '../types/FunctionInfo';
 export const analyzeAst = async (filePath: string, funcName: string): Promise<string[]> => {
     let resultArray: string[] = [];

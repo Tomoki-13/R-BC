@@ -1,17 +1,17 @@
 import { getSubDir } from "./utils/getSubDir";
 import { getAllFiles } from "./utils/getAllFiles";
-import { useAst, abstuseAst } from "./utils/useAst";
-import {countPatterns} from './utils/patternCount'
-import patternUtils from './utils/patternUtils'
-import patternIntegration from "./utils/patternIntegration";
+import { useAst, abstuseAst } from "./combinations/useAst";
+import {countPatterns} from './patternOperations/patternCount'
+import patternUtils from './patternOperations/patternUtils'
+import patternIntegration from "./patternOperations/patternIntegration";
 
 import fs from 'fs';
 import path from 'path';
-import { patternMatch,abstStr ,prep_repl,transformArgumrnt} from "./utils/patternMatch";
+import { patternMatch,abstStr ,prep_repl,transformArgumrnt} from "./patternOperations/patternMatch";
 
 (async () => {
-    const startDirectory: string = "../allrepos/repos";
-    const matchStartdir: string = "../allrepos/repos";
+    const startDirectory: string = "../allrepos/reposuuidv7.0.0failure";
+    const matchStartdir: string = "../allrepos/reposuuidv7.0.0success";
     let failurePattern1: number = 0;
     let lastPattern1: number = 0;
     const libName: string = process.argv[2];
@@ -32,12 +32,6 @@ import { patternMatch,abstStr ,prep_repl,transformArgumrnt} from "./utils/patter
             // console.log(extract_pattern1);
             failurePattern1++;
             respattern.push(extract_pattern1);
-            // if(respattern.length == 1){
-            //     if(respattern[0].length ==1){
-            //         console.log(subdir);
-            //         console.log(extract_pattern1);
-            //     }
-            // }
             //CSV行に追加
             const patternString = JSON.stringify(extract_pattern1).replace(/"/g, '""');
             csvRows.push(`"${subdir}","${patternString}"`);
@@ -47,13 +41,7 @@ import { patternMatch,abstStr ,prep_repl,transformArgumrnt} from "./utils/patter
         //     console.log('else');
         // }
 
-        // if(extract_pattern1.length == 1) {
-        //     if(extract_pattern1[0].length == 2 || (extract_pattern1[0].some(element => element.includes("interopRequireDefault")) && extract_pattern1[0].length == 3)) {
-        //         console.log(subdir);
-        //         console.log(extract_pattern1);
-        //     }
-        // }else{
-        // }
+
     }
 
     //CSVファイルの書き出し　
@@ -93,37 +81,8 @@ import { patternMatch,abstStr ,prep_repl,transformArgumrnt} from "./utils/patter
     
     // `lastpatterns` の更新後に短いパターンで置き換える処理
     let nextPatterns: string[][][] = JSON.parse(JSON.stringify(lastpatterns));
-
-    //短いパターンの置き換え処理
-    for (const subrespattern of lastpatterns) {
-        // subrespattern が string[][] であることを確認
-        if (Array.isArray(subrespattern) && subrespattern.every(Array.isArray)) {
-            let tmppattern: string[][][] = JSON.parse(JSON.stringify(nextPatterns));
-            // 全体から一意なものを残す
-            tmppattern = patternUtils.removeSubpattern(tmppattern, subrespattern);
-
-            // 最初の patternMatch の実行
-            let [isMatch, matchedPattern]: [boolean, string[][] | null] = await patternMatch(subrespattern, tmppattern);
-
-            if (isMatch && matchedPattern) {
-                // 各サブ配列の要素の文字列長を比較して、shorterかつmatchedPatternが部分的に含まれるかを確認
-                const shouldReplace = matchedPattern.length < subrespattern.length ||
-                    (matchedPattern.length === subrespattern.length && matchedPattern.every((arr, i) => 
-                            arr.every((element, j) => 
-                                element.length < (subrespattern[i][j] || "").length
-                            )
-                        ));
-        
-                if (shouldReplace) {
-                    //書き換え元と書き換え先の設定
-                    nextPatterns = patternUtils.removeSubpattern(nextPatterns, subrespattern);
-                    nextPatterns.push(matchedPattern);
-                }
-            }
-        }
-    }
     lastpatterns = nextPatterns;
-    let outputFileName1 = path.join(outputDirectory, `${path.basename(startDirectory)}_newpatterns_output.json`);
+    let outputFileName1 = path.join (outputDirectory, `${path.basename(startDirectory)}_newpatterns_output.json`);
     if(fs.existsSync(outputFileName1)) {
         const date = new Date();
         const formattedDate = date.toISOString().slice(0, 19).replace(/[T:]/g, '-');
@@ -188,10 +147,8 @@ import { patternMatch,abstStr ,prep_repl,transformArgumrnt} from "./utils/patter
         outputFileName2 = path.join(outputDirectory, `${path.basename(matchStartdir)}_matchResults_output_${formattedDate}.csv`);
     }
     //fs.writeFileSync(outputFileName2, matchcsvRows.join('\n'), 'utf8');
+
     console.log('success clientnum' + matchAlldirs.length);
-
-
-    //使用パターンListの変換
     let stringvariable: string[][][] = abstStr(lastpatterns);
     console.log(stringvariable.length);
     let mergepattern: { pattern: string[][], count: number }[] = countPatterns(stringvariable);
@@ -199,7 +156,6 @@ import { patternMatch,abstStr ,prep_repl,transformArgumrnt} from "./utils/patter
     //count の多い順にソート
     mergepattern.sort((a, b) => b.count - a.count);
     console.log('all detect mergepattern.length:'+mergepattern.length);
-    //console.log(mergepattern);
     //detectpatternlist
     let outputFileName3 = path.join(outputDirectory, `${path.basename(startDirectory)}_detectpatternlist_output.json`);
     if(fs.existsSync(outputFileName3)) {

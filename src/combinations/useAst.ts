@@ -1,15 +1,14 @@
 import fsPromises from 'fs/promises';
-import { funcNameIdentifiers, secfuncNameIdentifiers } from "./funcNameIdentifiers";
-import { extractImportLines } from "./extractImportLines";
-import { analyzeFile } from "./analyzeFile";
-import { analyzeAst,argplace } from "./analyzeAst";
-import { getArgAst } from './getArgAst';
+import { funcNameIdentifiers, secfuncNameIdentifiers } from "../utils/funcNameIdentifiers";
+import { extractImportLines } from "../utils/extractImportLines";
+import { analyzeFile } from "../utils/analyzeFile";
+import { analyzeAst,argplace } from "../astRelated/analyzeAst";
+import { getArgAst } from '../astRelated/getArgAst';
 
 export const useAst = async (allFiles: string[], libName: string): Promise<string[][]> =>{
     let pattern: string[][] = [];
     const visitedFiles:Set<string> = new Set<string>();
     //抽象化時の番号　ファイルを超えても区別するため
-    let j = 1;
     for (const filePath of allFiles) {
         if (visitedFiles.has(filePath)) continue;
         visitedFiles.add(filePath);
@@ -141,7 +140,6 @@ export const abstuseAst = async (allFiles: string[], libName: string): Promise<s
                         inFileStr = inFileStr.concat(result);
                     }
                 }
-                //重複を考慮
                 if(inFileStr.length > 0){
                     const base = "---";
                     let uniqueInFileStr: string[] = [...new Set(inFileStr)];
