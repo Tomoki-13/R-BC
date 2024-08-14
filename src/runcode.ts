@@ -1,17 +1,17 @@
 import { getSubDir } from "./utils/getSubDir";
 import { getAllFiles } from "./utils/getAllFiles";
-import { useAst, abstuseAst } from "./utils/useAst";
-import {countPatterns} from './utils/patternCount'
-import patternUtils from './utils/patternUtils'
-import patternIntegration from "./utils/patternIntegration";
+import { useAst, abstuseAst } from "./combinations/useAst";
+import {countPatterns} from './patternOperations/patternCount'
+import patternUtils from './patternOperations/patternUtils'
+import patternIntegration from "./patternOperations/patternIntegration";
 
 import fs from 'fs';
 import path from 'path';
-import { patternMatch,abstStr ,prep_repl,transformArgumrnt} from "./utils/patternMatch";
+import { patternMatch,abstStr ,prep_repl,transformArgumrnt} from "./patternOperations/patternMatch";
 
 (async () => {
-    const startDirectory: string = "../allrepos/repos";
-    const matchStartdir: string = "../allrepos/repos";
+    const startDirectory: string = "../allrepos/reposuuidv7.0.0failure";
+    const matchStartdir: string = "../allrepos/reposuuidv7.0.0success";
     let failurePattern1: number = 0;
     let lastPattern1: number = 0;
     const libName: string = process.argv[2];

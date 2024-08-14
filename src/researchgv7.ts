@@ -1,6 +1,6 @@
 import { getSubDir } from "./utils/getSubDir";
 import { getAllFiles } from "./utils/getAllFiles";
-import { useFunc,useFuncg7} from "./utils/useFunc";
+import { useFunc,useFuncg7} from "./combinations/useFunc";
 (async () => {
     const libName:string = process.argv[2];
     const startDirectory:string = "../reposgv7failure";
