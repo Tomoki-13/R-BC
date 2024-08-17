@@ -71,34 +71,29 @@ function removeDuplicate(patterns: string[][][]): string[][][] {
 //呼び出しだけのもの削除
 function removeCallOnly(pattern: string[][][]): string[][][] {
     for(let i = pattern.length - 1; i >= 0; i--) {
-        let judge = true;
-        let judge2 = true;
-        for(let j = pattern[i].length - 1; j >= 0; j--) {
-            if(pattern[i][j].length > 1) {
-                judge = false;
-            }
-            judge2 = true;
-            for(let k = pattern[i][j].length - 1; k >= 0; k--) {
-                if(!(pattern[i][j][k].includes("import") || pattern[i][j][k].includes("require") || pattern[i][j][k].includes("_interopRequireDefault"))) {
-                    judge2 = false;
+        let isCallOnly = true;
+
+        for(let j = 0; j < pattern[i].length; j++) {
+            let allElementsMatch = true;
+            for(let k = 0; k < pattern[i][j].length; k++) {
+                const element = pattern[i][j][k];
+                if(!(element.includes("import") || element.includes("require") || element.includes("_interopRequireDefault"))) {
+                    allElementsMatch = false;
                     break;
                 }
             }
-            
-            if(judge2 === false) {
+            if(!allElementsMatch) {
+                isCallOnly = false;
                 break;
             }
         }
-        
-        // 該当パターンの削除
-        if(judge === true || judge2 === true) {
+
+        if(isCallOnly || (pattern[i].length === 1&&pattern[i][0].length === 1)) {
             pattern.splice(i, 1);
         }
     }
-    
     return pattern;
 }
-
 //特定のサブパターンを削除
 function removeSubpattern(tmppattern: string[][][], subpattern: string[][]): string[][][] {
     const subpatternStr = arrayToString(subpattern);
