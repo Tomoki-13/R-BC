@@ -1,4 +1,4 @@
-import {getFunc} from '../utils/getFunc';
+import {getFunc} from '../astRelated/getFunc';
 import { FunctionInfo} from '../types/FunctionInfo';
 //getFunc(filePath:string,funcName:string)
 describe('getFunc test', () => {
