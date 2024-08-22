@@ -1,13 +1,13 @@
 import { getSubDir } from "./utils/getSubDir";
 import { getAllFiles } from "./utils/getAllFiles";
 import { useAst, abstuseAst } from "./combinations/useAst";
-import {countPatterns} from './patternOperations/patternCount'
-import patternUtils from './patternOperations/patternUtils'
-import patternIntegration from "./patternOperations/patternIntegration";
+import {countPatterns} from './patternOperations/patternCount';
+import {processPatterns} from './combinations/pattern';
 
 import fs from 'fs';
 import path from 'path';
-import { patternMatch,abstStr ,prep_repl,transformArgumrnt} from "./patternOperations/patternMatch";
+import {patternMatch} from "./patternOperations/patternMatch";
+import patternConversion from "./patternOperations/patternConversion";
 
 (async () => {
     const startDirectory: string = "../allrepos/reposuuidv7.0.0failure";
@@ -64,40 +64,13 @@ import { patternMatch,abstStr ,prep_repl,transformArgumrnt} from "./patternOpera
     // console.log(respattern);
     console.log("----------------------");
 
-
-    //呼び出しだけのもの削除
-    respattern = patternUtils.removeCallOnly(respattern);
-    console.log('respattern.length'+respattern.length);
-    let newpatterns: string[][][] = [];
-    //パターンの短いものからマッチするように工夫
-    respattern = patternUtils.sortRespattern(respattern);
-    //簡易変換
-    newpatterns = await patternIntegration.processPatterns(respattern);
-    //subnewpatternsは，newpatternsを一意にしたもの
-    let subnewpatterns:string[][][] = JSON.parse(JSON.stringify(newpatterns));
-    subnewpatterns = patternUtils.removeDuplicate(subnewpatterns);
-    let lastpatterns: string[][][] = [];
-    lastpatterns = await patternIntegration.processIntegration(newpatterns,subnewpatterns);
-    
-    // `lastpatterns` の更新後に短いパターンで置き換える処理
-    let nextPatterns: string[][][] = JSON.parse(JSON.stringify(lastpatterns));
-    lastpatterns = nextPatterns;
-    let outputFileName1 = path.join (outputDirectory, `${path.basename(startDirectory)}_newpatterns_output.json`);
-    if(fs.existsSync(outputFileName1)) {
-        const date = new Date();
-        const formattedDate = date.toISOString().slice(0, 19).replace(/[T:]/g, '-');
-        outputFileName1 = path.join(outputDirectory, `${path.basename(startDirectory)}_newpatterns_output_${formattedDate}.json`);
-    }
-    //pattern
-    //fs.writeFileSync(outputFileName1, JSON.stringify(newpatterns, null, 4), 'utf8');
-    
-    //console.log('respattern.length'+respattern.length);
-    //重複パターンの削除respattern[i][j]
-    respattern = patternUtils.removecase(respattern);
-    //console.log('respattern:'+respattern.length);
+    console.log('respattern:'+respattern.length);
     let countmatchedpatterns:string[][][] = [];
+    let lastpatterns = await processPatterns(respattern);
 
     //第２処理
+    let stringvariable: string[][][] = patternConversion.abstStr(lastpatterns);
+    console.log('stringvariable.length'+stringvariable.length);
     const matchAlldirs: string[] = await getSubDir(matchStartdir);
     console.log('lastpatterns.length'+lastpatterns.length);
     for(const subdir of matchAlldirs) {
@@ -107,7 +80,7 @@ import { patternMatch,abstStr ,prep_repl,transformArgumrnt} from "./patternOpera
         // console.log(match_extract_pattern);
         if(match_extract_pattern.length > 0) {
             // match_extract_pattern確認用　respattern作成したパターン
-            const [isMatch, matchedPattern]: [boolean, string[][] | null] = await patternMatch(match_extract_pattern, lastpatterns);
+            const [isMatch, matchedPattern]: [boolean, string[][] | null] = await patternMatch(match_extract_pattern, stringvariable);
             if(isMatch && matchedPattern) {
                 // console.log("----------------------");
                 // console.log(subdir);
@@ -147,10 +120,7 @@ import { patternMatch,abstStr ,prep_repl,transformArgumrnt} from "./patternOpera
         outputFileName2 = path.join(outputDirectory, `${path.basename(matchStartdir)}_matchResults_output_${formattedDate}.csv`);
     }
     //fs.writeFileSync(outputFileName2, matchcsvRows.join('\n'), 'utf8');
-
     console.log('success clientnum' + matchAlldirs.length);
-    let stringvariable: string[][][] = abstStr(lastpatterns);
-    console.log(stringvariable.length);
     let mergepattern: { pattern: string[][], count: number }[] = countPatterns(stringvariable);
     //mergepattern = mergeContainedPatterns(mergepattern);
     //count の多い順にソート
