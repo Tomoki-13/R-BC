@@ -14,7 +14,7 @@ import path from 'path';
     try {
         //ディレクトリごとに求めたいため
         const alldirs:string[] = await getSubDir(startDirectory);
-        for (const subdir of alldirs) {
+        for(const subdir of alldirs) {
             let extract_pattern1:string[][] = [];
             let extract_pattern2:string[][] = [];
             const allFiles:string[] = await getAllFiles(subdir);
@@ -41,13 +41,13 @@ import path from 'path';
                 //CSV行に追加
                 const patternString = JSON.stringify(extract_pattern2).replace(/"/g, '""');
                 csvRows.push(`"${subdir}","${patternString}"`);
-            }else if (InPatternJudge==true){
+            }else if(InPatternJudge==true){
                 console.log('2'+subdir);
                 console.log(extract_pattern2);
                 n++;
                 const patternString = JSON.stringify(extract_pattern2).replace(/"/g, '""');
                 csvRows.push(`"${subdir}","${patternString}"`);
-            }else if (DeepImportant==true){
+            }else if(DeepImportant==true){
                 console.log('3'+subdir);
                 console.log(extract_pattern2);
                 n++;

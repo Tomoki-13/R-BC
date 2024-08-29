@@ -15,7 +15,7 @@ import path from 'path';
         const csvRows: string[] = ['client,Patterns']; 
         
         //各ディレクトリに対する処理
-        for (const subdir of alldirs) {
+        for(const subdir of alldirs) {
             let extract_pattern: string[][] = [];
             let extract_pattern2: string[][] = [];
             const allFiles: string[] = await getAllFiles(subdir);
@@ -29,7 +29,7 @@ import path from 'path';
             //     n++;
             // }
             //成功したクライアントでパターンを持っているものを検出
-            if (extract_pattern.length !== 0) {
+            if(extract_pattern.length !== 0) {
                 console.log(subdir);
                 //console.log(extract_pattern);
                 console.log(extract_pattern2);

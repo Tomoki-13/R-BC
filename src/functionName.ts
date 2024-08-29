@@ -6,7 +6,7 @@ const {extractImportLines} = require("./utils/extractImportLines");
 
 const add_funcName = async (allFiles: string[],libName:string): Promise<string[][]> => {
     let pattern: string[][] = [];
-    for (const filePath of allFiles) {
+    for(const filePath of allFiles) {
         try {
             const fileContent = await fsPromises.readFile(filePath, 'utf8');
             const lines = extractImportLines(fileContent,libName);
@@ -14,9 +14,9 @@ const add_funcName = async (allFiles: string[],libName:string): Promise<string[]
                 console.log('extractImportLines');
                 console.log(lines);
             }
-            for (const line of lines) {
+            for(const line of lines) {
                 let funcNames = funcNameIdentifiers(line, libName);
-                if (funcNames.length > 0) {
+                if(funcNames.length > 0) {
                     pattern.push(funcNames);
                 }
             }
@@ -40,7 +40,7 @@ const add_funcName = async (allFiles: string[],libName:string): Promise<string[]
         //console.log(alldirs);
         //各ディレクトリに対する処理
         let extract_pattern = new Array();
-        for (const subdir of alldirs) {
+        for(const subdir of alldirs) {
             console.log(subdir);
             //デバック用
             const allFiles: string[] = await getAllFiles(subdir);

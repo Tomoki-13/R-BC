@@ -4,7 +4,7 @@ export const analyzeFile = (funcNames:string[], code:string, libName:string):str
     const lines = code.split('\n').map(line => line.trim());
     let useFuncResult:string[] = [];
     if(funcNames.length>1){
-        for (const funcName of funcNames) { 
+        for(const funcName of funcNames) { 
                 let useFuncLines:string[] = lines.filter(line => new RegExp('\\b' + funcName.replace(/\./g, '\\.') + '\\b').test(line) && !/^\s*\/\//.test(line) /*&&!/import|require/.test(line)*/);
 
                 if(useFuncLines!=null&&useFuncLines.length !== 0){   
@@ -18,10 +18,10 @@ export const analyzeFile = (funcNames:string[], code:string, libName:string):str
     }else{
         let useFuncLines: string[] = lines.filter(line => new RegExp('\\b' + funcNames[0].replace(/\./g, '\\.') + '\\b').test(line) && !/^\s*\/\//.test(line)/*&&!/import|require/.test(line)*/);
         //console.log("use2:"+useFuncLines);
-        if (useFuncLines != null && useFuncLines.length !== 0) {
+        if(useFuncLines != null && useFuncLines.length !== 0) {
             const str1 = libName + '.mockImplementation';
             useFuncLines = useFuncLines.filter(line => line.length < 100 && !line.includes(str1) &&!line.includes('webpack_require'));
-            if (useFuncLines.length > 0) {
+            if(useFuncLines.length > 0) {
                   useFuncResult = useFuncResult.concat(useFuncLines);
             }
         }

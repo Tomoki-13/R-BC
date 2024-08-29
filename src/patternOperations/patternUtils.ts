@@ -61,7 +61,7 @@ function removeDuplicate(patterns: string[][][]): string[][][] {
     const seen = new Map<string, string[][]>();
     for(const subpattern of patterns) {
         const key = JSON.stringify(subpattern);
-        if (!seen.has(key)) {
+        if(!seen.has(key)) {
             seen.set(key, subpattern);
         }
     }

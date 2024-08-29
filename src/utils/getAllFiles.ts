@@ -5,7 +5,7 @@ import path from "path";
 export const getAllFiles = async (directoryPath: string): Promise<string[]> => {
     return new Promise<string[]>((resolve, reject) => {
         fs.readdir(directoryPath, { withFileTypes: true }, async (err, files) => {
-            if (err) {
+            if(err) {
                 console.error('Error fs.readdir(directoryPath, { withFileTypes: true }, async (err, files):', err);
                 reject(err);
                 return;
@@ -14,11 +14,11 @@ export const getAllFiles = async (directoryPath: string): Promise<string[]> => {
         const allFiles: string[] = [];
 
         //各ファイルおよびディレクトリに対して処理
-        for (const file of files) {
+        for(const file of files) {
             const filePath: string = path.join(directoryPath, file.name);
 
             //jsまたはtsファイルの場合は配列に追加 
-            if ((file.isFile()) &&
+            if((file.isFile()) &&
                 (file.name.endsWith(".js") ||
                 file.name.endsWith(".ts") ||
                 file.name.endsWith(".jsx") ||
@@ -28,9 +28,9 @@ export const getAllFiles = async (directoryPath: string): Promise<string[]> => {
                 !file.name.endsWith(".min.js") &&
                 !file.name.endsWith(".dev.js")) {
                     allFiles.push(filePath);
-                } else if (file.isDirectory()) {
+                } else if(file.isDirectory()) {
                     //サブディレクトリの場合は再帰的に処理
-                    if (!filePath.includes('node_modules')) {
+                    if(!filePath.includes('node_modules')) {
                         const subDirectoryFiles: string[] = await getAllFiles(filePath);
                         allFiles.push(...subDirectoryFiles);
                     }

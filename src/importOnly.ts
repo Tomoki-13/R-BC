@@ -14,21 +14,21 @@ import { extractImportLines } from "./utils/extractImportLines";
         console.log(alldirs.length);
         //各ディレクトリに対する処理
         let extract_pattern:string[][] = new Array();
-        for (const subdir of alldirs) {
+        for(const subdir of alldirs) {
             const allFiles:string[] = await getAllFiles(subdir);
             extract_pattern = await add_extract(allFiles);
             //console.log(extract_pattern);
 
             // パターンを持っていない場合クライアントの出力
-            if (extract_pattern.length === 0) {
+            if(extract_pattern.length === 0) {
                 n++;
-                for (const filePath of allFiles) {
+                for(const filePath of allFiles) {
                     try {
                         // ファイルの内容の取得
                         const fileContent: string = await fsPromises.readFile(filePath, 'utf8');
                         // 呼び出し列の取得
                         const lines:string[] = extractImportLines(fileContent,libName);
-                        if (lines.length !== 0) {
+                        if(lines.length !== 0) {
                             console.log(filePath);
                             console.log("Current lines:", lines);
                         }
@@ -39,7 +39,7 @@ import { extractImportLines } from "./utils/extractImportLines";
             }
 
             // 成功したクライアントでパターンを持っているものを検出
-            if (extract_pattern.length !== 0) {
+            if(extract_pattern.length !== 0) {
                 console.log(subdir);
                 console.log(extract_pattern);
                 n++;

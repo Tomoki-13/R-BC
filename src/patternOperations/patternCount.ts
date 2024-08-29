@@ -3,7 +3,7 @@ export function countPatterns(pattern: string[][][]): { pattern: string[][], cou
     const patternMap = new Map<string, number>();
     pattern.forEach(subrespattern => {
         const patternString = JSON.stringify(subrespattern);
-        if (patternMap.has(patternString)) {
+        if(patternMap.has(patternString)) {
             patternMap.set(patternString, patternMap.get(patternString)! + 1);
         } else {
             patternMap.set(patternString, 1);

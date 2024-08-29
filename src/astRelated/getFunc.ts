@@ -46,12 +46,12 @@ export const getFunc = async(filePath:string,funcName:string): Promise<FunctionI
             if(location.length>0){
                 traverse(parsed, {
                     ExpressionStatement(path){
-                        if (t.isCallExpression(path.node.expression)) {
+                        if(t.isCallExpression(path.node.expression)) {
                             const callee = path.node.expression.callee;
-                            if (t.isIdentifier(callee)) {
+                            if(t.isIdentifier(callee)) {
                                 const name: string = callee.name;
                                 const params: string[] = path.node.expression.arguments.map(arg => {
-                                    if (t.isIdentifier(arg)) {
+                                    if(t.isIdentifier(arg)) {
                                         return arg.name;
                                     } else if (t.isLiteral(arg)) {
                                         const literal = arg as t.StringLiteral | t.NumericLiteral | t.BooleanLiteral;
@@ -66,7 +66,7 @@ export const getFunc = async(filePath:string,funcName:string): Promise<FunctionI
                         }
                     },
                     ExportNamedDeclaration(path) {
-                        if (t.isFunctionDeclaration(path.node.declaration) && path.node.declaration.id) {
+                        if(t.isFunctionDeclaration(path.node.declaration) && path.node.declaration.id) {
                             const name: string = path.node.declaration.id.name;
                             const params: string[] = path.node.declaration.params.map(param => (t.isIdentifier(param) ? param.name : ''));
                             exportedFunctions.add(serializeFunction(name, params));
@@ -83,16 +83,16 @@ export const getFunc = async(filePath:string,funcName:string): Promise<FunctionI
                         }
                     },
                     ExportDefaultDeclaration(path){
-                        if (t.isFunctionDeclaration(path.node.declaration) && path.node.declaration.id) {
+                        if(t.isFunctionDeclaration(path.node.declaration) && path.node.declaration.id) {
                             const name: string = path.node.declaration.id.name;
                             const params: string[] = path.node.declaration.params.map(param => (t.isIdentifier(param) ? param.name : ''));
                             exportedFunctions.add(serializeFunction(name, params));
-                        } else if (t.isFunctionExpression(path.node.declaration) || t.isArrowFunctionExpression(path.node.declaration)) {
+                        } else if(t.isFunctionExpression(path.node.declaration) || t.isArrowFunctionExpression(path.node.declaration)) {
                             exportedFunctions.add({ name: 'default', args: [''] });
                         }
                     },
                     FunctionDeclaration(path){
-                        if (path.node.id &&checkRange(location, path.node?.start ?? 0, path.node.end ?? 0)) {
+                        if(path.node.id &&checkRange(location, path.node?.start ?? 0, path.node.end ?? 0)) {
                             const name: string = path.node.id.name;
                             const params: string[] = path.node.params.map(param => (t.isIdentifier(param) ? param.name : ''));
                             const serializedFunc: ExportFunctionInfo = serializeFunction(name, params);
@@ -100,7 +100,7 @@ export const getFunc = async(filePath:string,funcName:string): Promise<FunctionI
                         }
                     },
                     VariableDeclarator(path){
-                        if (t.isIdentifier(path.node.id) && path.node.init && (t.isFunctionExpression(path.node.init) || t.isArrowFunctionExpression(path.node.init))&& checkRange(location, path.node?.start ?? 0, path.node.end ?? 0)) {
+                        if(t.isIdentifier(path.node.id) && path.node.init && (t.isFunctionExpression(path.node.init) || t.isArrowFunctionExpression(path.node.init))&& checkRange(location, path.node?.start ?? 0, path.node.end ?? 0)) {
                             const name: string = path.node.id.name;
                             const params: string[] = path.node.init.params.map(param => (t.isIdentifier(param) ? param.name : ''));
                             const serializedFunc: ExportFunctionInfo = serializeFunction(name, params);
@@ -108,20 +108,20 @@ export const getFunc = async(filePath:string,funcName:string): Promise<FunctionI
                         }
                     },
                     AssignmentExpression(path){
-                        if (t.isFunctionExpression(path.node.right) || t.isArrowFunctionExpression(path.node.right)) {
+                        if(t.isFunctionExpression(path.node.right) || t.isArrowFunctionExpression(path.node.right)) {
                             let name: string | undefined;
                             let params: string[] = path.node.right.params.map(param => (t.isIdentifier(param) ? param.name : ''));
             
                             if (t.isMemberExpression(path.node.left) && !path.node.left.computed && t.isIdentifier(path.node.left.property)) {
                                 name = path.node.left.property.name;
-                                if (t.isIdentifier(path.node.left.object) && (path.node.left.object.name === 'exports' || path.node.left.object.name === 'module')) {
+                                if(t.isIdentifier(path.node.left.object) && (path.node.left.object.name === 'exports' || path.node.left.object.name === 'module')) {
                                     exportedFunctions.add(serializeFunction(name, params));
                                 }
-                            } else if (t.isIdentifier(path.node.left)) {
+                            } else if(t.isIdentifier(path.node.left)) {
                                 name = path.node.left.name;
                             }
                             
-                            if (name&&checkRange(location, path.node?.start ?? 0, path.node.end ?? 0)) {
+                            if(name&&checkRange(location, path.node?.start ?? 0, path.node.end ?? 0)) {
                                 const serializedFunc: ExportFunctionInfo = serializeFunction(name, params);
                                 resultArray.push({ name: name, args: params, isExported: isExportedFunction(serializedFunc), start: path.node.start ?? 0, end: path.node.end ?? 0 });
                             }
@@ -132,9 +132,9 @@ export const getFunc = async(filePath:string,funcName:string): Promise<FunctionI
                 //他のエクスポートに対応
                 traverse(parsed, {
                     ExportNamedDeclaration(path) {
-                        if (path.node.specifiers.length > 0) {
+                        if(path.node.specifiers.length > 0) {
                             for (const specifier of path.node.specifiers) {
-                                if (t.isIdentifier(specifier.exported)) {
+                                if(t.isIdentifier(specifier.exported)) {
                                     const name: string = specifier.exported.name;
                                     for (const obj of resultArray) {
                                         if (obj.name.includes(name)) {
@@ -146,7 +146,7 @@ export const getFunc = async(filePath:string,funcName:string): Promise<FunctionI
                         }
                     },
                     ExportDefaultDeclaration(path){
-                        if (t.isIdentifier(path.node.declaration) && path.node.declaration.loc?.identifierName) {
+                        if(t.isIdentifier(path.node.declaration) && path.node.declaration.loc?.identifierName) {
                             const name: string = path.node.declaration.loc?.identifierName;
                             for (const obj of resultArray) {
                                 if (obj.name.includes(name)) {
@@ -171,25 +171,25 @@ const funcLocation = async (parsed:any, funcName: string): Promise<number[][]> =
         traverse(parsed, {
             VariableDeclarator(path: any) {
                 const declarationNode = path.findParent((p: any) => t.isVariableDeclaration(p.node));
-                if (t.isIdentifier(path.node.init?.callee) && path.node.init.callee.name === '_interopRequireDefault') {
+                if(t.isIdentifier(path.node.init?.callee) && path.node.init.callee.name === '_interopRequireDefault') {
                     const init = path.node.init;
-                    if (init.arguments && init.arguments.some((arg: t.Expression | t.Identifier) => t.isIdentifier(arg) && arg.name.includes(funcName))) {
+                    if(init.arguments && init.arguments.some((arg: t.Expression | t.Identifier) => t.isIdentifier(arg) && arg.name.includes(funcName))) {
                         resultArray.push([declarationNode.node.start, declarationNode.node.end]);
                     }
-                } else if (t.isMemberExpression(path.node.init) && path.node.init.property.name === 'default') {
+                } else if(t.isMemberExpression(path.node.init) && path.node.init.property.name === 'default') {
                     //.default対応
                     resultArray.push([declarationNode.node.start, declarationNode.node.end]);
                 }
             },
             CallExpression(path: any) {
-                if (t.isIdentifier(path.node.callee)) {
-                    if (path.node.callee.name.includes(funcName)) {
+                if(t.isIdentifier(path.node.callee)) {
+                    if(path.node.callee.name.includes(funcName)) {
                         resultArray.push([path.node.start, path.node.end]);
                     }
-                } else if (t.isMemberExpression(path.node.callee)) {
-                    if (t.isIdentifier(path.node.callee.object) && path.node.callee.object.name.includes(funcName)) {
+                } else if(t.isMemberExpression(path.node.callee)) {
+                    if(t.isIdentifier(path.node.callee.object) && path.node.callee.object.name.includes(funcName)) {
                         resultArray.push([path.node.start, path.node.end]);
-                    } else if (path.node.callee.object && t.isMemberExpression(path.node.callee.object)) {
+                    } else if(path.node.callee.object && t.isMemberExpression(path.node.callee.object)) {
                         //~~.default.~~()の取得
                         if (path.node.callee.object.object && t.isIdentifier(path.node.callee.object.object) && path.node.callee.object.object.name.includes(funcName)) {
                             resultArray.push([path.node.start, path.node.end]);

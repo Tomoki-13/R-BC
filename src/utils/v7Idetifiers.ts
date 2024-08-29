@@ -3,7 +3,7 @@ import { secfuncNameIdentifiers }  from "./funcNameIdentifiers";
 export const v7Idetifiers = async (extract_pattern2: string[][]): Promise<boolean>  => {
     let resultJudge:boolean= false;
     if(extract_pattern2.length>0){
-        for (const arrays of extract_pattern2) {
+        for(const arrays of extract_pattern2) {
             //配列でなければ呼び出しのみで未使用と判断できる
             if(Array.isArray(arrays)){
                 let judge1:boolean= false;
@@ -11,7 +11,7 @@ export const v7Idetifiers = async (extract_pattern2: string[][]): Promise<boolea
                 let secFunName:string[] =[];
                 let word:string = '';
                 let interopRequireDefaultWord:string = '';
-                for (const str of arrays) {
+                for(const str of arrays) {
                     const pattern1:RegExp = /import\s+(\w+)\s+from\s+\(*['"]uuid['"]\)*/;
                     const pattern2:RegExp = /(?:var|const|let)*\s*(\w+)\s*=\s*require\(*['"]uuid['"]\)*/;
                     const pattern3:RegExp = /import\s\*\s+as\s+(\w+)\s+from\s+\(*['"]uuid['"]\)*/;
@@ -66,32 +66,32 @@ export const v7removeException = async (extract_pattern1: string[][], extract_pa
     // 関数名.を含む行を持つ要素だけをextract_pattern2から収集（extract_pattern1には関数名.の呼び出しのみしかない）
     // extract_pattern1と同じ要素を持つ配列ごとに宣言を確認する必要がある，ファイルの違いを考慮するため
     const matchedElements: string[][] = [];
-    for (const item1 of extract_pattern1) {
+    for(const item1 of extract_pattern1) {
         const searchString: string = item1[0]; // extract_pattern1の要素を検索する文字列
-        for (const item2 of extract_pattern2) {
-            if (item2.flat().includes(searchString)) {
+        for(const item2 of extract_pattern2) {
+            if(item2.flat().includes(searchString)) {
                 matchedElements.push(item2);
             }
         }
     }
     // console.log(matchedElements);
-    if (Array.isArray(matchedElements)) {
-        for (const Element of matchedElements) {
+    if(Array.isArray(matchedElements)) {
+        for(const Element of matchedElements) {
             let judge1 = false;
-            if (Array.isArray(Element)) {
-                for (const str of Element) {
+            if(Array.isArray(Element)) {
+                for(const str of Element) {
                     const pattern1 = /(?:var|const|let)*\s*(\w+)\s*=\s*require\(*['"]uuid['"]\)*/;
                     const pattern2 = /import \*\s+as\s+(\w+)\s+from\s+\(*['"]uuid['"]\)*/;
                     const match1 = str.match(pattern1);
                     const match2 = str.match(pattern2);
                     // console.log(match1);
                     // console.log(match2);
-                    if (match1 || match2) {
+                    if(match1 || match2) {
                         judge1 = true;
                     }
                 }
             }
-            if (judge1 == false) {
+            if(judge1 == false) {
                 resultJudge = false;
             }
         }
@@ -102,9 +102,9 @@ export const v7removeException = async (extract_pattern1: string[][], extract_pa
 export async function deepImport(extract_pattern2:string[][]): Promise<boolean> {
     let resultJudge: boolean = false;
     if(Array.isArray(extract_pattern2)){
-        for (const arrays of extract_pattern2) {
+        for(const arrays of extract_pattern2) {
             if(Array.isArray(arrays)){
-                for (const str of arrays) {
+                for(const str of arrays) {
                     const pattern1: RegExp = /\(*['"]uuid\/.*?\/.*?['"]\)*/;
                     const match1: string[]|null = str.match(pattern1);
                     if(match1){

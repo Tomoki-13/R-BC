@@ -9,8 +9,8 @@ export const useAst = async (allFiles: string[], libName: string): Promise<strin
     let pattern: string[][] = [];
     const visitedFiles:Set<string> = new Set<string>();
     //抽象化時の番号　ファイルを超えても区別するため
-    for (const filePath of allFiles) {
-        if (visitedFiles.has(filePath)) continue;
+    for(const filePath of allFiles) {
+        if(visitedFiles.has(filePath)) continue;
         visitedFiles.add(filePath);
         
         try {
@@ -22,9 +22,9 @@ export const useAst = async (allFiles: string[], libName: string): Promise<strin
             }
             //関数の使用部分の抽出
             let funcName:string[] = [];
-            for (const line of lines) {
+            for(const line of lines) {
                 let name:string[] = funcNameIdentifiers(line, libName);
-                if (name.length > 0) {
+                if(name.length > 0) {
                     funcName = funcName.concat(name);
                     for(const one of funcName){
                         const secUseFuncnames = secfuncNameIdentifiers(one, fileContent);
@@ -34,11 +34,11 @@ export const useAst = async (allFiles: string[], libName: string): Promise<strin
                     }
                 }
             }
-            if (funcName.length > 0) {
+            if(funcName.length > 0) {
                 const uniquefuncName: string[] = [...new Set(funcName)];
                 for(const one of uniquefuncName){
                     let result:string[] = await analyzeAst(filePath,one);
-                    if (result.length > 0) {
+                    if(result.length > 0) {
                         //mockImplementationの対策 配列で削除 除外
                         const checkstr = 'mockImplementation';
                         //除外
@@ -63,9 +63,9 @@ export const useAst = async (allFiles: string[], libName: string): Promise<strin
         }
 
         //文字数が異常に多いものを削除
-        for (let i = 0; i < pattern.length; i++) {
-            for (let j = pattern[i].length - 1; j >= 0; j--) {
-                if (pattern[i][j].length > 400) {
+        for(let i = 0; i < pattern.length; i++) {
+            for(let j = pattern[i].length - 1; j >= 0; j--) {
+                if(pattern[i][j].length > 400) {
                     //要素を削除
                     pattern[i].splice(j, 1);
                 }
@@ -74,14 +74,14 @@ export const useAst = async (allFiles: string[], libName: string): Promise<strin
         //空のサブ配列を削除
         pattern = pattern.filter(subArray => subArray.length > 0);
     }
-    for (let i = 0;i < pattern.length;i++) {
+    for(let i = 0;i < pattern.length;i++) {
         pattern[i] = pattern[i].map(item => item.trim().replace(/\s+/g, ' '));
     }
-    if (pattern.length > 0) {
-        for (let i = 0; i < pattern.length; i++) {
-            if (pattern[i] && pattern[i].length > 0) {
-                for (let j = 0; j < pattern[i].length; j++) {
-                    if (typeof pattern[i][j] === 'string') {
+    if(pattern.length > 0) {
+        for(let i = 0; i < pattern.length; i++) {
+            if(pattern[i] && pattern[i].length > 0) {
+                for(let j = 0; j < pattern[i].length; j++) {
+                    if(typeof pattern[i][j] === 'string') {
                         pattern[i][j] = pattern[i][j].replace(/[\r\n]/g, '');
                         pattern[i][j] = pattern[i][j].replace(/^,|,$/g, '');
                     }
@@ -96,8 +96,8 @@ export const abstuseAst = async (allFiles: string[], libName: string): Promise<s
     const visitedFiles:Set<string> = new Set<string>();
     //抽象化時の番号　ファイルを超えても区別するため
     let j = 1;
-    for (const filePath of allFiles) {
-        if (visitedFiles.has(filePath)) continue;
+    for(const filePath of allFiles) {
+        if(visitedFiles.has(filePath)) continue;
         visitedFiles.add(filePath);
         
         try {
@@ -109,9 +109,9 @@ export const abstuseAst = async (allFiles: string[], libName: string): Promise<s
             }
             //関数の使用部分の抽出
             let funcName:string[] = [];
-            for (const line of lines) {
+            for(const line of lines) {
                 let name:string[] = funcNameIdentifiers(line, libName);
-                if (name.length > 0) {
+                if(name.length > 0) {
                     funcName = funcName.concat(name);
                     for(const one of funcName){
                         const secUseFuncnames = secfuncNameIdentifiers(one, fileContent);
@@ -121,14 +121,14 @@ export const abstuseAst = async (allFiles: string[], libName: string): Promise<s
                     }
                 }
             }
-            if (funcName.length > 0) {
+            if(funcName.length > 0) {
                 //重複を削除
                 const uniquefuncName: string[] = [...new Set(funcName)];
                 for(const one of uniquefuncName){
                     let result:string[] = await analyzeAst(filePath,one);
                     //let result:string[] = await argplace(filePath,one);
                     //文字列が使用された場合のみ最終結果に追加
-                    if (result.length > 0) {
+                    if(result.length > 0) {
                         //mockImplementationの対策 配列で削除 
                         const checkstr = 'mockImplementation';
                         for(const subresult of result){
@@ -160,9 +160,9 @@ export const abstuseAst = async (allFiles: string[], libName: string): Promise<s
         }
 
         //文字数が異常に多いものを削除
-        for (let i = 0; i < pattern.length; i++) {
-            for (let j = pattern[i].length - 1; j >= 0; j--) {
-                if (pattern[i][j].length > 400) {
+        for(let i = 0; i < pattern.length; i++) {
+            for(let j = pattern[i].length - 1; j >= 0; j--) {
+                if(pattern[i][j].length > 400) {
                     //要素を削除
                     pattern[i].splice(j, 1);
                 }
@@ -172,14 +172,14 @@ export const abstuseAst = async (allFiles: string[], libName: string): Promise<s
         pattern = pattern.filter(subArray => subArray.length > 0);
     }
     //空白削除　/t等も削除
-    for (let i = 0; i < pattern.length; i++) {
+    for(let i = 0; i < pattern.length; i++) {
         pattern[i] = pattern[i].map(item => item.trim().replace(/\s+/g, ' '));
     }
-    if (pattern.length > 0) {
-        for (let i = 0; i < pattern.length; i++) {
-            if (pattern[i] && pattern[i].length > 0) {
-                for (let j = 0; j < pattern[i].length; j++) {
-                    if (typeof pattern[i][j] === 'string') {
+    if(pattern.length > 0) {
+        for(let i = 0; i < pattern.length; i++) {
+            if(pattern[i] && pattern[i].length > 0) {
+                for(let j = 0; j < pattern[i].length; j++) {
+                    if(typeof pattern[i][j] === 'string') {
                         pattern[i][j] = pattern[i][j].replace(/[\r\n]/g, '');
                         pattern[i][j] = pattern[i][j].replace(/^,|,$/g, '');
                     }
@@ -188,9 +188,9 @@ export const abstuseAst = async (allFiles: string[], libName: string): Promise<s
         }
     }
     //語尾の;の削除　).系にまでマッチするので残す
-    // for (let i = 0; i < pattern.length; i++) {
-    //     for (let j = 0; j < pattern[i].length; j++) {
-    //         if (pattern[i][j].endsWith(';')) {
+    // for(let i = 0; i < pattern.length; i++) {
+    //     for(let j = 0; j < pattern[i].length; j++) {
+    //         if(pattern[i][j].endsWith(';')) {
     //             pattern[i][j] = pattern[i][j].slice(0, -1);
     //         }
     //     }

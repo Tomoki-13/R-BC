@@ -10,7 +10,7 @@ export const useFunc = async (allFiles: string[], libName: string): Promise<stri
     const pattern: string[][] = [];
     const visitedFiles:Set<string> = new Set<string>();
 
-    for (const filePath of allFiles) {
+    for(const filePath of allFiles) {
         if (visitedFiles.has(filePath)) continue;
         visitedFiles.add(filePath);
 
@@ -18,7 +18,7 @@ export const useFunc = async (allFiles: string[], libName: string): Promise<stri
             const fileContent:string = await fsPromises.readFile(filePath, 'utf8');
             const lines:string[] = extractImportLines(fileContent, libName);
 
-            for (const line of lines) {
+            for(const line of lines) {
                 let funcName:string[] = funcNameIdentifiers(line, libName);
 
                 if (funcName.length > 0) {
@@ -26,7 +26,7 @@ export const useFunc = async (allFiles: string[], libName: string): Promise<stri
                     let secuseFuncLines: string[] = [];
 
                     if (funcName.length > 1) {
-                        for (const oneFuncName of funcName) {
+                        for(const oneFuncName of funcName) {
                             const secUseFuncnames:string[] = secfuncNameIdentifiers(oneFuncName, fileContent);
                             if (secUseFuncnames) {
                                 secuseFuncLines = secuseFuncLines.concat(analyzeFile(secUseFuncnames, fileContent));
@@ -60,7 +60,7 @@ export const useFunc1_v7 = async (allFiles: string[], libName: string): Promise<
     const pattern:string[][] = [];
     const visitedFiles:Set<string> = new Set<string>();
 
-    for (const filePath of allFiles) {
+    for(const filePath of allFiles) {
         if (visitedFiles.has(filePath)) continue;
         visitedFiles.add(filePath);
 
@@ -69,7 +69,7 @@ export const useFunc1_v7 = async (allFiles: string[], libName: string): Promise<
             const lines = extractImportLines(fileContent, libName);
             let funcName: string[] = [];
 
-            for (const line of lines) {
+            for(const line of lines) {
                 funcName = funcNameIdentifiers(line, libName);
 
                 if (funcName !== undefined && funcName.length > 0) {
@@ -99,7 +99,7 @@ export async function useFuncg7(allFiles: string[], libName: string): Promise<st
     const pattern: string[][] = [];
     const visitedFiles:Set<string> = new Set<string>();
 
-    for (const filePath of allFiles) {
+    for(const filePath of allFiles) {
         if (visitedFiles.has(filePath)) continue;
         visitedFiles.add(filePath);
 
@@ -107,7 +107,7 @@ export async function useFuncg7(allFiles: string[], libName: string): Promise<st
             const fileContent = await fsPromises.readFile(filePath, 'utf8');
             const lines = extractImportLines(fileContent, libName);
 
-            for (const line of lines) {
+            for(const line of lines) {
                 let funcName: string[] = funcNameIdentifiers(line, libName);
 
                 if (funcName && funcName.length > 0) {
@@ -115,7 +115,7 @@ export async function useFuncg7(allFiles: string[], libName: string): Promise<st
                     let secuseFuncLines: string[] = [];
 
                     if (funcName.length > 1) {
-                        for (const oneFuncName of funcName) {
+                        for(const oneFuncName of funcName) {
                             const secUseFuncnames = secfuncNameIdentifiers(oneFuncName, fileContent);
                             if (secUseFuncnames) {
                                 secuseFuncLines = secuseFuncLines.concat(analyzeFile(secUseFuncnames, fileContent));

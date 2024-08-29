@@ -5,18 +5,18 @@ export const patternMatch = async (userpatterns: string[][], respattern: string[
     let search_patterns = JSON.parse(JSON.stringify(respattern));
     search_patterns = patternConversion.abstStr(search_patterns);
     try {
-        for (const search_pattern of search_patterns) {
+        for(const search_pattern of search_patterns) {
             //現在の search_pattern が全て userpatterns に一致するかどうかを示すフラグ
             //let patternMatched = true;
 
             // search_pattern 全体の variableMap を作成
             const variableMap: { [key: string]: string[] } = {};
-            for (const search_one of search_pattern) {
-                for (const str of search_one) {
+            for(const search_one of search_pattern) {
+                for(const str of search_one) {
                     const match = str.match(/variable(\d+)/g);
-                    if (match) {
+                    if(match) {
                         const key = match[0];
-                        if (!variableMap[key]) {
+                        if(!variableMap[key]) {
                             variableMap[key] = [];
                         }
                         variableMap[key].push(str);
@@ -27,28 +27,28 @@ export const patternMatch = async (userpatterns: string[][], respattern: string[
 
             //判定用
             const variableMapJudge: { [key: string]: boolean } = {};
-            for (const key in variableMap) {
-                if (variableMap.hasOwnProperty(key)) {
+            for(const key in variableMap) {
+                if(variableMap.hasOwnProperty(key)) {
                     variableMapJudge[key] = false;
                 }
             }
             
-            for (const userpattern of userpatterns) {
+            for(const userpattern of userpatterns) {
                 //variableMap 内の全てのパターンが一致するか確認する
-                for (const key in variableMap) {
-                    if (variableMap.hasOwnProperty(key)) {
+                for(const key in variableMap) {
+                    if(variableMap.hasOwnProperty(key)) {
                         const regex1: RegExp = new RegExp(patternConversion.escapeFunc(variableMap[key][0]));
                         let importMatch: RegExpMatchArray | null = null;
                         let num: number = 0;
-                        for (const line of userpattern) {
+                        for(const line of userpattern) {
                             importMatch = line.match(regex1);
                             num++;
-                            if (importMatch) {
+                            if(importMatch) {
                                 break;
                             }
                         }
 
-                        if (importMatch && importMatch?.groups) {
+                        if(importMatch && importMatch?.groups) {
                             const importName = importMatch.groups[key];
                             for(const key1 in variableMap){
                                 for(let i = 0; i < variableMap[key1].length; i++){
@@ -58,30 +58,30 @@ export const patternMatch = async (userpatterns: string[][], respattern: string[
                                 }
                             }
                             const keys = Object.keys(variableMap);
-                            if (keys.length === 1) {
+                            if(keys.length === 1) {
                                 const key = keys[0];
-                                if (variableMap[key].length === 1) {
+                                if(variableMap[key].length === 1) {
                                     // console.log('variableMapJudge');
                                     // console.log(variableMapJudge);
                                     return [true, search_pattern];
                                 }
-                            } else if (variableMap[key].length === 1) {
+                            } else if(variableMap[key].length === 1) {
                                 variableMapJudge[key] = true;
                             }
-                            for (let i = 1; i < variableMap[key].length; i++) {
+                            for(let i = 1; i < variableMap[key].length; i++) {
                                 let functionCallPatternStr = variableMap[key][i].replace(key, importName);
                                 //抽象化 
                                 //functionCallPatternStr = functionCallPatternStr.replace(/\((.*?)\)/g, (_, inner) => inner ? "(.*?)" : "()");
                                 const functionCallPattern = new RegExp(patternConversion.escapeFunc(functionCallPatternStr));
                                 let matched = false;
-                                for (let j = num; j < userpattern.length; j++) {
+                                for(let j = num; j < userpattern.length; j++) {
                                     //userpattern[j]に[]がある時の処理
                                     let replaceuserpattern = userpattern[j].replace(/[\r\n]/g, '');
                                     replaceuserpattern = userpattern[j].replace(/\[[^\]]*\]/g, 'argument');
                                     //userpattern[j]に{}がある時の処理
                                     replaceuserpattern = replaceuserpattern.replace(/\{[^}]*\}/g, 'argument');
                                     const functionCallMatch = replaceuserpattern.match(functionCallPattern);
-                                    if (functionCallMatch) {
+                                    if(functionCallMatch) {
                                         //一致が見つかった場合
                                         matched = true;
                                         break;
@@ -90,7 +90,7 @@ export const patternMatch = async (userpatterns: string[][], respattern: string[
                                         matched = false;
                                     }
                                 }
-                                if (!matched) {
+                                if(!matched) {
                                     variableMapJudge[key] = false;
                                     break;
                                 }
@@ -101,20 +101,20 @@ export const patternMatch = async (userpatterns: string[][], respattern: string[
                         } else {
                             variableMapJudge[key] = false;
                         }
-                        if (variableMapJudge[key] == false) {
+                        if(variableMapJudge[key] == false) {
                             break;
                         }
                     }
                 }
                 //現在の search_pattern が一致
-                if (Object.values(variableMapJudge).every(value => value === true)) {
+                if(Object.values(variableMapJudge).every(value => value === true)) {
                     // console.log('variableMapJudge');
                     // console.log(variableMapJudge);
                     return [true, search_pattern];
                 }
             }
 
-            if (Object.values(variableMapJudge).every(value => value === true)) {
+            if(Object.values(variableMapJudge).every(value => value === true)) {
                 // console.log('variableMapJudge');
                 // console.log(variableMapJudge);
                 return [true, search_pattern];

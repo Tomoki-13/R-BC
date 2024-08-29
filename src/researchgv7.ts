@@ -10,7 +10,7 @@ import { useFunc,useFuncg7} from "./combinations/useFunc";
         //ディレクトリごとに求めたいため
         const alldirs:string[] = await getSubDir(startDirectory);
         console.log(alldirs.length);
-        for (const subdir of alldirs) {
+        for(const subdir of alldirs) {
             console.log(subdir);
             let extract_pattern1:string[][] = [];
             let extract_pattern2:string[][] = [];

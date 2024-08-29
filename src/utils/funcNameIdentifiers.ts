@@ -18,10 +18,10 @@ export const funcNameIdentifiers = (line:string,libraryName:string): string[] =>
     let match3_1: string[]=[];
     let match6_1: string[]=[];
     //match3の{}の中を処理
-    if (match3) {
+    if(match3) {
         const resultArray: string[] = match3[1].split(',').map(item => item.trim());
         const AsPattern: RegExp = /(.+?)\s+as\s+([^\s]+)/;
-        for (const result of resultArray) {
+        for(const result of resultArray) {
             const name: string[] | null = result.match(AsPattern);
             if(name!=null){
                 match3_1.push(name[2]);
@@ -34,7 +34,7 @@ export const funcNameIdentifiers = (line:string,libraryName:string): string[] =>
     if(match6){
         const resultArray = match6[1].split(',').map(item => item.trim());
         const AsPattern: RegExp = /[^:]+:\s*([^,\s]+)/;
-        for (const result of resultArray) {
+        for(const result of resultArray) {
             const name = result.match(AsPattern);
             if(name!=null){
                 match6_1.push(name[1]);
@@ -43,11 +43,11 @@ export const funcNameIdentifiers = (line:string,libraryName:string): string[] =>
             }
         }
     }
-    if (match1) {
+    if(match1) {
         let result:string[] = [];
         result.push(match1[1].trim());
         return result;
-    } else if (match2) {
+    } else if(match2) {
         let result:string[] = [];
         result.push(match2[1].trim());
         return result;
@@ -86,22 +86,22 @@ export const secfuncNameIdentifiers = (functionName: string, line: string): stri
     const match2: RegExpMatchArray | null = line.match(pattern2);
     let secFuncName: string[] = [];
     let match2_1: string[] = [];
-    if (match2) {
+    if(match2) {
         const resultArray: string[] = match2[1].split(',').map(item => item.trim());
         const AsPattern: RegExp = /([^:\s]+):\s*([^,\s]+)/;
-        for (const result of resultArray) {
+        for(const result of resultArray) {
             const name: RegExpMatchArray | null = result.match(AsPattern);
-            if (name != null) {
+            if(name != null) {
                 match2_1.push(name[2]);
             } else {
                 match2_1.push(result);
             }
         }
     }
-    if (match1) {
+    if(match1) {
         secFuncName.push(match1[1]);
-    } else if (match2) {
-        if (match2_1.length > 0) {
+    } else if(match2) {
+        if(match2_1.length > 0) {
             secFuncName = secFuncName.concat(match2_1);
         }
     }

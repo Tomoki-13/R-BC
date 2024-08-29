@@ -50,7 +50,8 @@ export const analyzeAst = async (filePath: string, funcName: string): Promise<st
                             }
                         }
                     }
-                },NewExpression(path: any) {
+                },
+                NewExpression(path: any) {
                     // NewExpression:returnにマッチ
                     if (t.isIdentifier(path.node.callee)) {
                         if (path.node.callee.name === funcName) {
