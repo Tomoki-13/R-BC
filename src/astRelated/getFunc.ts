@@ -8,14 +8,14 @@ export const getFunc = async(filePath:string,funcName:string): Promise<FunctionI
     let resultArray: FunctionInfo[] = [];
     try {
         //ファイルの内容を取得
-        if (filePath.endsWith('.js') || filePath.endsWith('.ts')) {
+        if(filePath.endsWith('.js') || filePath.endsWith('.ts')) {
             const fileContent: string = await fsPromises.readFile(filePath, 'utf8');
             const parsed = parser.parse(fileContent, {sourceType: 'unambiguous', plugins: ["typescript",'decorators-legacy']});
         
             let exportedFunctions = new Set<ExportFunctionInfo>();
             const isExportedFunction = (func: ExportFunctionInfo): boolean => {
-                for (const exportedFunc of exportedFunctions) {
-                    if (exportedFunc.name === func.name && exportedFunc.args.join(',') === func.args.join(',')) {
+                for(const exportedFunc of exportedFunctions) {
+                    if(exportedFunc.name === func.name && exportedFunc.args.join(',') === func.args.join(',')) {
                         return true;
                     }
                 }
@@ -29,8 +29,8 @@ export const getFunc = async(filePath:string,funcName:string): Promise<FunctionI
                 try {
                     let isContained = false;
                     //locationの各要素についてループする
-                    for (const [locStart, locEnd] of location) {
-                        if (start <= locStart && end >= locEnd) {
+                    for(const [locStart, locEnd] of location) {
+                        if(start <= locStart && end >= locEnd) {
                             isContained = true;
                             break;
                         }
@@ -53,7 +53,7 @@ export const getFunc = async(filePath:string,funcName:string): Promise<FunctionI
                                 const params: string[] = path.node.expression.arguments.map(arg => {
                                     if(t.isIdentifier(arg)) {
                                         return arg.name;
-                                    } else if (t.isLiteral(arg)) {
+                                    } else if(t.isLiteral(arg)) {
                                         const literal = arg as t.StringLiteral | t.NumericLiteral | t.BooleanLiteral;
                                         return String(literal.value);
                                     } else {
@@ -70,10 +70,10 @@ export const getFunc = async(filePath:string,funcName:string): Promise<FunctionI
                             const name: string = path.node.declaration.id.name;
                             const params: string[] = path.node.declaration.params.map(param => (t.isIdentifier(param) ? param.name : ''));
                             exportedFunctions.add(serializeFunction(name, params));
-                        } else if (t.isVariableDeclaration(path.node.declaration)) {
+                        } else if(t.isVariableDeclaration(path.node.declaration)) {
                             const declarations = path.node.declaration.declarations;
-                            for (const declarator of declarations) {
-                                if (t.isVariableDeclarator(declarator) && t.isIdentifier(declarator.id) && declarator.init && t.isArrowFunctionExpression(declarator.init)) {
+                            for(const declarator of declarations) {
+                                if(t.isVariableDeclarator(declarator) && t.isIdentifier(declarator.id) && declarator.init && t.isArrowFunctionExpression(declarator.init)) {
                                     const name = declarator.id.name;
                                     const params = declarator.init.params.map(param => (t.isIdentifier(param) ? param.name : ''));
                                     const serializedFunc = serializeFunction(name, params);
@@ -112,7 +112,7 @@ export const getFunc = async(filePath:string,funcName:string): Promise<FunctionI
                             let name: string | undefined;
                             let params: string[] = path.node.right.params.map(param => (t.isIdentifier(param) ? param.name : ''));
             
-                            if (t.isMemberExpression(path.node.left) && !path.node.left.computed && t.isIdentifier(path.node.left.property)) {
+                            if(t.isMemberExpression(path.node.left) && !path.node.left.computed && t.isIdentifier(path.node.left.property)) {
                                 name = path.node.left.property.name;
                                 if(t.isIdentifier(path.node.left.object) && (path.node.left.object.name === 'exports' || path.node.left.object.name === 'module')) {
                                     exportedFunctions.add(serializeFunction(name, params));
@@ -133,11 +133,11 @@ export const getFunc = async(filePath:string,funcName:string): Promise<FunctionI
                 traverse(parsed, {
                     ExportNamedDeclaration(path) {
                         if(path.node.specifiers.length > 0) {
-                            for (const specifier of path.node.specifiers) {
+                            for(const specifier of path.node.specifiers) {
                                 if(t.isIdentifier(specifier.exported)) {
                                     const name: string = specifier.exported.name;
-                                    for (const obj of resultArray) {
-                                        if (obj.name.includes(name)) {
+                                    for(const obj of resultArray) {
+                                        if(obj.name.includes(name)) {
                                             obj.isExported = true;
                                         }
                                     }
@@ -148,8 +148,8 @@ export const getFunc = async(filePath:string,funcName:string): Promise<FunctionI
                     ExportDefaultDeclaration(path){
                         if(t.isIdentifier(path.node.declaration) && path.node.declaration.loc?.identifierName) {
                             const name: string = path.node.declaration.loc?.identifierName;
-                            for (const obj of resultArray) {
-                                if (obj.name.includes(name)) {
+                            for(const obj of resultArray) {
+                                if(obj.name.includes(name)) {
                                     obj.isExported = true;
                                 }
                             }
@@ -159,7 +159,7 @@ export const getFunc = async(filePath:string,funcName:string): Promise<FunctionI
             }
         }
     } catch (error) {
-        console.log(`getFunc Failed to create AST for file: ${filePath}`);
+        console.log(`getFunc Failed to create AST forfile: ${filePath}`);
         //console.log(error);
     }
     return resultArray;
@@ -191,7 +191,7 @@ const funcLocation = async (parsed:any, funcName: string): Promise<number[][]> =
                         resultArray.push([path.node.start, path.node.end]);
                     } else if(path.node.callee.object && t.isMemberExpression(path.node.callee.object)) {
                         //~~.default.~~()の取得
-                        if (path.node.callee.object.object && t.isIdentifier(path.node.callee.object.object) && path.node.callee.object.object.name.includes(funcName)) {
+                        if(path.node.callee.object.object && t.isIdentifier(path.node.callee.object.object) && path.node.callee.object.object.name.includes(funcName)) {
                             resultArray.push([path.node.start, path.node.end]);
                         }
                     }
