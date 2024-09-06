@@ -45,7 +45,6 @@ describe('analyzeAst.ts test', () => {
                 result = result.concat(name);
             }
         }
-        console.log(result);
         const expectedOutput: string[] = ['a', 'v4', "v1","v5","b","c"];
         expect(result).toEqual(expectedOutput);
     });
@@ -61,7 +60,6 @@ describe('analyzeAst.ts test', () => {
                 result = result.concat(name);
             }
         }
-        console.log(result);
         const expectedOutput: string[] = ['a', 'b', "v4","c","d","e"];
         expect(result).toEqual(expectedOutput);
     });

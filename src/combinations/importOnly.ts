@@ -1,8 +1,8 @@
 import { promises as fsPromises } from 'fs';
-import { getSubDir } from "./utils/getSubDir";
-import { getAllFiles } from "./utils/getAllFiles";
+import { getSubDir } from "../utils/getSubDir";
+import { getAllFiles } from "../utils/getAllFiles";
 const {add_extract} = require("./utils/add_extract");
-import { extractImportLines } from "./utils/extractImportLines";
+import { extractImportLines } from "../utils/extractImportLines";
 (async () => {
 
     //const startDirectory:string = "../repos";

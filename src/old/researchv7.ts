@@ -1,7 +1,7 @@
-import { getSubDir } from "./utils/getSubDir";
-import { getAllFiles } from "./utils/getAllFiles";
-import { useFunc1_v7, useFunc } from "./combinations/useFunc";
-import { v7Idetifiers, v7removeException, deepImport } from "./utils/v7Idetifiers";
+import { getSubDir } from "../utils/getSubDir";
+import { getAllFiles } from "../utils/getAllFiles";
+import { useFunc1_v7, useFunc } from "../combinations/useFunc";
+import { v7Idetifiers, v7removeException, deepImport } from "./v7Idetifiers";
 import fs from 'fs';
 import path from 'path';
 (async () => {

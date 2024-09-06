@@ -1,10 +1,8 @@
-import { secfuncNameIdentifiers }  from "./funcNameIdentifiers";
-//uuid()の使用を検知
+import { secfuncNameIdentifiers }  from "../utils/funcNameIdentifiers";
 export const v7Idetifiers = async (extract_pattern2: string[][]): Promise<boolean>  => {
     let resultJudge:boolean= false;
     if(extract_pattern2.length>0){
         for(const arrays of extract_pattern2) {
-            //配列でなければ呼び出しのみで未使用と判断できる
             if(Array.isArray(arrays)){
                 let judge1:boolean= false;
                 let funcName:string = '';

@@ -10,8 +10,8 @@ import {patternMatch} from "./patternOperations/patternMatch";
 import patternConversion from "./patternOperations/patternConversion";
 
 (async () => {
-    const startDirectory: string = "../allrepos/repossample1";
-    const matchStartdir: string = "../allrepos/repossample2";
+    const startDirectory: string = "../allrepos/";
+    const matchStartdir: string = "../allrepos/";
     let failurePattern1: number = 0;
     const libName: string = process.argv[2];
     const alldirs: string[] = await getSubDir(startDirectory);
@@ -77,7 +77,7 @@ import patternConversion from "./patternOperations/patternConversion";
                 const [isMatch, matchedPattern]: [boolean, string[][] | null] = await patternMatch(match_extract_pattern, stringvariable);
                 if(isMatch && matchedPattern) {
                     // console.log("----------------------");
-                    // console.log(subdir);
+                    //console.log(subdir);
                     // console.log("match_extract_pattern");
                     // console.log(match_extract_pattern);
                     // console.log("matchedPattern");
@@ -89,7 +89,8 @@ import patternConversion from "./patternOperations/patternConversion";
             }
         }
     }
-    console.log(noClientTestNum+'/'+matchAlldirs.length)
+    //console.log(noClientTestNum+'/'+matchAlldirs.length);
+    console.log('matchcsvRows.lengt'+matchcsvRows.length);
     //countmatchedpatterns検出時に該当したものの配列
     const search_patterns = JSON.parse(JSON.stringify(countmatchedpatterns));
     let detecteduserpattern = countPatterns(search_patterns);
