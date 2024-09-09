@@ -8,22 +8,33 @@ import fs from 'fs';
 import path from 'path';
 import {patternMatch} from "./patternOperations/patternMatch";
 import patternConversion from "./patternOperations/patternConversion";
+import { checkAst } from "./astRelated/checkAst";
 
 (async () => {
-    const startDirectory: string = "../allrepos/";
-    const matchStartdir: string = "../allrepos/";
+    const startDirectory: string = "../allrepos/reposuuidv7.0.0failure";
+    const matchStartdir: string = "../allrepos/reposuuidv7.0.0success";
     let failurePattern1: number = 0;
     const libName: string = process.argv[2];
     const alldirs: string[] = await getSubDir(startDirectory);
     const csvRows: string[] = ['failureclient,detectPatterns'];
     const matchcsvRows: string[] = ['client,Patterns,matchedPattern'];
+    let sumDetectClient:number = 0;
     let respattern: string[][][] = [];
     
     //各ディレクトリに対する処理
     for(const subdir of alldirs) {
         let extract_pattern1: string[][] = [];
+        let judge:boolean = true;
         const allFiles: string[] = await getAllFiles(subdir);
-    
+        for(const file of allFiles){
+            if(await checkAst(file) === false){
+                judge = false;
+                break;
+            }
+        }
+        if(judge === false){
+            continue;
+        }
         extract_pattern1 = await abstuseAst(allFiles, libName);
 
         if(extract_pattern1.length > 0) {
@@ -63,12 +74,13 @@ import patternConversion from "./patternOperations/patternConversion";
     const matchAlldirs: string[] = await getSubDir(matchStartdir);
     //console.log('lastpatterns.length'+lastpatterns.length);
     let noClientTestNum:number = 0;
+    let ClientTestNum:number = 0;
     for(const subdir of matchAlldirs) {
         let test:boolean = jsonconf(subdir);
-        if(test === false){
-            console.log(subdir);
-            noClientTestNum++;
-        }else{
+        // if(test === false){
+        //     console.log(subdir);
+        //     noClientTestNum++;
+        // }else{
             let match_extract_pattern: string[][] = [];
             const allFiles: string[] = await getAllFiles(subdir);
             match_extract_pattern = await useAst(allFiles, libName);
@@ -83,14 +95,26 @@ import patternConversion from "./patternOperations/patternConversion";
                     // console.log("matchedPattern");
                     // console.log(matchedPattern);
                     // console.log("----------------------");
+                    if(test === false){
+                        noClientTestNum++;
+                    }else{
+                        ClientTestNum++;
+                    }
+                    console.log(subdir);
                     matchcsvRows.push(`"${subdir}","${match_extract_pattern}","${matchedPattern}"`);
+                    //console.log(matchcsvRows.length);
                     countmatchedpatterns.push(matchedPattern);
+                    sumDetectClient++;
                 }
             }
-        }
+        //}
     }
+    //matchcsvRows danger
+    console.log('noClientTestNum'+noClientTestNum+'|ClientTestNum'+ClientTestNum);
+    console.log('sumDetectClient'+sumDetectClient);
+    console.log(matchcsvRows);
     //console.log(noClientTestNum+'/'+matchAlldirs.length);
-    console.log('matchcsvRows.lengt'+matchcsvRows.length);
+    console.log('matchcsvRows.length'+matchcsvRows.length);
     //countmatchedpatterns検出時に該当したものの配列
     const search_patterns = JSON.parse(JSON.stringify(countmatchedpatterns));
     let detecteduserpattern = countPatterns(search_patterns);
@@ -115,7 +139,7 @@ import patternConversion from "./patternOperations/patternConversion";
         const formattedDate = date.toISOString().slice(0, 19).replace(/[T:]/g, '-');
         outputFileName2 = path.join(outputDirectory, `${path.basename(matchStartdir)}_matchResults_output_${formattedDate}.csv`);
     }
-    //fs.writeFileSync(outputFileName2, matchcsvRows.join('\n'), 'utf8');
+    fs.writeFileSync(outputFileName2, matchcsvRows.join('\n'), 'utf8');
     console.log('success clientnum' + matchAlldirs.length);
     let mergepattern: { pattern: string[][], count: number }[] = countPatterns(stringvariable);
     mergepattern.sort((a, b) => b.count - a.count);

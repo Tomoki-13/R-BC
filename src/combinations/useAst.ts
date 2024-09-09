@@ -52,7 +52,6 @@ export const useAst = async (allFiles: string[], libName: string): Promise<strin
                         inFileStr = inFileStr.concat(result);
                     }
                 }
-                //重複を考慮
                 if(inFileStr.length > 0){
                     let uniqueInFileStr: string[] = [...new Set(inFileStr)];
                     pattern.push(uniqueInFileStr);
@@ -62,16 +61,13 @@ export const useAst = async (allFiles: string[], libName: string): Promise<strin
             console.error('Error readFile:', err);
         }
 
-        //文字数が異常に多いものを削除
         for(let i = 0; i < pattern.length; i++) {
             for(let j = pattern[i].length - 1; j >= 0; j--) {
                 if(pattern[i][j].length > 400) {
-                    //要素を削除
                     pattern[i].splice(j, 1);
                 }
             }
         }
-        //空のサブ配列を削除
         pattern = pattern.filter(subArray => subArray.length > 0);
     }
     for(let i = 0;i < pattern.length;i++) {
@@ -91,6 +87,7 @@ export const useAst = async (allFiles: string[], libName: string): Promise<strin
     }
     return pattern;
 }
+
 export const abstuseAst = async (allFiles: string[], libName: string): Promise<string[][]> =>{
     let pattern: string[][] = [];
     const visitedFiles:Set<string> = new Set<string>();
@@ -122,7 +119,6 @@ export const abstuseAst = async (allFiles: string[], libName: string): Promise<s
                 }
             }
             if(funcName.length > 0) {
-                //重複を削除
                 const uniquefuncName: string[] = [...new Set(funcName)];
                 for(const one of uniquefuncName){
                     let result:string[] = await analyzeAst(filePath,one);
@@ -159,7 +155,6 @@ export const abstuseAst = async (allFiles: string[], libName: string): Promise<s
             console.error('Error readFile:', err);
         }
 
-        //文字数が異常に多いものを削除
         for(let i = 0; i < pattern.length; i++) {
             for(let j = pattern[i].length - 1; j >= 0; j--) {
                 if(pattern[i][j].length > 400) {
@@ -168,7 +163,6 @@ export const abstuseAst = async (allFiles: string[], libName: string): Promise<s
                 }
             }
         }
-        //空のサブ配列を削除
         pattern = pattern.filter(subArray => subArray.length > 0);
     }
     //空白削除　/t等も削除
@@ -187,7 +181,7 @@ export const abstuseAst = async (allFiles: string[], libName: string): Promise<s
             }
         }
     }
-    //語尾の;の削除　).系にまでマッチするので残す
+    //語尾の;の削除　).系が問題
     // for(let i = 0; i < pattern.length; i++) {
     //     for(let j = 0; j < pattern[i].length; j++) {
     //         if(pattern[i][j].endsWith(';')) {
@@ -195,6 +189,5 @@ export const abstuseAst = async (allFiles: string[], libName: string): Promise<s
     //         }
     //     }
     // }
-
     return pattern;
 }
