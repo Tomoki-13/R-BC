@@ -112,7 +112,7 @@ import { checkAst } from "./astRelated/checkAst";
     //matchcsvRows danger
     console.log('noClientTestNum'+noClientTestNum+'|ClientTestNum'+ClientTestNum);
     console.log('sumDetectClient'+sumDetectClient);
-    console.log(matchcsvRows);
+    //console.log(matchcsvRows);
     //console.log(noClientTestNum+'/'+matchAlldirs.length);
     console.log('matchcsvRows.length'+matchcsvRows.length);
     //countmatchedpatterns検出時に該当したものの配列
@@ -139,7 +139,7 @@ import { checkAst } from "./astRelated/checkAst";
         const formattedDate = date.toISOString().slice(0, 19).replace(/[T:]/g, '-');
         outputFileName2 = path.join(outputDirectory, `${path.basename(matchStartdir)}_matchResults_output_${formattedDate}.csv`);
     }
-    fs.writeFileSync(outputFileName2, matchcsvRows.join('\n'), 'utf8');
+    //fs.writeFileSync(outputFileName2, matchcsvRows.join('\n'), 'utf8');
     console.log('success clientnum' + matchAlldirs.length);
     let mergepattern: { pattern: string[][], count: number }[] = countPatterns(stringvariable);
     mergepattern.sort((a, b) => b.count - a.count);

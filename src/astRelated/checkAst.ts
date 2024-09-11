@@ -11,7 +11,7 @@ export const checkAst = async(filePath:string): Promise<boolean> => {
             }
         }
     } catch (error) {
-        console.log(`AST creation not possible: ${filePath}`);
+        //console.log(`AST creation not possible: ${filePath}`);
         //console.log(error);
         return false;
     }

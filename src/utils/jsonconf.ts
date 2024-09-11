@@ -44,12 +44,11 @@ const checkTestScript=(packageJsonPath: string): string | false =>{
     const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
     if(packageJson.scripts && packageJson.scripts.test) {
         const testScript = packageJson.scripts.test.toLowerCase();
-        if(testScript.includes('standard') || testScript.includes('eslint')) {
-            //console.log('testScript:'+testScript);
+        if(!testScript.includes('&&')&&(testScript.includes('standard') || testScript.includes('eslint'))) {
+            console.log('testScript:'+testScript);
             return 'standard';
         }
         if(testScript.includes('no test')) {
-            //console.log('testScript'+testScript);
             return 'no test';
         }
         return 'client';
