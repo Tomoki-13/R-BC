@@ -3,7 +3,7 @@ import { getAllFiles } from "./utils/getAllFiles";
 import { useAst, abstuseAst } from "./combinations/useAst";
 import {countPatterns} from './patternOperations/patternCount';
 import {processPatterns} from './combinations/pattern';
-import { jsonconf } from "./utils/jsonconf";
+import { jsonconf, jsonconfStr } from "./utils/jsonconf";
 import fs from 'fs';
 import path from 'path';
 import {patternMatch} from "./patternOperations/patternMatch";
@@ -11,8 +11,8 @@ import patternConversion from "./patternOperations/patternConversion";
 import { checkAst } from "./astRelated/checkAst";
 
 (async () => {
-    const startDirectory: string = "../allrepos/reposuuidv7.0.0failure";
-    const matchStartdir: string = "../allrepos/reposuuidv7.0.0success";
+    const startDirectory: string = "../allrepos/repos";
+    const matchStartdir: string = "../allrepos/repos";
     let failurePattern1: number = 0;
     const libName: string = process.argv[2];
     const alldirs: string[] = await getSubDir(startDirectory);
@@ -73,14 +73,29 @@ import { checkAst } from "./astRelated/checkAst";
     //console.log('stringvariable.length'+stringvariable.length);
     const matchAlldirs: string[] = await getSubDir(matchStartdir);
     //console.log('lastpatterns.length'+lastpatterns.length);
+    let notest:number = 0;
+    let standard:number = 0;
+    let noscript:number = 0;
+    let noPackagejson:number = 0 ;
     let noClientTestNum:number = 0;
     let ClientTestNum:number = 0;
     for(const subdir of matchAlldirs) {
-        let test:boolean = jsonconf(subdir);
-        // if(test === false){
-        //     console.log(subdir);
-        //     noClientTestNum++;
-        // }else{
+        //let test:boolean = jsonconf(subdir);
+        let test:string = jsonconfStr(subdir);
+        //if(test == false){
+        if(test != 'client'){
+            //console.log(subdir);
+            if (test === 'standard') {
+                standard++
+            } else if (test === 'no test') {
+                notest++;
+            } else if(test === 'no scripts'){
+                noscript++
+            } else if(test === 'noPackage.json'){
+                noPackagejson++
+            }
+            noClientTestNum++;
+        }else{
             let match_extract_pattern: string[][] = [];
             const allFiles: string[] = await getAllFiles(subdir);
             match_extract_pattern = await useAst(allFiles, libName);
@@ -95,21 +110,22 @@ import { checkAst } from "./astRelated/checkAst";
                     // console.log("matchedPattern");
                     // console.log(matchedPattern);
                     // console.log("----------------------");
-                    if(test === false){
-                        noClientTestNum++;
-                    }else{
-                        ClientTestNum++;
-                    }
-                    console.log(subdir);
+                    // if(test === false){
+                    //     noClientTestNum++;
+                    // }else{
+                    //     ClientTestNum++;
+                    // }
+                    //console.log(subdir);
                     matchcsvRows.push(`"${subdir}","${match_extract_pattern}","${matchedPattern}"`);
                     //console.log(matchcsvRows.length);
                     countmatchedpatterns.push(matchedPattern);
                     sumDetectClient++;
                 }
             }
-        //}
+        }
     }
     //matchcsvRows danger
+    console.log('standard or eslint:'+standard+' notest:'+notest+' noscript:'+noscript+' nopackage.json:'+noPackagejson);
     console.log('noClientTestNum'+noClientTestNum+'|ClientTestNum'+ClientTestNum);
     console.log('sumDetectClient'+sumDetectClient);
     //console.log(matchcsvRows);
