@@ -1,7 +1,7 @@
 import {funcNameIdentifiers} from '../utils/funcNameIdentifiers';
 import {extractImportLines} from '../utils/extractImportLines';
 import fsPromises from 'fs/promises';
-describe('analyzeAst.ts test', () => {
+describe('funcNameIdentifiers.ts test', () => {
     test('one name', async () => {
         const filePath:string = "./src/__tests__/InputFile/sample3.ts";
         const libName:string = 'fs/promises';

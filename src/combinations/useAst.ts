@@ -8,7 +8,6 @@ import { getArgAst } from '../astRelated/getArgAst';
 export const useAst = async (allFiles: string[], libName: string): Promise<string[][]> =>{
     let pattern: string[][] = [];
     const visitedFiles:Set<string> = new Set<string>();
-    //抽象化時の番号　ファイルを超えても区別するため
     for(const filePath of allFiles) {
         if(visitedFiles.has(filePath)) continue;
         visitedFiles.add(filePath);
@@ -148,7 +147,6 @@ export const abstuseAst = async (allFiles: string[], libName: string): Promise<s
                         j++;
                     }
                     pattern.push(uniqueInFileStr);
-                    //pattern.push(inFileStr);
                 }
             }
         } catch (err) {
@@ -158,7 +156,6 @@ export const abstuseAst = async (allFiles: string[], libName: string): Promise<s
         for(let i = 0; i < pattern.length; i++) {
             for(let j = pattern[i].length - 1; j >= 0; j--) {
                 if(pattern[i][j].length > 400) {
-                    //要素を削除
                     pattern[i].splice(j, 1);
                 }
             }

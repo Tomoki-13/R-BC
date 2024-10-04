@@ -69,7 +69,6 @@ export const funcNameIdentifiers = (line:string,libraryName:string): string[] =>
             return result;
         }
         return match6_1;
-        //match5と6でうまく正規表現を分ける必要あり
     } else if(match5) {
         let result:string[] = [];
         result.push(match5[1].trim());
