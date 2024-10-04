@@ -22,6 +22,17 @@ function prep_repl(inputs: string[]): string[] {
     });
 }
 
+const replaceQuote =  (inputs: string[]):  string[]  => {
+    for(let i = 0;i < inputs.length;i++) {
+        //console.log(inputs[i]);
+        if(!inputs[i].includes('["\']')){
+            inputs[i] = inputs[i].replace(/['"]/g, '["\']');
+        }
+        //console.log(inputs[i]);
+    }
+    return inputs;
+}
+
 //(?<variable2>[\\w-]+) 以外の()の処理
 function escapeFunc(str: string): string {
     let escapedStr = '';
@@ -99,10 +110,11 @@ function transformArgumrnt(str: string): string {
 }
 //パターンへの変換
 function abstStr(respattern: string[][][]): string[][][] {
-    const copiedRespattern = JSON.parse(JSON.stringify(respattern));
+    let copiedRespattern:string[][][] = JSON.parse(JSON.stringify(respattern));
     for(let i = 0; copiedRespattern.length > i; i++) {
         for(let j = 0; copiedRespattern[i].length > j; j++) {
             copiedRespattern[i][j] = prep_repl(copiedRespattern[i][j]);
+            copiedRespattern[i][j] = replaceQuote(copiedRespattern[i][j]);
             for(let k = 1; copiedRespattern[i][j].length > k; k++) {
                 if (typeof copiedRespattern[i][j][k] === 'string' &&(copiedRespattern[i][j][k].includes('require') ||copiedRespattern[i][j][k].includes('import') ||copiedRespattern[i][j][k].includes('_interopRequireDefault'))) {
                     continue;
