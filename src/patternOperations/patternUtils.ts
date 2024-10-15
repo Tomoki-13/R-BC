@@ -95,8 +95,8 @@ function removeCallOnly(pattern: string[][][]): string[][][] {
     return pattern;
 }
 //特定のサブパターンを削除
-function removeSubpattern(tmppattern: string[][][], subpattern: string[][]): string[][][] {
-    const subpatternStr = arrayToString(subpattern);
+function removeSubpattern(tmppattern: string[][][], deletePattern: string[][]): string[][][] {
+    const subpatternStr = arrayToString(deletePattern);
     return tmppattern.filter(pattern => arrayToString(pattern) !== subpatternStr);
 }
 

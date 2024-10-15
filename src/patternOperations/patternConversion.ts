@@ -24,11 +24,9 @@ function prep_repl(inputs: string[]): string[] {
 
 const replaceQuote =  (inputs: string[]):  string[]  => {
     for(let i = 0;i < inputs.length;i++) {
-        //console.log(inputs[i]);
         if(!inputs[i].includes('["\']')){
             inputs[i] = inputs[i].replace(/['"]/g, '["\']');
         }
-        //console.log(inputs[i]);
     }
     return inputs;
 }

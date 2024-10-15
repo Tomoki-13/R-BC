@@ -86,7 +86,7 @@ export const useAst = async (allFiles: string[], libName: string): Promise<strin
     }
     return pattern;
 }
-
+//-を変換
 export const abstuseAst = async (allFiles: string[], libName: string): Promise<string[][]> =>{
     let pattern: string[][] = [];
     const visitedFiles:Set<string> = new Set<string>();
