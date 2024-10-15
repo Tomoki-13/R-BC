@@ -1,9 +1,8 @@
-//パターンマッチング用関数
+//パターンマッチング用関数　userpatterns対象　respattern検出用
 import patternConversion from "./patternConversion";
 export const patternMatch = async (userpatterns: string[][], respattern: string[][][]): Promise<[boolean, string[][] | null]> => {
     //配列の要素を変えることを想定して
-    let search_patterns = JSON.parse(JSON.stringify(respattern));
-    search_patterns = patternConversion.abstStr(search_patterns);
+    let search_patterns:string[][][] = JSON.parse(JSON.stringify(respattern));
     try {
         for(const search_pattern of search_patterns) {
             //現在の search_pattern が全て userpatterns に一致するかどうかを示すフラグ
@@ -61,8 +60,6 @@ export const patternMatch = async (userpatterns: string[][], respattern: string[
                             if(keys.length === 1) {
                                 const key = keys[0];
                                 if(variableMap[key].length === 1) {
-                                    // console.log('variableMapJudge');
-                                    // console.log(variableMapJudge);
                                     return [true, search_pattern];
                                 }
                             } else if(variableMap[key].length === 1) {
@@ -108,15 +105,11 @@ export const patternMatch = async (userpatterns: string[][], respattern: string[
                 }
                 //現在の search_pattern が一致
                 if(Object.values(variableMapJudge).every(value => value === true)) {
-                    // console.log('variableMapJudge');
-                    // console.log(variableMapJudge);
                     return [true, search_pattern];
                 }
             }
 
             if(Object.values(variableMapJudge).every(value => value === true)) {
-                // console.log('variableMapJudge');
-                // console.log(variableMapJudge);
                 return [true, search_pattern];
             }
         }

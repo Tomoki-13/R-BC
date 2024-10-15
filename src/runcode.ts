@@ -11,8 +11,8 @@ import patternConversion from "./patternOperations/patternConversion";
 import { checkAst } from "./astRelated/checkAst";
 
 (async () => {
-    const startDirectory: string = "../allrepos/repo";
-    const matchStartdir: string = "../allrepos/repos";
+    const startDirectory: string = "../allrepos/reposuuidv7.0.0failure";
+    const matchStartdir: string = "../allrepos/reposuuidv7.0.0success";
     let failurePattern1: number = 0;
     const libName: string = process.argv[2];
     const alldirs: string[] = await getSubDir(startDirectory);
@@ -20,7 +20,7 @@ import { checkAst } from "./astRelated/checkAst";
     const matchcsvRows: string[] = ['client,Patterns,matchedPattern'];
     let sumDetectClient:number = 0;
     let respattern: string[][][] = [];
-    
+    console.log();
     //各ディレクトリに対する処理
     for(const subdir of alldirs) {
         let extract_pattern1: string[][] = [];
@@ -65,10 +65,27 @@ import { checkAst } from "./astRelated/checkAst";
 
     console.log('respattern:'+respattern.length);
     let countmatchedpatterns:string[][][] = [];
+    //console.log(respattern);
     let lastpatterns = await processPatterns(respattern);
-
+    //detectpatternlist
+    //console.log("lastpattern:",lastpatterns);
+    let mergepattern: { pattern: string[][], count: number }[] = countPatterns(lastpatterns);
+    mergepattern.sort((a, b) => b.count - a.count);
+    console.log('all detect mergepattern.length:'+mergepattern.length);
+    let outputMergepattern = path.join(outputDirectory, `${path.basename(startDirectory)}_detectpatternlist_output.json`);
+    if(fs.existsSync(outputMergepattern)) {
+        const date = new Date();
+        const formattedDate = date.toISOString().slice(0, 19).replace(/[T:]/g, '-');
+        outputMergepattern = path.join(outputDirectory, `${path.basename(startDirectory)}_detectpatternlist_output_${formattedDate}.json`);
+    }
+    const totalCount2 = mergepattern.reduce((acc, item) => acc + item.count, 0);
+    const output2 = {patterns: mergepattern,totalCount: totalCount2};
+    if (mergepattern) {
+        //fs.writeFileSync(outputMergepattern, JSON.stringify(output2, null, 4), 'utf8');
+    }
     //第２処理
-    let stringvariable: string[][][] = patternConversion.abstStr(lastpatterns);
+    // console.log('stringvariable');
+    // console.log(stringvariable);
     //console.log('stringvariable.length'+stringvariable.length);
     const matchAlldirs: string[] = await getSubDir(matchStartdir);
     //console.log('lastpatterns.length'+lastpatterns.length);
@@ -97,7 +114,7 @@ import { checkAst } from "./astRelated/checkAst";
             match_extract_pattern = await useAst(allFiles, libName);
             // console.log(match_extract_pattern);
             if(match_extract_pattern.length > 0) {
-                const [isMatch, matchedPattern]: [boolean, string[][] | null] = await patternMatch(match_extract_pattern, stringvariable);
+                const [isMatch, matchedPattern]: [boolean, string[][] | null] = await patternMatch(match_extract_pattern, lastpatterns);
                 if(isMatch && matchedPattern) {
                     // console.log("----------------------");
                     //console.log(subdir);
@@ -145,19 +162,4 @@ import { checkAst } from "./astRelated/checkAst";
     }
     //fs.writeFileSync(outputFileName2, matchcsvRows.join('\n'), 'utf8');
     console.log('success clientnum' + matchAlldirs.length);
-    let mergepattern: { pattern: string[][], count: number }[] = countPatterns(stringvariable);
-    mergepattern.sort((a, b) => b.count - a.count);
-    console.log('all detect mergepattern.length:'+mergepattern.length);
-    //detectpatternlist
-    let outputFileName3 = path.join(outputDirectory, `${path.basename(startDirectory)}_detectpatternlist_output.json`);
-    if(fs.existsSync(outputFileName3)) {
-        const date = new Date();
-        const formattedDate = date.toISOString().slice(0, 19).replace(/[T:]/g, '-');
-        outputFileName3 = path.join(outputDirectory, `${path.basename(startDirectory)}_detectpatternlist_output_${formattedDate}.json`);
-    }
-    const totalCount2 = mergepattern.reduce((acc, item) => acc + item.count, 0);
-    const output2 = {patterns: mergepattern,totalCount: totalCount2};
-    if (mergepattern) {
-        //fs.writeFileSync(outputFileName3, JSON.stringify(output2, null, 4), 'utf8');
-    }
 })();
