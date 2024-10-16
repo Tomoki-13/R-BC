@@ -20,7 +20,6 @@ Sample
 src/__tests__/InputFile
 src/__tests__/ast.test.ts
 src/__tests__/integrate.test.ts
-src/__tests__/patternMatch.test.ts
 output
 diff
 allrepos

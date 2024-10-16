@@ -5,10 +5,7 @@ export const patternMatch = async (userpatterns: string[][], respattern: string[
     let search_patterns:string[][][] = JSON.parse(JSON.stringify(respattern));
     try {
         for(const search_pattern of search_patterns) {
-            //現在の search_pattern が全て userpatterns に一致するかどうかを示すフラグ
-            //let patternMatched = true;
-
-            // search_pattern 全体の variableMap を作成
+            //search_pattern 全体の variableMap を作成
             const variableMap: { [key: string]: string[] } = {};
             for(const search_one of search_pattern) {
                 for(const str of search_one) {
