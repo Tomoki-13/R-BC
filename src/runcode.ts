@@ -11,13 +11,13 @@ import patternConversion from "./patternOperations/patternConversion";
 import { checkAst } from "./astRelated/checkAst";
 
 (async () => {
-    const startDirectory: string = "../allrepos/reposuuidv7.0.0failure";
-    const matchStartdir: string = "../allrepos/reposuuidv7.0.0success";
+    const startDirectory: string = "../allrepos/reposg";
+    const matchStartdir: string = "../allrepos/repos";
     let failurePattern1: number = 0;
     const libName: string = process.argv[2];
     const alldirs: string[] = await getSubDir(startDirectory);
-    const csvRows: string[] = ['failureclient,detectPatterns'];
-    const matchcsvRows: string[] = ['client,Patterns,matchedPattern'];
+    let JsonRows:{failureclient:string,detectPatterns:string[][]}[] = [];
+    let matchCliantPatternJson:{ client: string, pattern: string[][], detectPattern: string[][] }[] =[]
     let sumDetectClient:number = 0;
     let respattern: string[][][] = [];
     console.log();
@@ -43,7 +43,10 @@ import { checkAst } from "./astRelated/checkAst";
             respattern.push(extract_pattern1);
             //CSV行に追加
             const patternString = JSON.stringify(extract_pattern1).replace(/"/g, '""');
-            csvRows.push(`"${subdir}","${patternString}"`);
+            JsonRows.push({
+                failureclient: subdir,
+                detectPatterns: extract_pattern1
+            });
         }
     }
 
@@ -52,27 +55,24 @@ import { checkAst } from "./astRelated/checkAst";
     if(!fs.existsSync(outputDirectory)) {
         fs.mkdirSync(outputDirectory);
     }
-    let outputFileName = path.join(outputDirectory, `${path.basename(startDirectory)}_output.csv`);
+    let outputFileName = path.join(outputDirectory, `${path.basename(startDirectory)}_output.json`);
     if(fs.existsSync(outputFileName)) {
         const date = new Date();
         const formattedDate = date.toISOString().slice(0, 19).replace(/[T:]/g, '-');
-        outputFileName = path.join(outputDirectory, `${path.basename(startDirectory)}_output_${formattedDate}.csv`);
+        outputFileName = path.join(outputDirectory, `${path.basename(startDirectory)}_output_${formattedDate}.json`);
     }
-    //fs.writeFileSync(outputFileName, csvRows.join('\n'), 'utf8');
+    //fs.writeFileSync(outputFileName, JSON.stringify(JsonRows, null, 4), 'utf8');
     // console.log('failure clientnum' + alldirs.length);
-    // console.log('patern client' + failurePattern1);
-    console.log("----------------------");
 
     console.log('respattern:'+respattern.length);
     let countmatchedpatterns:string[][][] = [];
     //console.log(respattern);
     let lastpatterns = await processPatterns(respattern);
     //detectpatternlist
-    //console.log("lastpattern:",lastpatterns);
     let mergepattern: { pattern: string[][], count: number }[] = countPatterns(lastpatterns);
     mergepattern.sort((a, b) => b.count - a.count);
     console.log('all detect mergepattern.length:'+mergepattern.length);
-    let outputMergepattern = path.join(outputDirectory, `${path.basename(startDirectory)}_detectpatternlist_output.json`);
+    let outputMergepattern = path.join(outputDirectory, `${path.basename(startDirectory)}_1017patterns_detectpatternlist_output.json`);
     if(fs.existsSync(outputMergepattern)) {
         const date = new Date();
         const formattedDate = date.toISOString().slice(0, 19).replace(/[T:]/g, '-');
@@ -84,11 +84,7 @@ import { checkAst } from "./astRelated/checkAst";
         //fs.writeFileSync(outputMergepattern, JSON.stringify(output2, null, 4), 'utf8');
     }
     //第２処理
-    // console.log('stringvariable');
-    // console.log(stringvariable);
-    //console.log('stringvariable.length'+stringvariable.length);
     const matchAlldirs: string[] = await getSubDir(matchStartdir);
-    //console.log('lastpatterns.length'+lastpatterns.length);
     let notest:number = 0;
     let standard:number = 0;
     let noscript:number = 0;
@@ -117,14 +113,18 @@ import { checkAst } from "./astRelated/checkAst";
                 const [isMatch, matchedPattern]: [boolean, string[][] | null] = await patternMatch(match_extract_pattern, lastpatterns);
                 if(isMatch && matchedPattern) {
                     // console.log("----------------------");
-                    //console.log(subdir);
+                    // console.log(subdir);
                     // console.log("match_extract_pattern");
                     // console.log(match_extract_pattern);
                     // console.log("matchedPattern");
                     // console.log(matchedPattern);
                     // console.log("----------------------");
-                    //console.log(subdir);
-                    matchcsvRows.push(`"${subdir}","${match_extract_pattern}","${matchedPattern}"`);
+                    //matchCliantPatternJson.push(`"${subdir}","${match_extract_pattern}","${matchedPattern}"`);
+                    matchCliantPatternJson.push({
+                        client: subdir,
+                        pattern: match_extract_pattern,
+                        detectPattern: matchedPattern
+                    });
                     countmatchedpatterns.push(matchedPattern);
                     sumDetectClient++;
                 }
@@ -133,9 +133,8 @@ import { checkAst } from "./astRelated/checkAst";
     }
     //console.log('standard or eslint:'+standard+' notest:'+notest+' noscript:'+noscript+' nopackage.json:'+noPackagejson);
     console.log('sumDetectClient'+sumDetectClient);
-    //console.log(matchcsvRows);
+    //console.log(matchCliantPatternJson);
     //console.log(noClientTestNum+'/'+matchAlldirs.length);
-    console.log('matchcsvRows.length'+matchcsvRows.length);
     //countmatchedpatterns検出時に該当したものの配列
     const search_patterns = JSON.parse(JSON.stringify(countmatchedpatterns));
     let detecteduserpattern = countPatterns(search_patterns);
@@ -154,12 +153,12 @@ import { checkAst } from "./astRelated/checkAst";
     }
     //fs.writeFileSync(outputFileName4, JSON.stringify(output, null, 4));
 
-    let outputFileName2 = path.join(outputDirectory, `${path.basename(matchStartdir)}_matchResults_output.csv`);
+    let outputFileName2 = path.join(outputDirectory, `${path.basename(matchStartdir)}_matchResults_output.json`);
     if(fs.existsSync(outputFileName2)) {
         const date = new Date();
         const formattedDate = date.toISOString().slice(0, 19).replace(/[T:]/g, '-');
-        outputFileName2 = path.join(outputDirectory, `${path.basename(matchStartdir)}_matchResults_output_${formattedDate}.csv`);
+        outputFileName2 = path.join(outputDirectory, `${path.basename(matchStartdir)}_matchResults_output_${formattedDate}.json`);
     }
-    //fs.writeFileSync(outputFileName2, matchcsvRows.join('\n'), 'utf8');
+    //fs.writeFileSync(outputFileName2, JSON.stringify(matchCliantPatternJson, null, 2), 'utf8');
     console.log('success clientnum' + matchAlldirs.length);
 })();
