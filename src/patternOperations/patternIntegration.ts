@@ -57,7 +57,7 @@ async function processIntegration(newpatterns: string[][][],IntegrationPattern: 
     }
     return lastpatterns;
 }
-//改善の余地あり
+
 const findShortest =  (list: string[][][]): string[][] =>{
     let shortestPattern:string[][] = [];
     for(let i = 0;i < list.length; i++){

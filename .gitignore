@@ -1,10 +1,6 @@
 datasets
 node_modules
 repos
-reposv7.0.0failure
-reposv7.0.0success
-reposv8.0.0failure
-reposv8.0.0success
 Sampleuuid
 .DS_Store
 test
@@ -23,3 +19,4 @@ src/__tests__/integrate.test.ts
 output
 diff
 allrepos
+sample4

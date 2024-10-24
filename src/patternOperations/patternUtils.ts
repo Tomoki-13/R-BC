@@ -17,7 +17,6 @@ function removecase(pattern: string[][][]): string[][][] {
                     }
                 }
             }
-            //空なら削除
             if(pattern[i].length === 0) {
                 pattern.splice(i, 1);
             }
@@ -36,8 +35,6 @@ function removecase(pattern: string[][][]): string[][][] {
                     }
                 }
             }
-
-            //配列が空なら削除
             if(pattern[i].length === 0) {
                 pattern.splice(i, 1);
             }

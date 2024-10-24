@@ -11,7 +11,7 @@ import patternConversion from "./patternOperations/patternConversion";
 import { checkAst } from "./astRelated/checkAst";
 
 (async () => {
-    const startDirectory: string = "../allrepos/reposg";
+    const startDirectory: string = "../allrepos/repos";
     const matchStartdir: string = "../allrepos/repos";
     let failurePattern1: number = 0;
     const libName: string = process.argv[2];
@@ -41,8 +41,6 @@ import { checkAst } from "./astRelated/checkAst";
             // console.log(extract_pattern1);
             failurePattern1++;
             respattern.push(extract_pattern1);
-            //CSV行に追加
-            const patternString = JSON.stringify(extract_pattern1).replace(/"/g, '""');
             JsonRows.push({
                 failureclient: subdir,
                 detectPatterns: extract_pattern1
@@ -50,7 +48,6 @@ import { checkAst } from "./astRelated/checkAst";
         }
     }
 
-    //CSVファイルの書き出し　
     const outputDirectory = path.resolve(__dirname, '../output');
     if(!fs.existsSync(outputDirectory)) {
         fs.mkdirSync(outputDirectory);
@@ -152,7 +149,7 @@ import { checkAst } from "./astRelated/checkAst";
         outputFileName4 = path.join(outputDirectory, `${path.basename(matchStartdir)}_Detectioncount_output_${formattedDate}.json`);
     }
     //fs.writeFileSync(outputFileName4, JSON.stringify(output, null, 4));
-
+    //検出対象
     let outputFileName2 = path.join(outputDirectory, `${path.basename(matchStartdir)}_matchResults_output.json`);
     if(fs.existsSync(outputFileName2)) {
         const date = new Date();
@@ -160,5 +157,6 @@ import { checkAst } from "./astRelated/checkAst";
         outputFileName2 = path.join(outputDirectory, `${path.basename(matchStartdir)}_matchResults_output_${formattedDate}.json`);
     }
     //fs.writeFileSync(outputFileName2, JSON.stringify(matchCliantPatternJson, null, 2), 'utf8');
+    //console.log('success clientnum' + matchAlldirs.length);
     console.log('success clientnum' + matchAlldirs.length);
 })();

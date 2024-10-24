@@ -178,7 +178,7 @@ export const abstuseAst = async (allFiles: string[], libName: string): Promise<s
             }
         }
     }
-    //語尾の;の削除　).系が問題
+    //語尾の;の削除).系が問題
     // for(let i = 0; i < pattern.length; i++) {
     //     for(let j = 0; j < pattern[i].length; j++) {
     //         if(pattern[i][j].endsWith(';')) {
