@@ -1,5 +1,5 @@
 import { promises as fsPromises } from 'fs';
-import { extractImportLinesFull } from './extractImportLines';
+import { extractImportLinesFull } from '../utils/extractImportLines';
 //ファイルごとの調査と結果の出力
 export const add_extract = async(allFiles: string[]): Promise<string[][]> => {
     let pattern: string[][] = [];
