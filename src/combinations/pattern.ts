@@ -9,7 +9,5 @@ export async function processPatterns(respatternwp: string[][][]): Promise<strin
     let subnewpatterns: string[][][] = JSON.parse(JSON.stringify(respatternwp));
     subnewpatterns = patternUtils.removeDuplicate(subnewpatterns);
     lastpatterns = await patternIntegration.processIntegration(respatternwp, subnewpatterns);
-    let nextPatterns: string[][][] = JSON.parse(JSON.stringify(lastpatterns));
-    lastpatterns = nextPatterns;
     return lastpatterns;
 }

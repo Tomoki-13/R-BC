@@ -58,6 +58,7 @@ async function processIntegration(newpatterns: string[][][],IntegrationPattern: 
     return lastpatterns;
 }
 
+//小さい[][]配列を調査
 const findShortest =  (list: string[][][]): string[][] =>{
     let shortestPattern:string[][] = [];
     for(let i = 0;i < list.length; i++){

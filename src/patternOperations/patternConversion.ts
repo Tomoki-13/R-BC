@@ -24,13 +24,10 @@ function prep_repl(inputs: string[]): string[] {
 
 const replaceQuote =  (inputs: string[]):  string[]  => {
     for(let i = 0;i < inputs.length;i++) {
-        if(!(inputs[i].includes(`["'\`]`)||inputs[i].includes('["\'`]'))){
-            inputs[i] = inputs[i].replace(/['"`]/g, `["'\`]`);
-        }
+        inputs[i] = inputs[i].replace(/['"`]/g, `["'\`]`);
     }
     return inputs;
 }
-
 //(?<variable2>[\\w-]+) 以外の()の処理
 function escapeFunc(str: string): string {
     let escapedStr = '';

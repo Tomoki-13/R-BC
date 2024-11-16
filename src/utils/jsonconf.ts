@@ -1,6 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 
+//細かい粒度
 export const jsonconf=(repoPath: string): boolean  =>{
     let returnJudge:boolean = true;
 
@@ -30,7 +31,7 @@ export const jsonconf=(repoPath: string): boolean  =>{
     }
     return returnJudge;
 }
-
+//ステータスをそのまま返す
 export const jsonconfStr =(repoPath: string): string  =>{
 
     if (!repoPath) {
