@@ -3,10 +3,10 @@ export const funcNameIdentifiers = (line:string,libraryName:string): string[] =>
     const pattern1: RegExp = new RegExp(`import\\s+(\\w+)\\s+from\\s+\\(*['"\`]${libraryName}[^-]*?['"\`]\\)*`);
     //_interopRequireDefault()を含む
     const pattern2: RegExp = new RegExp(`(?:var|const|let)*\\s*(\\w+)\\s*=\\s*require\\s*\\(\\s*['"\`]\\s*${libraryName}[^-]*?['"\`]\\s*\\)*`);
-    const pattern3: RegExp  = new RegExp(`import\\s*{\\s*([^}]+)\\s*}\\s*from\\s+\\(*['"\`]${libraryName}[^-]*?['"\`]\\)*`);
-    const pattern4: RegExp = new RegExp(`import\\s*\\*\\s+as\\s+(\\w+)\\s+from\\s+\\(*['"\`]${libraryName}[^-]*?['"\`]\\)*`);
-    const pattern5: RegExp = new RegExp(`(?:var|const|let)\\s*{\\s*([^\\s]+)\\s*}\\s*=\\s*require\\(*['"\`]${libraryName}['"\`]\\)*.*$`);
-    const pattern6: RegExp = new RegExp(`(?:var|const|let)\\s*{\\s*([^}]+)\\s*}\\s*=\\s*require\\(*['"\`]${libraryName}[^-]*?['"\`]\\)*`);
+    const pattern3: RegExp  = new RegExp(`import\\s*{\\s*([^}]+)\\s*}\\s*from\\s+\\(*\\s*['"\`]\\s*${libraryName}[^-]*?\\s*['"\`]\\s*\\)*`);
+    const pattern4: RegExp = new RegExp(`import\\s*\\*\\s+as\\s+(\\w+)\\s+from\\s+\\(*\\s*['"\`]\\s*${libraryName}[^-]*?\\s*['"\`]\\s*\\)*`);
+    const pattern5: RegExp = new RegExp(`(?:var|const|let)\\s*{\\s*([^\\s]+)\\s*}\\s*=\\s*require\\(*\\s*['"\`]\\s*${libraryName}[^-]*?\\s*['"\`]\\s*\\)*.*$`);
+    const pattern6: RegExp = new RegExp(`(?:var|const|let)\\s*{\\s*([^}]+)\\s*}\\s*=\\s*require\\(*\\s*['"\`]\\s*${libraryName}[^-]*?\\s*['"\`]\\s*\\)*`);
     
     const match1: RegExpMatchArray | null = line.match(pattern1);
     const match2: RegExpMatchArray | null = line.match(pattern2);
@@ -79,8 +79,8 @@ export const funcNameIdentifiers = (line:string,libraryName:string): string[] =>
 }
 
 export const secfuncNameIdentifiers = (functionName: string, line: string): string[] => {
-    const pattern1: RegExp = new RegExp(`(?:var|const|let)\\s*(\\w+)\\s*=\\s*_interopRequireDefault\\(${functionName}\\)*`);
-    const pattern2: RegExp = new RegExp(`(?:var|const|let)\\s*\\{\\s*([^\\s]+)\\s*\\}\\s*=\\s*_interopRequireDefault\\(${functionName}\\)*`);
+    const pattern1: RegExp = new RegExp(`(?:var|const|let)\\s*(\\w+)\\s*=\\s*_interopRequireDefault\\(\\s*${functionName}[^-]*?\\s*\\)*`);
+    const pattern2: RegExp = new RegExp(`(?:var|const|let)\\s*\\{\\s*([^\\s]+)\\s*\\}\\s*=\\s*_interopRequireDefault\\(\\s*${functionName}[^-]*?\\s*\\)*`);
     const match1: RegExpMatchArray | null = line.match(pattern1);
     const match2: RegExpMatchArray | null = line.match(pattern2);
     let secFuncName: string[] = [];

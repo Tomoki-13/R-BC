@@ -162,11 +162,12 @@ export const abstuseAst = async (allFiles: string[], libName: string): Promise<s
         }
         pattern = pattern.filter(subArray => subArray.length > 0);
     }
-    //空白削除　/t等も削除
+    //空白削除　/t等も削除　let const var削除
     for(let i = 0; i < pattern.length; i++) {
         pattern[i] = pattern[i].map(item => item.trim().replace(/\s+/g, ' '));
     }
     if(pattern.length > 0) {
+        const regex = /^\s*(?:let|const|var)/;
         for(let i = 0; i < pattern.length; i++) {
             if(pattern[i] && pattern[i].length > 0) {
                 for(let j = 0; j < pattern[i].length; j++) {
@@ -174,17 +175,18 @@ export const abstuseAst = async (allFiles: string[], libName: string): Promise<s
                         pattern[i][j] = pattern[i][j].replace(/[\r\n]/g, '');
                         pattern[i][j] = pattern[i][j].replace(/^,|,$/g, '');
                     }
+                    pattern[i][j] = pattern[i][j].replace(regex, '').trimStart();
                 }
             }
         }
     }
-    //語尾の;の削除).系が問題
-    // for(let i = 0; i < pattern.length; i++) {
-    //     for(let j = 0; j < pattern[i].length; j++) {
-    //         if(pattern[i][j].endsWith(';')) {
-    //             pattern[i][j] = pattern[i][j].slice(0, -1);
-    //         }
-    //     }
-    // }
+    //語尾の;の削除).系が問題 
+    for(let i = 0; i < pattern.length; i++) {
+        for(let j = 0; j < pattern[i].length; j++) {
+            if(pattern[i][j].endsWith(';')) {
+                pattern[i][j] = pattern[i][j].slice(0, -1);
+            }
+        }
+    }
     return pattern;
 }
