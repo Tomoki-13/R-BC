@@ -9,6 +9,12 @@ export interface MatchClientPattern {
     detectPattern: string[][];
 }
 
+export interface DupMatchClientPattern {
+    client: string;
+    pattern: string[][];
+    detectPattern: string[][][];
+}
+
 export interface PatternCount {
     pattern: string[][];
     count: number;
