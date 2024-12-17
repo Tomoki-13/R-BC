@@ -1,5 +1,5 @@
 import { createPattern,detectByPattern } from "./combinations/create_detect_pattern";
-import {MatchClientPattern,DupMatchClientPattern} from './types/outputTypes';
+import {MatchClientPattern} from './types/outputTypes';
 (async () => {
     const getPatternDir: string = "../allrepos/reposuuidv7.0.0-beta.0failure";
     const matchDir: string = "../allrepos/reposuuidv7.0.0-beta.0success";
@@ -9,7 +9,5 @@ import {MatchClientPattern,DupMatchClientPattern} from './types/outputTypes';
     lastpatterns = await createPattern(getPatternDir,libName);
     //検出
     let matchCliantPatternJson:MatchClientPattern[] = await detectByPattern(matchDir,libName,lastpatterns);
-    //今後実装予定
-    // let matchCliantPatternJson:DupMatchClientPattern[] = await detectByPattern(matchDir,libName,lastpatterns);
-    //console.log(matchCliantPatternJson);
+    // let matchCliantPatternJson:MatchClientPattern[] = await detectByPattern(matchDir,libName,lastpatterns,1);
 })();
