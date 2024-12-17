@@ -136,14 +136,31 @@ export const abstuseAst = async (allFiles: string[], libName: string): Promise<s
                     }
                 }
                 if(inFileStr.length > 0){
+                    //let const var削除
+                    const letregex = /^\s*(?:let|const|var)/;
+                    for(let k = 0; k < inFileStr.length; k++){
+                        inFileStr[k] = inFileStr[k].replace(letregex, '').trimStart();
+                    }
+
+                    //抽象化
                     const base = "---";
                     let uniqueInFileStr: string[] = [...new Set(inFileStr)];
-                    //抽象
                     let sortUniquefuncName = uniquefuncName.sort((a, b) => b.length - a.length);
                     for(const one of sortUniquefuncName){
                         let replaceString: string = base  + j.toString();
-                        const regex = new RegExp(`(?<!["'])${one}(?!["'])`, 'g');
-                        uniqueInFileStr = uniqueInFileStr.map(str => str.replace(regex, replaceString));
+                        let mainregex = new RegExp(`(?<!["\`'])${one}(?!["\`'])`, 'g');
+                        for(let k = 0; k < uniqueInFileStr.length;k++){
+                            if(/import|require/.test(uniqueInFileStr[k]) && !/^\s*\/\//.test(uniqueInFileStr[k])&&/\{.*\}/.test(uniqueInFileStr[k])){
+                                //asと:の場合で条件分け」￥
+                                let regex1 = new RegExp(`:\\s*(?<!["\`'])${one}(?!["\`'])`, 'g');
+                                let regex2 = new RegExp(`as\\s*(?<!["\`'])${one}(?!["\`'])`, 'g');
+                                if(regex1.test(uniqueInFileStr[k]) || regex2.test(uniqueInFileStr[k])){
+                                    uniqueInFileStr[k] = uniqueInFileStr[k].replace(mainregex, replaceString);
+                                }
+                            }else{
+                                uniqueInFileStr[k] = uniqueInFileStr[k].replace(mainregex, replaceString);
+                            }
+                        }
                         j++;
                     }
                     pattern.push(uniqueInFileStr);
@@ -162,12 +179,11 @@ export const abstuseAst = async (allFiles: string[], libName: string): Promise<s
         }
         pattern = pattern.filter(subArray => subArray.length > 0);
     }
-    //空白削除　/t等も削除　let const var削除
+    //空白削除　/t等も削除
     for(let i = 0; i < pattern.length; i++) {
         pattern[i] = pattern[i].map(item => item.trim().replace(/\s+/g, ' '));
     }
     if(pattern.length > 0) {
-        const regex = /^\s*(?:let|const|var)/;
         for(let i = 0; i < pattern.length; i++) {
             if(pattern[i] && pattern[i].length > 0) {
                 for(let j = 0; j < pattern[i].length; j++) {
@@ -175,7 +191,6 @@ export const abstuseAst = async (allFiles: string[], libName: string): Promise<s
                         pattern[i][j] = pattern[i][j].replace(/[\r\n]/g, '');
                         pattern[i][j] = pattern[i][j].replace(/^,|,$/g, '');
                     }
-                    pattern[i][j] = pattern[i][j].replace(regex, '').trimStart();
                 }
             }
         }

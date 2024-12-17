@@ -3,7 +3,6 @@ export const getArgument = (code: string, funcName: string, argNum: number): str
     const regex:RegExp = new RegExp(`${funcName}(\\.[a-zA-Z]+)?\\((.*?)\\)`);
     const match:string[]|null = code.match(regex);
     let ArgumentArray: string[] | undefined;
-    //先に([])のような時は，[]の中身で第１引数であるといった分け方も必要かも
     if(match) {
         const AnalyzeArray = match[2].split(',').map(item => item.trim());
         // 最初の文字が '[' で、かつ最後の文字が ']' である要素までを繋げる

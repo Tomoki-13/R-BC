@@ -21,6 +21,7 @@ export const createPattern=async (patternDir: string,libName:string): Promise<st
         let extract_pattern1: string[][] = [];
         let judge:boolean = true;
         const allFiles: string[] = await getAllFiles(subdir);
+        //Astが作れないファイルがあればクライアントを除外
         for(const file of allFiles){
             if(await checkAst(file) === false){
                 judge = false;
