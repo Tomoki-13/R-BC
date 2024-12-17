@@ -32,7 +32,7 @@ const replaceQuote =  (inputs: string[]):  string[]  => {
 //全てのパターンの末尾に.が来ないように
 const checkDot =  (inputs: string[]):  string[]  => {
     for(let i = 0;i < inputs.length;i++) {
-        inputs[i] = inputs[i].concat("\\s*[^-]*");
+        inputs[i] = inputs[i].concat("\\s*[^.]*");
     }
     return inputs;
 }
