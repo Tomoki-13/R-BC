@@ -1,3 +1,15 @@
 # r-bc
-### npm install
-### ts-node filename
+
+## 使用方法
+依存関係をインストール
+````bash
+npm install
+````
+ディレクトリ移動
+```bash
+cd src
+```
+src/runcode.tsのファイル内のパスを書き換えたのち，以下を実行(libName：ライブラリ名)
+```bash
+ts-node runcode.ts libName
+```
