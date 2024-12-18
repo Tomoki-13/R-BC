@@ -34,7 +34,7 @@ describe('funcNameIdentifiers.ts test', () => {
         expect(result).toEqual(expectedOutput);
     });
     test('import', async () => {
-        const filePath:string = "./src/__tests__/InputFile/importsample.js";
+        const filePath:string = "./src/__tests__/InputFile/importsample.ts";
         const libName:string = 'module';
         const fileContent: string = await fsPromises.readFile(filePath, 'utf8');
         const lines = extractImportLines(fileContent,libName);
@@ -45,7 +45,7 @@ describe('funcNameIdentifiers.ts test', () => {
                 result = result.concat(name);
             }
         }
-        const expectedOutput: string[] = ['a', 'v4', "v1","v5","b","c"];
+        const expectedOutput: string[] = ['abc', 'v4', "v1","v5","bcd","cdf"];
         expect(result).toEqual(expectedOutput);
     });
     test('require', async () => {
@@ -60,7 +60,7 @@ describe('funcNameIdentifiers.ts test', () => {
                 result = result.concat(name);
             }
         }
-        const expectedOutput: string[] = ['a', 'b', "v4","c","d","e"];
+        const expectedOutput: string[] = ['abc', 'bcd', "v4","cdf","def","efj"];
         expect(result).toEqual(expectedOutput);
     });
 })

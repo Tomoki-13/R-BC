@@ -36,7 +36,6 @@ describe('abstuse', () => {
             "import * as ---2 from 'module'",
             "import {v2 as ---3} from 'module'"
         ]];
-          console.log(output);
         expect(output).toEqual(expectedOutput);
     });
     test('require ', async () => {
@@ -49,7 +48,6 @@ describe('abstuse', () => {
             "{v1:---3,v5:---4} = require('module')",
             "---5 = require('module').func"
         ]];
-        console.log(output);
         expect(output).toEqual(expectedOutput);
     });
 });

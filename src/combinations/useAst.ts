@@ -150,6 +150,7 @@ export const abstuseAst = async (allFiles: string[], libName: string): Promise<s
                         let replaceString: string = base  + j.toString();
                         let mainregex = new RegExp(`(?<!["\`'])${one}(?!["\`'])`, 'g');
                         for(let k = 0; k < uniqueInFileStr.length;k++){
+                            //特殊処理：{}呼び出し系
                             if(/import|require/.test(uniqueInFileStr[k]) && !/^\s*\/\//.test(uniqueInFileStr[k])&&/\{.*\}/.test(uniqueInFileStr[k])){
                                 //asと:の場合で条件分け」￥
                                 let regex1 = new RegExp(`:\\s*(?<!["\`'])${one}(?!["\`'])`, 'g');
@@ -195,7 +196,7 @@ export const abstuseAst = async (allFiles: string[], libName: string): Promise<s
             }
         }
     }
-    //語尾の;の削除).系が問題 
+    //語尾の;削除
     for(let i = 0; i < pattern.length; i++) {
         for(let j = 0; j < pattern[i].length; j++) {
             if(pattern[i][j].endsWith(';')) {

@@ -59,7 +59,7 @@ export const createPattern=async (patternDir: string,libName:string): Promise<st
 
     //標準出力
     console.log('alldirs',alldirs.length);
-    console.log('failure clientnum',failurePattern1);
+    console.log('make failure pattern',failurePattern1);
     console.log('all detect mergepattern.length:',mergepattern.length);
     return lastpatterns;
 }
@@ -90,9 +90,9 @@ export const detectByPattern = async (matchDir: string,libName:string,detectPatt
             }
             noClientTestNum++;
         }else{
-            if (test === 'standard') {
-                standard++
-            }
+            // if (test === 'standard') {
+            //     standard++
+            // }
             let match_extract_pattern: string[][] = [];
             const allFiles: string[] = await getAllFiles(subdir);
             match_extract_pattern = await useAst(allFiles, libName);
@@ -107,6 +107,9 @@ export const detectByPattern = async (matchDir: string,libName:string,detectPatt
                             detectPattern: [matchedPattern]
                         });
                         countmatchedpatterns = countmatchedpatterns.concat([matchedPattern]);
+                        if (test === 'standard') {
+                            standard++
+                        }
                         sumDetectClient++;
                     }
                 }else{
