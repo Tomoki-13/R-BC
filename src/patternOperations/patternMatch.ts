@@ -19,7 +19,6 @@ export const patternMatch = async (userpatterns: string[][], respattern: string[
                     }
                 }
             }
-            //console.log(variableMap);
 
             //判定用
             const variableMapJudge: { [key: string]: boolean } = {};
@@ -30,11 +29,14 @@ export const patternMatch = async (userpatterns: string[][], respattern: string[
             }
             
             for(const userpattern of userpatterns) {
-                //variableMap 内の全てのパターンが一致するか確認する
-                for(const key in variableMap) {
-                    if(variableMap.hasOwnProperty(key)) {
-                        const regex1: RegExp = new RegExp(patternConversion.escapeFunc(variableMap[key][0]));
+                //他のループに影響を与えないように配列を複製
+                const variableMapCopy = JSON.parse(JSON.stringify(variableMap));
+                //variableMap内の全てのパターンが一致するか確認する
+                for(const key in variableMapCopy) {
+                    if(variableMapCopy.hasOwnProperty(key)) {
+                        const regex1: RegExp = new RegExp(patternConversion.escapeFunc(variableMapCopy[key][0]));
                         let importMatch: RegExpMatchArray | null = null;
+                        //マッチした要素の次から以降マッチングするため
                         let num: number = 0;
                         for(const line of userpattern) {
                             importMatch = line.match(regex1);
@@ -45,22 +47,28 @@ export const patternMatch = async (userpatterns: string[][], respattern: string[
                         }
 
                         if(importMatch && importMatch?.groups) {
+                            //他のkeyでinteropRequireDefaultがある場合の置換
                             const importName = importMatch.groups[key];
-                            for(const key1 in variableMap){
-                                for(let i = 0; i < variableMap[key1].length; i++){
+                            for(const key1 in variableMapCopy){
+                                for(let i = 0; i < variableMapCopy[key1].length; i++){
                                     if(!(key1 == key && i == 0)){
-                                        variableMap[key1][i] = variableMap[key1][i].replace(key, importName);
+                                        variableMapCopy[key1][i] = variableMapCopy[key1][i].replace(key, importName);
                                     }
                                 }
                             }
-                            for(let i = 1; i < variableMap[key].length; i++) {
-                                let functionCallPatternStr = variableMap[key][i].replace(key, importName);
+                            // console.log('importMatch.groups[key]',importMatch.groups[key]);
+                            // console.log('variableMapCopy',variableMapCopy);
+                            //interopRequireDefaultがある場合に最初の要素は1つだけのことがある
+                            if(variableMapCopy[key].length == 1){
+                                variableMapJudge[key] = true;
+                                continue;
+                            }
+                            for(let i = 1; i < variableMapCopy[key].length; i++) {
+                                let functionCallPatternStr = variableMapCopy[key][i].replace(key, importName);
                                 //抽象化 
-                                //functionCallPatternStr = functionCallPatternStr.replace(/\((.*?)\)/g, (_, inner) => inner ? "(.*?)" : "()");
                                 const functionCallPattern = new RegExp(patternConversion.escapeFunc(functionCallPatternStr));
                                 let matched = false;
                                 for(let j = num; j < userpattern.length; j++) {
-                                    //マッチングの際にユーザのパターンが複雑なときの影響をとる：引数
                                     //userpattern[j]に[]がある時の処理
                                     let replaceuserpattern = userpattern[j].replace(/[\r\n]/g, '');
                                     replaceuserpattern = userpattern[j].replace(/\[[^\]]*\]/g, 'argument');
@@ -80,7 +88,7 @@ export const patternMatch = async (userpatterns: string[][], respattern: string[
                                     variableMapJudge[key] = false;
                                     break;
                                 }
-                                if(i == variableMap[key].length - 1 && matched){
+                                if(i == variableMapCopy[key].length - 1 && matched){
                                     variableMapJudge[key] = true;
                                 }
                             }
@@ -96,6 +104,10 @@ export const patternMatch = async (userpatterns: string[][], respattern: string[
                 if(Object.values(variableMapJudge).every(value => value === true)) {
                     return [true, search_pattern];
                 }
+            }
+
+            if(Object.values(variableMapJudge).every(value => value === true)) {
+                return [true, search_pattern];
             }
         }
     } catch (err) {
@@ -123,7 +135,6 @@ export const allPatternMatch = async (userpatterns: string[][], respattern: stri
                     }
                 }
             }
-            //console.log(variableMap);
 
             //判定用
             const variableMapJudge: { [key: string]: boolean } = {};
@@ -134,9 +145,10 @@ export const allPatternMatch = async (userpatterns: string[][], respattern: stri
             }
             
             for(const userpattern of userpatterns) {
-                for(const key in variableMap) {
-                    if(variableMap.hasOwnProperty(key)) {
-                        const regex1: RegExp = new RegExp(patternConversion.escapeFunc(variableMap[key][0]));
+                const variableMapCopy = JSON.parse(JSON.stringify(variableMap));
+                for(const key in variableMapCopy) {
+                    if(variableMapCopy.hasOwnProperty(key)) {
+                        const regex1: RegExp = new RegExp(patternConversion.escapeFunc(variableMapCopy[key][0]));
                         let importMatch: RegExpMatchArray | null = null;
                         let num: number = 0;
                         for(const line of userpattern) {
@@ -149,17 +161,21 @@ export const allPatternMatch = async (userpatterns: string[][], respattern: stri
 
                         if(importMatch && importMatch?.groups) {
                             const importName = importMatch.groups[key];
-                            for(const key1 in variableMap){
-                                for(let i = 0; i < variableMap[key1].length; i++){
+                            for(const key1 in variableMapCopy){
+                                for(let i = 0; i < variableMapCopy[key1].length; i++){
                                     if(!(key1 == key && i == 0)){
-                                        variableMap[key1][i] = variableMap[key1][i].replace(key, importName);
+                                        variableMapCopy[key1][i] = variableMapCopy[key1][i].replace(key, importName);
                                     }
                                 }
                             }
-                            for(let i = 1; i < variableMap[key].length; i++) {
-                                let functionCallPatternStr = variableMap[key][i].replace(key, importName);
+                            //interopRequireDefaultがある場合に最初の要素は1つだけのことがある
+                            if(variableMapCopy[key].length == 1){
+                                variableMapJudge[key] = true;
+                                continue;
+                            }
+                            for(let i = 1; i < variableMapCopy[key].length; i++) {
+                                let functionCallPatternStr = variableMapCopy[key][i].replace(key, importName);
                                 //抽象化 
-                                //functionCallPatternStr = functionCallPatternStr.replace(/\((.*?)\)/g, (_, inner) => inner ? "(.*?)" : "()");
                                 const functionCallPattern = new RegExp(patternConversion.escapeFunc(functionCallPatternStr));
                                 let matched = false;
                                 for(let j = num; j < userpattern.length; j++) {

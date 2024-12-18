@@ -104,10 +104,10 @@ function transformArgumrnt(str: string): string {
         //引数をカンマで分割し、それぞれに [^,]* を適用
         const parts = args.split(',');
         const transformedArgs = parts.slice(0, -1).map(() => '[^,]*').concat('[^,]*').join(',');
-        return `${functionName}\\(${transformedArgs}\\)`;
+        return `${functionName}\(${transformedArgs}\)`;
     } else if(args.length > 0){
         //引数がカンマで区切られていない場合はそのまま返す
-        return `${functionName}\\([^,]*\\)`;
+        return `${functionName}\([^,]*\)`;
     } else{
         return str
     }
@@ -118,14 +118,14 @@ function abstStr(respattern: string[][][]): string[][][] {
     for(let i = 0; copiedRespattern.length > i; i++) {
         for(let j = 0; copiedRespattern[i].length > j; j++) {
             copiedRespattern[i][j] = prep_repl(copiedRespattern[i][j]);
-            copiedRespattern[i][j] = replaceQuote(copiedRespattern[i][j]);
-            copiedRespattern[i][j] = checkDot(copiedRespattern[i][j]);
             for(let k = 1; copiedRespattern[i][j].length > k; k++) {
                 if (typeof copiedRespattern[i][j][k] === 'string' &&(copiedRespattern[i][j][k].includes('require') ||copiedRespattern[i][j][k].includes('import') ||copiedRespattern[i][j][k].includes('_interopRequireDefault'))) {
                     continue;
                 }
                 copiedRespattern[i][j][k] = transformArgumrnt(copiedRespattern[i][j][k]);
             }
+            copiedRespattern[i][j] = replaceQuote(copiedRespattern[i][j]);
+            copiedRespattern[i][j] = checkDot(copiedRespattern[i][j]);
         }
     }
     //重複パターンの削除copiedRespattern[i][j]
