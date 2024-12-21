@@ -2,6 +2,7 @@ export interface JsonRow {
     failureclient: string;
     detectPatterns: string[][];
 }
+
 export interface MatchClientPattern {
     client: string;
     pattern: string[][];
