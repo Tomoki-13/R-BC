@@ -1,8 +1,9 @@
-import { createPattern,detectByPattern } from "./combinations/create_detect_pattern";
+import { createPattern } from "./combinations/createPattern";
+import { detectByPattern } from "./combinations/detectByPattern";
 import {MatchClientPattern} from './types/outputTypes';
 (async () => {
-    const getPatternDir: string = "../allrepos/reposuuidv7.0.0-beta.0failure";
-    const matchDir: string = "../allrepos/reposuuidv7.0.0-beta.0success";
+    const getPatternDir: string = "../allrepos/repos";
+    const matchDir: string = "../allrepos/repos";
     const libName: string = process.argv[2];
     let lastpatterns: string[][][] = [];
     //パターン作成

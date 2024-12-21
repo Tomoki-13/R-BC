@@ -1,68 +1,14 @@
-import { checkAst } from "../astRelated/checkAst";
-import {JsonRow,PatternCount,DetectionOutput,MatchClientPattern} from '../types/outputTypes';
-import { abstuseAst,useAst } from "./useAst";
+import fs from 'fs';
+import path from "path";
+import {DetectionOutput, MatchClientPattern} from '../types/outputTypes';
 import { getAllFiles } from "../utils/getAllFiles";
 import { getSubDir } from "../utils/getSubDir";
-import path from "path";
-import fs from 'fs';
+import { jsonconfStr } from "../utils/jsonconf";
 import output_json from "../utils/output_json";
-import { processPatterns } from "./pattern";
 import {countPatterns} from '../patternOperations/patternCount';
-import {jsonconfStr } from "../utils/jsonconf";
-import {patternMatch,allPatternMatch} from "../patternOperations/patternMatch";
+import {patternMatch, allPatternMatch} from "../patternOperations/patternMatch";
+import { useAst } from "./useAst";
 
-//作成処理
-export const createPattern=async (patternDir: string,libName:string): Promise<string[][][]>=>{
-    let JsonRows:JsonRow[] = [];
-    let respattern: string[][][] = [];
-    let failurePattern1: number = 0;
-    const alldirs: string[] = await getSubDir(patternDir);
-    for(const subdir of alldirs) {
-        let extract_pattern1: string[][] = [];
-        let judge:boolean = true;
-        const allFiles: string[] = await getAllFiles(subdir);
-        //Astが作れないファイルがあればクライアントを除外
-        for(const file of allFiles){
-            if(await checkAst(file) === false){
-                judge = false;
-                break;
-            }
-        }
-        if(judge === false){
-            continue;
-        }
-        extract_pattern1 = await abstuseAst(allFiles, libName);
-        if(extract_pattern1.length > 0) {
-            failurePattern1++;
-            respattern.push(extract_pattern1);
-            JsonRows.push({
-                failureclient: subdir,
-                detectPatterns: extract_pattern1
-            });
-        }
-    }
-    //集約
-    let lastpatterns = await processPatterns(respattern);
-
-    //ファイル出力
-    const outputDirectory = path.resolve(__dirname, '../../output');
-    output_json.createOutputDirectory(outputDirectory);
-    //fs.writeFileSync(output_json.getUniqueOutputPath(outputDirectory,path.basename(patternDir),'rawpattern'), JSON.stringify(JsonRows, null, 4), 'utf8');
-
-    let mergepattern: PatternCount[] = countPatterns(lastpatterns);
-    mergepattern.sort((a, b) => b.count - a.count);
-    const totalCount2 = mergepattern.reduce((acc, item) => acc + item.count, 0);
-    const output2:DetectionOutput = {patterns: mergepattern,totalCount: totalCount2};
-    if (mergepattern) {
-        //fs.writeFileSync(output_json.getUniqueOutputPath(outputDirectory,path.basename(patternDir),'detectpatternlist'), JSON.stringify(output2, null, 4), 'utf8');
-    }
-
-    //標準出力
-    console.log('alldirs',alldirs.length);
-    console.log('make failure pattern',failurePattern1);
-    console.log('all detect mergepattern.length:',mergepattern.length);
-    return lastpatterns;
-}
 //単一検出 mode = 0 ,重複検出 mode =1
 export const detectByPattern = async (matchDir: string,libName:string,detectPattern:string[][][],mode:number = 0): Promise<MatchClientPattern[]>=>{
     let notest:number = 0;
