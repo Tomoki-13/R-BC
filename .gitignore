@@ -1,7 +1,5 @@
 datasets
 node_modules
-repos
-Sampleuuid
 .DS_Store
 scripts
 src/asttry
@@ -9,14 +7,7 @@ package-lock.json
 Dockerfile
 dockercompose.yml
 .dockerignore
-Sample
-.babelrc
 src/__tests__/InputFile
-src/__tests__/ast.test.ts
-src/__tests__/integrate.test.ts
-src/__tests__/patternMatch.test.ts
 output
 diff
 allrepos
-sample4
-sampleCliant

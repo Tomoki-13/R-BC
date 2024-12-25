@@ -1,4 +1,4 @@
-import { abstuseAst,useAst } from "../combinations/useAst";
+import { useAst } from "../combinations/useAst";
 describe('useAst', () => {
     test('import', async () => {
         const filepath:string[] = ['./src/__tests__/InputFile/importsample.ts'];
@@ -28,7 +28,7 @@ describe('useAst', () => {
 describe('abstuse', () => {
     test('import', async () => {
         const filepath:string[] = ['./src/__tests__/InputFile/importsample.ts'];
-        const output = await abstuseAst(filepath,"module");
+        const output = await useAst(filepath,"module",1);
         const expectedOutput:string[][]= [[
             "import ---1 from 'module'",
             "import {v4} from 'module'",
@@ -40,7 +40,7 @@ describe('abstuse', () => {
     });
     test('require ', async () => {
         const filepath:string[] = ['./src/__tests__/InputFile/requiresample.js'];
-        const output = await abstuseAst(filepath,"module");
+        const output = await useAst(filepath,"module",1);
         const expectedOutput:string[][]= [[
             "---1 = require('module')",
             "---2 = require('module/v4')",

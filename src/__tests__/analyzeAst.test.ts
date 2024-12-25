@@ -9,4 +9,8 @@ describe('analyzeAst.ts test', () => {
         //pathはsrcから
         await expect(analyzeAst('./src/__tests__/InputFile/sample.ts','FuncA')).resolves.toEqual(expectedOutput);
     });
+    test('.default case', async () => {
+        const expectedOutput:string[] = ['_uuid2.default.v4()'];
+        await expect(analyzeAst('./src/__tests__/InputFile/sample2.js','_uuid2')).resolves.toEqual(expectedOutput);
+    });
 })
