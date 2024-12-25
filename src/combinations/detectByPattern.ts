@@ -89,6 +89,7 @@ export const detectByPattern = async (matchDir: string,libName:string,detectPatt
     
     //標準出力
     console.log('standard or eslint:'+standard+' notest:'+notest+' noscript:'+noscript+' nopackage.json:'+noPackagejson);
-    console.log('sumDetectClient'+sumDetectClient);
+    console.log('detectedUsedPattern:',detectedUserPattern.length);
+    console.log('sumDetectClient:',sumDetectClient);
     return matchCliantPatternJson;
 }

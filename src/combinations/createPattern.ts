@@ -7,13 +7,13 @@ import { getAllFiles } from "../utils/getAllFiles";
 import { getSubDir } from "../utils/getSubDir";
 import {JsonRow, PatternCount, DetectionOutput} from '../types/outputTypes';
 import output_json from "../utils/output_json";
-import { processPatterns } from "./pattern";
+import { processPatterns } from "./processPatterns";
+import patternUtils from '../patternOperations/patternUtils';
 
 //作成処理
 export const createPattern=async (patternDir: string,libName:string): Promise<string[][][]>=>{
     let JsonRows:JsonRow[] = [];
     let respattern: string[][][] = [];
-    let failurePattern1: number = 0;
     const alldirs: string[] = await getSubDir(patternDir);
     for(const subdir of alldirs) {
         let extract_pattern1: string[][] = [];
@@ -31,7 +31,6 @@ export const createPattern=async (patternDir: string,libName:string): Promise<st
         }
         extract_pattern1 = await useAst(allFiles, libName,1);
         if(extract_pattern1.length > 0) {
-            failurePattern1++;
             respattern.push(extract_pattern1);
             JsonRows.push({
                 failureclient: subdir,
@@ -39,6 +38,8 @@ export const createPattern=async (patternDir: string,libName:string): Promise<st
             });
         }
     }
+    //呼び出しだけのもの削除
+    respattern = patternUtils.removeCallOnly(respattern);
     //集約
     let lastpatterns = await processPatterns(respattern);
 
@@ -57,7 +58,7 @@ export const createPattern=async (patternDir: string,libName:string): Promise<st
 
     //標準出力
     console.log('alldirs',alldirs.length);
-    console.log('make failure pattern',failurePattern1);
+    console.log('make failure pattern',respattern.length);
     console.log('all detect mergepattern.length:',mergepattern.length);
     return lastpatterns;
 }
