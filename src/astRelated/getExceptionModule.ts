@@ -3,16 +3,14 @@ const parser = require("@babel/parser");
 import { promises as fsPromises } from 'fs';
 import traverse from "@babel/traverse";
 import * as t from "@babel/types";
-export const getExceptionModule = async (filePath: string, funcName: string,code:string[]): Promise<string[]> => {
+export const getExceptionModule = async (filePath: string, funcName: string,codes:string[]=[]): Promise<string[]> => {
     let resultArray: string[] = [];
     try {
-        let codes: string[] = [];
         //ファイルの内容を取得
         if(filePath.endsWith('.js') || filePath.endsWith('.ts')) {
             const fileContent: string = await fsPromises.readFile(filePath, 'utf8');
             const parsed = parser.parse(fileContent, { sourceType: 'unambiguous', plugins: ["typescript", 'decorators-legacy'] });
-            //module.exports.propertyでの種類
-            //module.exports.hasMagic
+            //module.exports.propertyでの種類 例：module.exports.hasMagic
             traverse(parsed, {
                 AssignmentExpression(path: any) {
                     if(t.isMemberExpression(path.node.left) &&

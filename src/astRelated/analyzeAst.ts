@@ -35,7 +35,7 @@ export const analyzeAst = async (filePath: string, funcName: string): Promise<st
                             codes.push(code);
                         }
                     } else if(t.isMemberExpression(path.node.callee)) {
-                        if(t.isIdentifier(path.node.callee.object)  && new RegExp(`^${funcName}(?![a-zA-Z])`).test(path.node.callee.object.name)) {
+                        if(t.isIdentifier(path.node.callee.object) && new RegExp(`^${funcName}(?![a-zA-Z])`).test(path.node.callee.object.name)) {
                             const code: string = fileContent.substring(path.node.start, path.node.end);
                             //mockを行で削除
                             // if(!code.includes('mockImplementation')){
@@ -64,7 +64,8 @@ export const analyzeAst = async (filePath: string, funcName: string): Promise<st
                             codes.push(code);
                         } else if(path.node.callee.object && t.isMemberExpression(path.node.callee.object)) {
                             //~~.default.~~の取得
-                            if(path.node.callee.object.object && t.isIdentifier(path.node.callee.object.object) && new RegExp(`^${funcName}(?![a-zA-Z])`).test(path.node.callee.object.object.name)) {
+                            if(path.node.callee.object.object && t.isIdentifier(path.node.callee.object.object) &&
+                                new RegExp(`^${funcName}(?![a-zA-Z])`).test(path.node.callee.object.object.name)) {
                                 const code: string = fileContent.substring(path.node.start, path.node.end);
                                 codes.push(code);
                             }
@@ -95,7 +96,7 @@ export const argplace = async (filePath: string, funcName: string): Promise<stri
             traverse(parsed, {
                 CallExpression(path: any) {
                     // 関数の呼び出しを見つける
-                    if(t.isIdentifier(path.node.callee) && path.node.callee.name.includes(funcName)) {
+                    if(t.isIdentifier(path.node.callee) && path.node.callee.name === funcName) {
                         let code = fileContent.substring(path.node.start, path.node.end);
                         if(path.node.arguments.length > 0) {
                             //~~()の部分
@@ -117,7 +118,7 @@ export const argplace = async (filePath: string, funcName: string): Promise<stri
                         }
                         codes.push(code);
                     } else if(t.isMemberExpression(path.node.callee)) {
-                        if(t.isIdentifier(path.node.callee.object) && path.node.callee.object.name.includes(funcName)) {
+                        if(t.isIdentifier(path.node.callee.object) && path.node.callee.object.name === funcName) {
                             let code = fileContent.substring(path.node.start, path.node.end);
                             if(path.node.arguments.length > 0) {
                                 let placeword: string = fileContent.substring(path.node.arguments[0].start, path.node.arguments[path.node.arguments.length - 1].end);
@@ -137,7 +138,7 @@ export const argplace = async (filePath: string, funcName: string): Promise<stri
                         } else if(t.isMemberExpression(path.node.callee.object)) {
                             // ~~.default.~~()の取得
                             if(t.isIdentifier(path.node.callee.object.object)) {
-                                if(path.node.callee.object.object.name.includes(funcName)) {
+                                if(path.node.callee.object.object.name === funcName) {
                                     let code = fileContent.substring(path.node.start, path.node.end);
                                     if(path.node.arguments.length > 0) {
                                         let placeword: string = fileContent.substring(path.node.arguments[0].start, path.node.arguments[path.node.arguments.length - 1].end);

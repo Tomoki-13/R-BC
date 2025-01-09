@@ -14,4 +14,10 @@ describe('getExceptionModule', () => {
         code = await getExceptionModule('./src/__tests__/InputFile/getExceptionModule/sample2.js','globby',code);
         expect(code.map(line => line.trim())).toEqual(expectedOutput.map(line => line.trim()));
     });
+    test('Without a third argument', async () => {
+        const expectedOutput:string[] = ['module.exports.generateGlobTasks = globby.generateGlobTasks',
+            'module.exports.hasMagic = globby.hasMagic'];
+        let code:string[] = await getExceptionModule('./src/__tests__/InputFile/getExceptionModule/sample2.js','globby');
+        expect(code.map(line => line.trim())).toEqual(expectedOutput.map(line => line.trim()));
+    });
 })

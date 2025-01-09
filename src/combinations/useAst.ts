@@ -1,9 +1,8 @@
 import fsPromises from 'fs/promises';
 import { funcNameIdentifiers, secfuncNameIdentifiers } from "../utils/funcNameIdentifiers";
 import { extractImportLines } from "../utils/extractImportLines";
-import { analyzeFile } from "../utils/analyzeFile";
-import { analyzeAst,argplace } from "../astRelated/analyzeAst";
-import { getArgAst } from '../astRelated/getArgAst';
+import { analyzeAst } from "../astRelated/analyzeAst";
+import { getExceptionModule } from '../astRelated/getExceptionModule';
 //createPattern用(抽象化あり) mode = 1,detectByPattern用 mode = 0
 export const useAst = async (allFiles: string[], libName: string,mode:number = 0): Promise<string[][]> =>{
     let pattern: string[][] = [];
@@ -41,6 +40,11 @@ export const useAst = async (allFiles: string[], libName: string,mode:number = 0
                     let result:string[] = await analyzeAst(filePath,one);
                     //let result:string[] = await argplace(filePath,one);
                     if(result.length > 0) {
+                        //module.export.~~を除外 引数の時に一緒に追跡
+                        let except_str:string[] = await getExceptionModule(filePath,one)
+                        if(except_str){
+                            return [];
+                        }
                         //パターン作成時に抜けが起こるため mock除外(return [])する
                         if(mode === 1){
                             const checkstr = 'mockImplementation';
