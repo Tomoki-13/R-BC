@@ -11,3 +11,4 @@ src/__tests__/InputFile
 output
 diff
 allrepos
+coverage

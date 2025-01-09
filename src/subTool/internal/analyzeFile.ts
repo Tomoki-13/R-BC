@@ -5,14 +5,13 @@ export const analyzeFile = (funcNames:string[], code:string, libName:string):str
     let useFuncResult:string[] = [];
     if(funcNames.length>1){
         for(const funcName of funcNames) { 
-                let useFuncLines:string[] = lines.filter(line => new RegExp('\\b' + funcName.replace(/\./g, '\\.') + '\\b').test(line) && !/^\s*\/\//.test(line) /*&&!/import|require/.test(line)*/);
-
-                if(useFuncLines!=null&&useFuncLines.length !== 0){   
-                    useFuncLines = useFuncLines.filter(line => line.length < 100);
-                    const str1 = libName + '.mockImplementation';
-                    useFuncLines = useFuncLines.filter(line => !line.includes(str1));
-                    useFuncResult = useFuncResult.concat(useFuncLines);
-                }
+            let useFuncLines:string[] = lines.filter(line => new RegExp('\\b' + funcName.replace(/\./g, '\\.') + '\\b').test(line) && !/^\s*\/\//.test(line) /*&&!/import|require/.test(line)*/);
+            if(useFuncLines!=null&&useFuncLines.length !== 0){   
+                useFuncLines = useFuncLines.filter(line => line.length < 100);
+                const str1 = libName + '.mockImplementation';
+                useFuncLines = useFuncLines.filter(line => !line.includes(str1));
+                useFuncResult = useFuncResult.concat(useFuncLines);
+            }
         }
         return useFuncResult;
     }else{
