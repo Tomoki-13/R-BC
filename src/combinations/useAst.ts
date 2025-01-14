@@ -40,18 +40,19 @@ export const useAst = async (allFiles: string[], libName: string,mode:number = 0
                     let result:string[] = await analyzeAst(filePath,one);
                     //let result:string[] = await argplace(filePath,one);
                     if(result.length > 0) {
-                        //module.export.~~を除外 引数の時に一緒に追跡
-                        let except_str:string[] = await getExceptionModule(filePath,one)
-                        if(except_str){
-                            return [];
-                        }
-                        //パターン作成時に抜けが起こるため mock除外(return [])する
                         if(mode === 1){
-                            const checkstr = 'mockImplementation';
+                            //パターン作成時に抜けが起こるため mock除外(return [])する
+                            const checkstr = 'mock';
                             for(const subresult of result){
                                 if(subresult.includes(checkstr)){
                                     return [];
                                 }
+                            }
+                            //module.export.~~を除外 引数の時に一緒に追跡
+                            let except_str:string[] = await getExceptionModule(filePath,one);
+                            if(except_str.length > 0){
+                                console.log('except_str',except_str);
+                                return [];
                             }
                         }
                         inFileStr = inFileStr.concat(result);
