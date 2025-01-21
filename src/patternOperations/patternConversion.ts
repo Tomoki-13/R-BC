@@ -22,17 +22,21 @@ function prep_repl(inputs: string[]): string[] {
     });
 }
 
-//'`"を許容するように
-const replaceQuote =  (inputs: string[]):  string[]  => {
+//'`" ,*,/の設定
+const replaceQuoteAndasterisk =  (inputs: string[]):  string[]  => {
     for(let i = 0;i < inputs.length;i++) {
+        inputs[i] = inputs[i].replace(/\//g, `\\/`);
         inputs[i] = inputs[i].replace(/['"`]/g, `["'\`]`);
+        inputs[i] = inputs[i].replace(/ \* /g, ' \\* ');
     }
     return inputs;
 }
+
+
 //全てのパターンの末尾に.が来ないように
 const checkDot =  (inputs: string[]):  string[]  => {
     for(let i = 0;i < inputs.length;i++) {
-        inputs[i] = inputs[i].concat("\\s*[^.]*");
+        inputs[i] = inputs[i].concat("[^.]*");
     }
     return inputs;
 }
@@ -124,7 +128,7 @@ function abstStr(respattern: string[][][]): string[][][] {
                 }
                 copiedRespattern[i][j][k] = transformArgumrnt(copiedRespattern[i][j][k]);
             }
-            copiedRespattern[i][j] = replaceQuote(copiedRespattern[i][j]);
+            copiedRespattern[i][j] = replaceQuoteAndasterisk(copiedRespattern[i][j]);
             copiedRespattern[i][j] = checkDot(copiedRespattern[i][j]);
         }
     }
