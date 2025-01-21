@@ -79,18 +79,20 @@ function removeCallOnly(pattern: string[][][]): string[][][] {
                     break;
                 }
             }
+            //import,require,_interopRequireDefaultが含まれていない要素がある場合
             if(!allElementsMatch) {
                 isCallOnly = false;
                 break;
             }
         }
 
-        if(isCallOnly || (pattern[i].length === 1&&pattern[i][0].length === 1)) {
+        if(isCallOnly || (pattern[i].length === 1 && pattern[i][0].length === 1) || pattern[i].length === 0) {
             pattern.splice(i, 1);
         }
     }
     return pattern;
 }
+
 //特定のサブパターンを削除
 function removeSubpattern(tmppattern: string[][][], deletePattern: string[][]): string[][][] {
     const subpatternStr = arrayToString(deletePattern);

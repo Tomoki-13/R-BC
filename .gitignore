@@ -12,3 +12,4 @@ output
 diff
 allrepos
 coverage
+src/index.ts

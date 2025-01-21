@@ -51,7 +51,6 @@ export const useAst = async (allFiles: string[], libName: string,mode:number = 0
                             //module.export.~~を除外 引数の時に一緒に追跡
                             let except_str:string[] = await getExceptionModule(filePath,one);
                             if(except_str.length > 0){
-                                console.log('except_str',except_str);
                                 return [];
                             }
                         }
@@ -111,6 +110,30 @@ export const useAst = async (allFiles: string[], libName: string,mode:number = 0
     //空白削除　/t等も削除
     for(let i = 0;i < pattern.length;i++) {
         pattern[i] = pattern[i].map(item => item.trim().replace(/\s+/g, ' '));
+        // クライアント内でのパターンの重複統合
+        if (mode == 1) {
+            const replacement = "tmp";
+            let tmp_pattern = pattern.map(subPattern =>
+                subPattern.map(item =>item.replace(/(?<=---)\d+/, replacement))
+            );
+            let index: number[] = []; 
+            //一致するインデックスのペアを調査
+            for (let j = 0; j < tmp_pattern.length; j++) {
+                for (let k = j + 1; k < tmp_pattern.length; k++) {
+                    //string[] の粒度で比較
+                    if (arraysAreEqual(tmp_pattern[j], tmp_pattern[k])) {
+                        index.push(k);
+                    }
+                }
+            }
+            index.sort((a, b) => b - a);
+            index = [...new Set(index)]
+            if(index.length > 0) {
+                for(const index_i of index) {
+                    pattern.splice(index_i, pattern[index_i].length);
+                }
+            }
+        }
     }
     if(pattern.length > 0) {
         for(let i = 0; i < pattern.length; i++) {
@@ -135,4 +158,12 @@ export const useAst = async (allFiles: string[], libName: string,mode:number = 0
         }
     }
     return pattern;
+}
+//長さが異なる場合は false
+function arraysAreEqual(arr1: string[], arr2: string[]): boolean {
+    if (arr1.length !== arr2.length) return false;
+    for (let i = 0; i < arr1.length; i++) {
+        if (arr1[i] !== arr2[i]) return false;
+    }
+    return true;
 }
