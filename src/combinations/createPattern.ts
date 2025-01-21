@@ -11,7 +11,7 @@ import { processPatterns } from "./processPatterns";
 import patternUtils from '../patternOperations/patternUtils';
 
 //作成処理
-export const createPattern=async (patternDir: string,libName:string): Promise<string[][][]>=>{
+export const createPattern = async (patternDir: string,libName:string): Promise<string[][][]>=>{
     let JsonRows:JsonRow[] = [];
     let respattern: string[][][] = [];
     const alldirs: string[] = await getSubDir(patternDir);
@@ -32,6 +32,7 @@ export const createPattern=async (patternDir: string,libName:string): Promise<st
         extract_pattern1 = await useAst(allFiles, libName,1);
         if(extract_pattern1.length > 0) {
             respattern.push(extract_pattern1);
+            console.log(subdir);
             JsonRows.push({
                 failureclient: subdir,
                 detectPatterns: extract_pattern1
@@ -45,9 +46,7 @@ export const createPattern=async (patternDir: string,libName:string): Promise<st
 
     //ファイル出力
     const outputDirectory = path.resolve(__dirname, '../../output');
-    output_json.createOutputDirectory(outputDirectory);
     //fs.writeFileSync(output_json.getUniqueOutputPath(outputDirectory,path.basename(patternDir),'rawpattern'), JSON.stringify(JsonRows, null, 4), 'utf8');
-
     let mergepattern: PatternCount[] = countPatterns(lastpatterns);
     mergepattern.sort((a, b) => b.count - a.count);
     const totalCount2 = mergepattern.reduce((acc, item) => acc + item.count, 0);

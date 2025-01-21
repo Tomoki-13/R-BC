@@ -15,60 +15,49 @@ export const detectByPattern = async (matchDir: string,libName:string,detectPatt
     let standard:number = 0;
     let noscript:number = 0;
     let noPackagejson:number = 0 ;
-    let noClientTestNum:number = 0;
 
     let matchCliantPatternJson: MatchClientPattern[] =[]
     let countmatchedpatterns:string[][][] = [];
     let sumDetectClient:number = 0;
     
     const matchAlldirs: string[] = await getSubDir(matchDir);
-    console.log('matchAlldirs:',matchAlldirs.length);
     for(const subdir of matchAlldirs) {
         let test:string = jsonconfStr(subdir);
-        //npm testで実行できるテストがない場合
-        if(test !== 'client' && test !== 'standard'){
-            if (test === 'no test') {
-                notest++;
-            } else if(test === 'no scripts'){
-                noscript++
-            } else if(test === 'noPackage.json'){
-                noPackagejson++
-            }
-            noClientTestNum++;
-        }else{
-            // if (test === 'standard') {
-            //     standard++
-            // }
-            let match_extract_pattern: string[][] = [];
-            const allFiles: string[] = await getAllFiles(subdir);
-            match_extract_pattern = await useAst(allFiles, libName);
-            // console.log(match_extract_pattern);
-            if(match_extract_pattern.length > 0) {
-                if(mode == 0){
-                    const [isMatch, matchedPattern]: [boolean, string[][] | null] = await patternMatch(match_extract_pattern, detectPattern);
-                    if(isMatch && matchedPattern) {
-                        matchCliantPatternJson.push({
-                            client: subdir,
-                            pattern: match_extract_pattern,
-                            detectPattern: [matchedPattern]
-                        });
-                        countmatchedpatterns = countmatchedpatterns.concat([matchedPattern]);
-                        if (test === 'standard') {
-                            standard++
-                        }
-                        sumDetectClient++;
+        let match_extract_pattern: string[][] = [];
+        const allFiles: string[] = await getAllFiles(subdir);
+        match_extract_pattern = await useAst(allFiles, libName);
+        // console.log(match_extract_pattern);
+        if(match_extract_pattern.length > 0) {
+            if(mode == 0){
+                const [isMatch, matchedPattern]: [boolean, string[][] | null] = await patternMatch(match_extract_pattern, detectPattern);
+                if(isMatch && matchedPattern) {
+                    matchCliantPatternJson.push({
+                        client: subdir,
+                        pattern: match_extract_pattern,
+                        detectPattern: [matchedPattern]
+                    });
+                    countmatchedpatterns = countmatchedpatterns.concat([matchedPattern]);
+                    if(test === 'standard') {
+                        standard++
+                    }else if(test === 'no test') {
+                        notest++;
+                    } else if(test === 'no scripts'){
+                        noscript++
+                    } else if(test === 'noPackage.json'){
+                        noPackagejson++
                     }
-                }else{
-                    const [isMatch, matchedPattern]: [boolean, string[][][] | null] = await allPatternMatch(match_extract_pattern, detectPattern);
-                    if(isMatch && matchedPattern) {
-                        matchCliantPatternJson.push({
-                            client: subdir,
-                            pattern: match_extract_pattern,
-                            detectPattern: matchedPattern
-                        });
-                        countmatchedpatterns = countmatchedpatterns.concat(matchedPattern);
-                        sumDetectClient++;
-                    }
+                    sumDetectClient++;
+                }
+            }else{
+                const [isMatch, matchedPattern]: [boolean, string[][][] | null] = await allPatternMatch(match_extract_pattern, detectPattern);
+                if(isMatch && matchedPattern) {
+                    matchCliantPatternJson.push({
+                        client: subdir,
+                        pattern: match_extract_pattern,
+                        detectPattern: matchedPattern
+                    });
+                    countmatchedpatterns = countmatchedpatterns.concat(matchedPattern);
+                    sumDetectClient++;
                 }
             }
         }
@@ -83,7 +72,7 @@ export const detectByPattern = async (matchDir: string,libName:string,detectPatt
     const totalCount = detectedUserPattern.reduce((acc, item) => acc + item.count, 0);
     const output1:DetectionOutput = { patterns: detectedUserPattern,totalCount: totalCount};
     //検出に使ったパターンの検出数
-    //fs.writeFileSync(output_json.getUniqueOutputPath(outputDirectory,path.basename(matchDir),'Detectioncount'), JSON.stringify(output1, null, 4));
+    fs.writeFileSync(output_json.getUniqueOutputPath(outputDirectory,path.basename(matchDir),'Detectioncount'), JSON.stringify(output1, null, 4));
     //検出対象
     //fs.writeFileSync(output_json.getUniqueOutputPath(outputDirectory,path.basename(matchDir),'matchResults'), JSON.stringify(matchCliantPatternJson, null, 2), 'utf8');
     
