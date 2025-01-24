@@ -64,14 +64,16 @@ describe('confirm test', () => {
     test('intero', async () => {
         const userpatterns: string[][] = [
             ["var ---2 = require('module');",'var ---1 = _interopRequireDefault(---2);','---1()'],
-            [ "import ---3 from 'module';", '---3()' ]]
-        ;
+            [ "import ---3 from 'module';", '---3()' ]
+        ];
         let search_patterns: string[][][] = [
             [
-                ['var (?<variable2>[\\w-]+) = require(["\'`]module["\'`]);\\s*[^.]*','var (?<variable1>[\\w-]+) = _interopRequireDefault(variable2);\\s*[^.]*','variable1()\\s*[^.]*'],
+                ["var ---2 = require('module');",'var ---1 = _interopRequireDefault(---2);','---1()']
             ]
         ];
+        search_patterns = patternConversion.abstStr(search_patterns);
         const expectedOutput: boolean = true;
+
         const [isMatch]: [boolean, string[][] | null] = await patternMatch(userpatterns, search_patterns);
         expect(isMatch).toEqual(expectedOutput);
     });

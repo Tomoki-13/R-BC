@@ -4,11 +4,11 @@ describe('useAst', () => {
         const filepath:string[] = ['./src/__tests__/InputFile/importsample.ts'];
         const output = await useAst(filepath,"module");
         const expectedOutput:string[][]= [[
-            "import abc from 'module';",
-            "import {v4} from 'module';",
-            "import {v1,v5} from 'module';",
-            "import * as bcd from 'module';",
-            "import {v2 as cdf} from 'module';"
+            "import abc from 'module'",
+            "import {v4} from 'module'",
+            "import {v1,v5} from 'module'",
+            "import * as bcd from 'module'",
+            "import {v2 as cdf} from 'module'"
         ]];
         expect(output).toEqual(expectedOutput);
     });
@@ -16,11 +16,11 @@ describe('useAst', () => {
         const filepath:string[] = ['./src/__tests__/InputFile/requiresample.js'];
         const output = await useAst(filepath,"module");
         const expectedOutput:string[][]= [[
-            "const abc = require('module');",
-            "const bcd = require('module/v4');",
-            "const {v4} = require('module');",
-            "const {v1:cdf,v5:def} = require('module');",
-            "const efj = require('module').func;"
+            "const abc = require('module')",
+            "const bcd = require('module/v4')",
+            "const {v4} = require('module')",
+            "const {v1:cdf,v5:def} = require('module')",
+            "const efj = require('module').func"
         ]];
         expect(output).toEqual(expectedOutput);
     });

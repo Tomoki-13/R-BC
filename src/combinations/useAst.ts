@@ -78,7 +78,7 @@ export const useAst = async (allFiles: string[], libName: string,mode:number = 0
                             for(let k = 0; k < uniqueInFileStr.length;k++){
                                 //特殊処理：{}呼び出し系
                                 if(/import|require/.test(uniqueInFileStr[k]) && !/^\s*\/\//.test(uniqueInFileStr[k])&&/\{.*\}/.test(uniqueInFileStr[k])){
-                                    //asと:の場合で条件分け」￥
+                                    //asと:の場合で条件分け
                                     let regex1 = new RegExp(`:\\s*(?<!["\`'])${one}(?!["\`'])`, 'g');
                                     let regex2 = new RegExp(`as\\s*(?<!["\`'])${one}(?!["\`'])`, 'g');
                                     if(regex1.test(uniqueInFileStr[k]) || regex2.test(uniqueInFileStr[k])){
@@ -107,10 +107,35 @@ export const useAst = async (allFiles: string[], libName: string,mode:number = 0
         }
         pattern = pattern.filter(subArray => subArray.length > 0);
     }
+
+    if(pattern.length > 0) {
+        for(let i = 0; i < pattern.length; i++) {
+            if(pattern[i] && pattern[i].length > 0) {
+                for(let j = 0; j < pattern[i].length; j++) {
+                    if(typeof pattern[i][j] === 'string') {
+                        pattern[i][j] = pattern[i][j].replace(/[\r\n]/g, '');
+                        pattern[i][j] = pattern[i][j].replace(/^,|,$/g, '');
+                    }
+                }
+            }
+        }
+    }
+    //末尾の;削除
+    for(let i = 0; i < pattern.length; i++) {
+        for(let j = 0; j < pattern[i].length; j++) {
+            if(pattern[i][j].endsWith(';')) {
+                pattern[i][j] = pattern[i][j].slice(0, -1);
+            }
+        }
+    }
+    
+    // //要素が１のものを配列から削除：不要な呼び出しをするクライアントがあるため，
+    // pattern = pattern.filter(subArray => subArray.length > 1);
+
     //空白削除　/t等も削除
     for(let i = 0;i < pattern.length;i++) {
         pattern[i] = pattern[i].map(item => item.trim().replace(/\s+/g, ' '));
-        // クライアント内でのパターンの重複統合
+        //クライアント内でのパターンの重複統合
         if (mode == 1) {
             const replacement = "tmp";
             let tmp_pattern = pattern.map(subPattern =>
@@ -127,7 +152,7 @@ export const useAst = async (allFiles: string[], libName: string,mode:number = 0
                 }
             }
             index.sort((a, b) => b - a);
-            index = [...new Set(index)]
+            index = [...new Set(index)];
             if(index.length > 0) {
                 for(const index_i of index) {
                     pattern.splice(index_i, pattern[index_i].length);
@@ -135,30 +160,10 @@ export const useAst = async (allFiles: string[], libName: string,mode:number = 0
             }
         }
     }
-    if(pattern.length > 0) {
-        for(let i = 0; i < pattern.length; i++) {
-            if(pattern[i] && pattern[i].length > 0) {
-                for(let j = 0; j < pattern[i].length; j++) {
-                    if(typeof pattern[i][j] === 'string') {
-                        pattern[i][j] = pattern[i][j].replace(/[\r\n]/g, '');
-                        pattern[i][j] = pattern[i][j].replace(/^,|,$/g, '');
-                    }
-                }
-            }
-        }
-    }
-    if(mode == 1){
-        //末尾の;削除
-        for(let i = 0; i < pattern.length; i++) {
-            for(let j = 0; j < pattern[i].length; j++) {
-                if(pattern[i][j].endsWith(';')) {
-                    pattern[i][j] = pattern[i][j].slice(0, -1);
-                }
-            }
-        }
-    }
     return pattern;
 }
+
+
 //長さが異なる場合は false
 function arraysAreEqual(arr1: string[], arr2: string[]): boolean {
     if (arr1.length !== arr2.length) return false;

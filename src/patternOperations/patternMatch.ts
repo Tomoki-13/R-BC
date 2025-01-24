@@ -45,7 +45,6 @@ export const patternMatch = async (userpatterns: string[][], respattern: string[
                                 break;
                             }
                         }
-
                         if(importMatch && importMatch?.groups) {
                             //他のkeyでinteropRequireDefaultがある場合の置換
                             const importName = importMatch.groups[key];
@@ -56,15 +55,12 @@ export const patternMatch = async (userpatterns: string[][], respattern: string[
                                     }
                                 }
                             }
-                            // console.log('importMatch.groups[key]',importMatch.groups[key]);
-                            // console.log('variableMapCopy',variableMapCopy);
-                            //interopRequireDefaultがある場合に最初の要素は1つだけのことがある
-                            if(variableMapCopy[key].length == 1){
+                            if(variableMapCopy[key].length === 1){
                                 variableMapJudge[key] = true;
                                 continue;
                             }
                             for(let i = 1; i < variableMapCopy[key].length; i++) {
-                                let functionCallPatternStr = variableMapCopy[key][i].replace(key, importName);
+                                let functionCallPatternStr = variableMapCopy[key][i];
                                 //抽象化 
                                 const functionCallPattern = new RegExp(patternConversion.escapeFunc(functionCallPatternStr));
                                 let matched = false;
@@ -84,19 +80,13 @@ export const patternMatch = async (userpatterns: string[][], respattern: string[
                                         matched = false;
                                     }
                                 }
-                                if(!matched) {
-                                    variableMapJudge[key] = false;
-                                    break;
-                                }
+                                
+
                                 if(i == variableMapCopy[key].length - 1 && matched){
                                     variableMapJudge[key] = true;
+                                    continue;
                                 }
                             }
-                        } else {
-                            variableMapJudge[key] = false;
-                        }
-                        if(variableMapJudge[key] == false) {
-                            break;
                         }
                     }
                 }
