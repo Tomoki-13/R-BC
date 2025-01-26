@@ -31,6 +31,7 @@ export const detectByPattern = async (matchDir: string,libName:string,detectPatt
             if(mode == 0){
                 const [isMatch, matchedPattern]: [boolean, string[][] | null] = await patternMatch(match_extract_pattern, detectPattern);
                 if(isMatch && matchedPattern) {
+                    // console.log(subdir);
                     matchCliantPatternJson.push({
                         client: subdir,
                         pattern: match_extract_pattern,
@@ -48,7 +49,7 @@ export const detectByPattern = async (matchDir: string,libName:string,detectPatt
                     }
                     sumDetectClient++;
                 }
-            }else{
+            }else if(mode == 1){
                 const [isMatch, matchedPattern]: [boolean, string[][][] | null] = await allPatternMatch(match_extract_pattern, detectPattern);
                 if(isMatch && matchedPattern) {
                     matchCliantPatternJson.push({
@@ -57,6 +58,15 @@ export const detectByPattern = async (matchDir: string,libName:string,detectPatt
                         detectPattern: matchedPattern
                     });
                     countmatchedpatterns = countmatchedpatterns.concat(matchedPattern);
+                    if(test === 'standard') {
+                        standard++
+                    }else if(test === 'no test') {
+                        notest++;
+                    } else if(test === 'no scripts'){
+                        noscript++
+                    } else if(test === 'noPackage.json'){
+                        noPackagejson++
+                    }
                     sumDetectClient++;
                 }
             }
@@ -74,11 +84,12 @@ export const detectByPattern = async (matchDir: string,libName:string,detectPatt
     //検出に使ったパターンの検出数
     fs.writeFileSync(output_json.getUniqueOutputPath(outputDirectory,path.basename(matchDir),'Detectioncount'), JSON.stringify(output1, null, 4));
     //検出対象
-    //fs.writeFileSync(output_json.getUniqueOutputPath(outputDirectory,path.basename(matchDir),'matchResults'), JSON.stringify(matchCliantPatternJson, null, 2), 'utf8');
+    fs.writeFileSync(output_json.getUniqueOutputPath(outputDirectory,path.basename(matchDir),'matchResults'), JSON.stringify(matchCliantPatternJson, null, 2), 'utf8');
     
     //標準出力
-    console.log('standard or eslint:'+standard+' notest:'+notest+' noscript:'+noscript+' nopackage.json:'+noPackagejson);
-    console.log('detectedUsedPattern:',detectedUserPattern.length);
+    // console.log('standard or eslint:'+standard+' notest:'+notest+' noscript:'+noscript+' nopackage.json:'+noPackagejson);
+    // console.log('detectedUsedPattern:',detectedUserPattern.length);
+    console.log('success alldirs',matchAlldirs.length);
     console.log('sumDetectClient:',sumDetectClient);
     return matchCliantPatternJson;
 }

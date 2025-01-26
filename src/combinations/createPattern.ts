@@ -29,35 +29,39 @@ export const createPattern = async (patternDir: string,libName:string): Promise<
         if(judge === false){
             continue;
         }
+
         extract_pattern1 = await useAst(allFiles, libName,1);
         if(extract_pattern1.length > 0) {
-            respattern.push(extract_pattern1);
-            console.log(subdir);
-            JsonRows.push({
-                failureclient: subdir,
-                detectPatterns: extract_pattern1
-            });
+            //呼び出しだけのもの削除(呼び出しだけの場合，空配列)
+            let judgeArray = await patternUtils.removeCallOnly([extract_pattern1]);
+            if(judgeArray.length > 0 && judgeArray[0].length > 0) {
+                JsonRows.push({
+                    failureclient: subdir,
+                    detectPatterns: extract_pattern1
+                });
+                respattern.push(extract_pattern1);
+            }
         }
     }
-    //呼び出しだけのもの削除
-    respattern = patternUtils.removeCallOnly(respattern);
-    //集約
+    //集約　ただ，集約数計算のために重複している
     let lastpatterns = await processPatterns(respattern);
 
     //ファイル出力
     const outputDirectory = path.resolve(__dirname, '../../output');
     //fs.writeFileSync(output_json.getUniqueOutputPath(outputDirectory,path.basename(patternDir),'rawpattern'), JSON.stringify(JsonRows, null, 4), 'utf8');
     let mergepattern: PatternCount[] = countPatterns(lastpatterns);
+
     mergepattern.sort((a, b) => b.count - a.count);
     const totalCount2 = mergepattern.reduce((acc, item) => acc + item.count, 0);
     const output2:DetectionOutput = {patterns: mergepattern,totalCount: totalCount2};
     if (mergepattern) {
         //fs.writeFileSync(output_json.getUniqueOutputPath(outputDirectory,path.basename(patternDir),'detectpatternlist'), JSON.stringify(output2, null, 4), 'utf8');
     }
-
+    //lastpatternsを一意にする
+    lastpatterns = patternUtils.removeDuplicate(lastpatterns);
     //標準出力
-    console.log('alldirs',alldirs.length);
+    console.log('failure alldirs',alldirs.length);
     console.log('make failure pattern',respattern.length);
-    console.log('all detect mergepattern.length:',mergepattern.length);
+    console.log('lastapatterns',lastpatterns.length);
     return lastpatterns;
 }

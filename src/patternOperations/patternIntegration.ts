@@ -3,6 +3,7 @@ import {patternMatch} from './patternMatch';
 import patternUtils from './patternUtils';
 import patternConversion from "./patternConversion";
 //入力の中で収束させる　IntegrationPattern：abststrしていないもの対象
+//ここでは，収束のためpatternMatchで1つだけをマッチング
 async function processIntegration(newpatterns: string[][][],IntegrationPattern: string[][][]): Promise<string[][][]> {
     let lastpatterns: string[][][] = [];
     for(const subrespattern of newpatterns) {

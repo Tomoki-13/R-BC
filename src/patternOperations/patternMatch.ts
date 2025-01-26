@@ -108,10 +108,10 @@ export const patternMatch = async (userpatterns: string[][], respattern: string[
 //重複許容バージョン
 export const allPatternMatch = async (userpatterns: string[][], respattern: string[][][]): Promise<[boolean, string[][][] | null]> => {
     let search_patterns:string[][][] = JSON.parse(JSON.stringify(respattern));
-    let retrun_searchPattern:string[][][] = [];
+    //検出できたpatternのリスト
+    let detectList:string[][][] = [];
     try {
         for(const search_pattern of search_patterns) {
-            //search_pattern 全体の variableMap を作成
             const variableMap: { [key: string]: string[] } = {};
             for(const search_one of search_pattern) {
                 for(const str of search_one) {
@@ -125,8 +125,7 @@ export const allPatternMatch = async (userpatterns: string[][], respattern: stri
                     }
                 }
             }
-
-            //判定用
+            //判定用配列
             const variableMapJudge: { [key: string]: boolean } = {};
             for(const key in variableMap) {
                 if(variableMap.hasOwnProperty(key)) {
@@ -135,6 +134,7 @@ export const allPatternMatch = async (userpatterns: string[][], respattern: stri
             }
             
             for(const userpattern of userpatterns) {
+                //他のループに影響を与えないように配列を複製
                 const variableMapCopy = JSON.parse(JSON.stringify(variableMap));
                 for(const key in variableMapCopy) {
                     if(variableMapCopy.hasOwnProperty(key)) {
@@ -148,7 +148,6 @@ export const allPatternMatch = async (userpatterns: string[][], respattern: stri
                                 break;
                             }
                         }
-
                         if(importMatch && importMatch?.groups) {
                             const importName = importMatch.groups[key];
                             for(const key1 in variableMapCopy){
@@ -158,55 +157,55 @@ export const allPatternMatch = async (userpatterns: string[][], respattern: stri
                                     }
                                 }
                             }
-                            //interopRequireDefaultがある場合に最初の要素は1つだけのことがある
-                            if(variableMapCopy[key].length == 1){
+                            if(variableMapCopy[key].length === 1){
                                 variableMapJudge[key] = true;
                                 continue;
                             }
                             for(let i = 1; i < variableMapCopy[key].length; i++) {
-                                let functionCallPatternStr = variableMapCopy[key][i].replace(key, importName);
+                                let functionCallPatternStr = variableMapCopy[key][i];
                                 //抽象化 
                                 const functionCallPattern = new RegExp(patternConversion.escapeFunc(functionCallPatternStr));
                                 let matched = false;
                                 for(let j = num; j < userpattern.length; j++) {
+                                    //userpattern[j]に[]がある時の処理
                                     let replaceuserpattern = userpattern[j].replace(/[\r\n]/g, '');
                                     replaceuserpattern = userpattern[j].replace(/\[[^\]]*\]/g, 'argument');
                                     //userpattern[j]に{}がある時の処理
                                     replaceuserpattern = replaceuserpattern.replace(/\{[^}]*\}/g, 'argument');
                                     const functionCallMatch = replaceuserpattern.match(functionCallPattern);
                                     if(functionCallMatch) {
+                                        //一致が見つかった場合
                                         matched = true;
                                         break;
                                     } else {
+                                        //一致が見つからない場合
                                         matched = false;
                                     }
                                 }
-                                if(!matched) {
-                                    variableMapJudge[key] = false;
-                                    break;
-                                }
-                                if(i == variableMap[key].length - 1 && matched){
+                                
+
+                                if(i == variableMapCopy[key].length - 1 && matched){
                                     variableMapJudge[key] = true;
+                                    continue;
                                 }
                             }
-                        } else {
-                            variableMapJudge[key] = false;
-                        }
-                        if(variableMapJudge[key] == false) {
-                            break;
                         }
                     }
                 }
+                //現在の search_pattern が一致
                 if(Object.values(variableMapJudge).every(value => value === true)) {
-                    retrun_searchPattern.push(search_pattern);
+                    break;
                 }
+            }
+            if(Object.values(variableMapJudge).every(value => value === true)) {
+                detectList.push(search_pattern);    
             }
         }
     } catch (err) {
         console.error('Error readFile:', err);
     }
-    if(retrun_searchPattern.length > 0){
-        return [true, retrun_searchPattern];
+    if(detectList.length > 0){
+        return [true, detectList];
     }
     return [false, null];
 };
