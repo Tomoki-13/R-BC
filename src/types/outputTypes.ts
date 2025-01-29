@@ -16,5 +16,5 @@ export interface PatternCount {
 
 export interface DetectionOutput {
     patterns: PatternCount[];
-    totalCount: number;
+    totalClients: number;
 }

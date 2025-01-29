@@ -10,7 +10,7 @@ import {patternMatch, allPatternMatch} from "../patternOperations/patternMatch";
 import { useAst } from "./useAst";
 
 //単一検出 mode = 0 ,重複検出 mode =1
-export const detectByPattern = async (matchDir: string,libName:string,detectPattern:string[][][],mode:number = 0): Promise<MatchClientPattern[]>=>{
+export const detectByPattern = async (matchDir: string,libName:string,detectPattern:string[][][],mode:number = 0): Promise<DetectionOutput>=>{
     let notest:number = 0;
     let standard:number = 0;
     let noscript:number = 0;
@@ -79,17 +79,16 @@ export const detectByPattern = async (matchDir: string,libName:string,detectPatt
     //出力
     const outputDirectory = path.resolve(__dirname, '../../output');
     output_json.createOutputDirectory(outputDirectory);
-    const totalCount = detectedUserPattern.reduce((acc, item) => acc + item.count, 0);
-    const output1:DetectionOutput = { patterns: detectedUserPattern,totalCount: totalCount};
+    const output1:DetectionOutput = { patterns: detectedUserPattern,totalClients: sumDetectClient};
     //検出に使ったパターンの検出数
-    fs.writeFileSync(output_json.getUniqueOutputPath(outputDirectory,path.basename(matchDir),'Detectioncount'), JSON.stringify(output1, null, 4));
-    //検出対象
-    fs.writeFileSync(output_json.getUniqueOutputPath(outputDirectory,path.basename(matchDir),'matchResults'), JSON.stringify(matchCliantPatternJson, null, 2), 'utf8');
+    // fs.writeFileSync(output_json.getUniqueOutputPath(outputDirectory,path.basename(matchDir),'Detectioncount'), JSON.stringify(output1, null, 4));
+    //検出対象2
+    //fs.writeFileSync(output_json.getUniqueOutputPath(outputDirectory,path.basename(matchDir),'matchResults'), JSON.stringify(matchCliantPatternJson, null, 2), 'utf8');
     
     //標準出力
     // console.log('standard or eslint:'+standard+' notest:'+notest+' noscript:'+noscript+' nopackage.json:'+noPackagejson);
     // console.log('detectedUsedPattern:',detectedUserPattern.length);
     console.log('success alldirs',matchAlldirs.length);
     console.log('sumDetectClient:',sumDetectClient);
-    return matchCliantPatternJson;
+    return output1;
 }
