@@ -55,7 +55,7 @@ export const createPattern = async (patternDir: string,libName:string): Promise<
     const totalCount2 = mergepattern.reduce((acc, item) => acc + item.count, 0);
     const output2:DetectionOutput = {patterns: mergepattern,totalClients: totalCount2};
     if (mergepattern) {
-        //fs.writeFileSync(output_json.getUniqueOutputPath(outputDirectory,path.basename(patternDir),'detectpatternlist'), JSON.stringify(output2, null, 4), 'utf8');
+        fs.writeFileSync(output_json.getUniqueOutputPath(outputDirectory,path.basename(patternDir),'detectpatternlist'), JSON.stringify(output2, null, 4), 'utf8');
     }
     //lastpatternsを一意にする
     lastpatterns = patternUtils.removeDuplicate(lastpatterns);

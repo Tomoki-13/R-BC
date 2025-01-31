@@ -1,4 +1,4 @@
-import {getArgAst} from '../astRelated/getArgAst';
+import {getArgAst} from '../astRelated/argument/getArgAst';
 describe('getArgAst', () => {
     test('no arguments', async () => {
         const expectedOutput:string[][] = [];

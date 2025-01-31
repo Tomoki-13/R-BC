@@ -3,7 +3,7 @@ import * as path from 'path';
 
 const createOutputDirectory = (dirPath: string): void => {
     if(!fs.existsSync(dirPath)) {
-        //fs.mkdirSync(outputDirectory);
+        fs.mkdirSync(dirPath);
         console.log(dirPath);
     }
 };
