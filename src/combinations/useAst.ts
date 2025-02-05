@@ -139,15 +139,18 @@ export const useAst = async (allFiles: string[], libName: string,mode:number = 0
         if (mode == 1) {
             const replacement = "tmp";
             let tmp_pattern = pattern.map(subPattern =>
-                subPattern.map(item =>item.replace(/(?<=---)\d+/, replacement))
+                subPattern.map(item =>item.replace(/variable(\d+)/, replacement))
             );
             let index: number[] = []; 
             //一致するインデックスのペアを調査
             for (let j = 0; j < tmp_pattern.length; j++) {
                 for (let k = j + 1; k < tmp_pattern.length; k++) {
-                    //string[] の粒度で比較
-                    if (arraysAreEqual(tmp_pattern[j], tmp_pattern[k])) {
-                        index.push(k);
+                    if (isCompareElement(tmp_pattern[j], tmp_pattern[k])) {
+                        if(tmp_pattern[j].length > tmp_pattern[k].length){
+                            index.push(k);
+                        }else if(tmp_pattern[j].length < tmp_pattern[k].length || tmp_pattern[j].length === tmp_pattern[k].length){
+                            index.push(j);
+                        }
                     }
                 }
             }
@@ -163,12 +166,43 @@ export const useAst = async (allFiles: string[], libName: string,mode:number = 0
     return pattern;
 }
 
-
-//長さが異なる場合は false
-function arraysAreEqual(arr1: string[], arr2: string[]): boolean {
-    if (arr1.length !== arr2.length) return false;
-    for (let i = 0; i < arr1.length; i++) {
-        if (arr1[i] !== arr2[i]) return false;
+//長さが異なる場合は false 
+function isCompareElement(arr1: string[], arr2: string[]): boolean {
+    if (arr1.length !== arr2.length){
+        let long:string[] = [];
+        let short:string[] = [];
+        if(arr1.length < arr2.length){
+            long = arr2;
+            short = arr1;
+        }else{
+            long = arr1;
+            short = arr2;
+        }
+        if(isEqualCheck(short,long)){
+            return true;
+        }
+    }else{
+        for (let i = 0; i < arr1.length; i++) {
+            if (arr1[i] !== arr2[i]) return false;
+        }
+        return true;
     }
-    return true;
+    return false;
+}
+
+function isEqualCheck(short: string[], long: string[]): boolean {
+    let judge:boolean[] = [];
+    for(let i = 0; i < short.length; i++){
+        judge.push(false);
+    }
+    //longの要素にshortの要素が全て含まれているか
+    for(let i = 0; i < short.length; i++){
+        for(let j = 0; j < long.length; j++){
+            if(short[i] === long[j]){
+                judge[i] = true;
+                break;
+            }
+        }
+    }
+    return judge.every(val => val);
 }
