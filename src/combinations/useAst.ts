@@ -3,6 +3,8 @@ import { funcNameIdentifiers, secfuncNameIdentifiers } from "../utils/funcNameId
 import { extractImportLines } from "../utils/extractImportLines";
 import { analyzeAst } from "../astRelated/analyzeAst";
 import { getExceptionModule } from '../astRelated/getExceptionModule';
+import patternConversion from '../patternOperations/patternConversion';
+import patternUtils from '../patternOperations/patternUtils';
 //createPattern用(抽象化あり) mode = 1,detectByPattern用 mode = 0
 export const useAst = async (allFiles: string[], libName: string,mode:number = 0): Promise<string[][]> =>{
     let pattern: string[][] = [];
@@ -133,13 +135,14 @@ export const useAst = async (allFiles: string[], libName: string,mode:number = 0
     // pattern = pattern.filter(subArray => subArray.length > 1);
 
     //空白削除　/t等も削除
+    
     for(let i = 0;i < pattern.length;i++) {
         pattern[i] = pattern[i].map(item => item.trim().replace(/\s+/g, ' '));
         //クライアント内でのパターンの重複統合
         if (mode == 1) {
             const replacement = "tmp";
             let tmp_pattern = pattern.map(subPattern =>
-                subPattern.map(item =>item.replace(/variable(\d+)/, replacement))
+                subPattern.map(item =>item.replace(/---(\d+)/, replacement))
             );
             let index: number[] = []; 
             //一致するインデックスのペアを調査
@@ -163,6 +166,8 @@ export const useAst = async (allFiles: string[], libName: string,mode:number = 0
             }
         }
     }
+    //番号整理
+    pattern = patternUtils.alignNumbersInPattern(pattern).after;
     return pattern;
 }
 
