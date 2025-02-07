@@ -142,7 +142,7 @@ export const useAst = async (allFiles: string[], libName: string,mode:number = 0
         if (mode == 1) {
             const replacement = "tmp";
             let tmp_pattern = pattern.map(subPattern =>
-                subPattern.map(item =>item.replace(/---(\d+)/, replacement))
+                subPattern.map(item =>item.replace(/---(\d+)/g, replacement))
             );
             let index: number[] = []; 
             //一致するインデックスのペアを調査
@@ -161,7 +161,7 @@ export const useAst = async (allFiles: string[], libName: string,mode:number = 0
             index = [...new Set(index)];
             if(index.length > 0) {
                 for(const index_i of index) {
-                    pattern.splice(index_i, pattern[index_i].length);
+                    pattern.splice(index_i, 1);
                 }
             }
         }

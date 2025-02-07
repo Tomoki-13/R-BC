@@ -103,31 +103,42 @@ function arrayToString(array: string[][]): string {
     return array.map(row => row.join(',')).join(';');
 }
 
-//番号の不具合を修正
-function alignNumbersInPattern(subpattern: string[][]): { before: string[][], after: string[][] } {
-    let newSubpattern: string[][] = [];
-    let variableMapping: Map<string, string> = new Map();
+//番号の不具合を修正 
+function alignNumbersInPattern(pattern: string[][]): { before: string[][], after: string[][] } {
+    let  updatedPatterns: string[][] = [];
+    let variableMap: Map<string, string> = new Map();
     let numberIndex = 1;
-    for(let j = 0; j < subpattern.length; j++) {
-        newSubpattern.push([]);
-        for(let k = 0; k < subpattern[j].length; k++) {
-            let before = subpattern[j][k];
-            let after = before;
-            if(before.match(/(---\d+)/)) {
-                let match = before.match(/(---\d+)/);
-                if(match) {
-                    if(!variableMapping.has(match[1])) {
-                        variableMapping.set(match[1], `---${numberIndex++}`);
-                    }
-                    after = before.replace(match[1], variableMapping.get(match[1])!);
+    // ---数字が2つ以上ある行で---数字を置換するとエラーになる可能性あり，tmp数字に変換
+    let normalizedPatterns = pattern.map(row =>
+        row.map(item => item.replace(/---(\d+)/g, "tmp$1"))
+    );
+    for(let i = 0; i < pattern.length; i++) {
+        //　'---2' => '---1'のように移行先の数字を決定
+        for(let j = 0; j < normalizedPatterns[i].length; j++) {
+            let currentLine = normalizedPatterns[i][j];
+            let match = currentLine.match(/(tmp\d+)/);
+            if(match) {
+                if(!variableMap.has(match[1])) { 
+                    variableMap.set(match[1], `---${numberIndex++}`);
                 }
             }
-            newSubpattern[j].push(after);
         }
+        updatedPatterns = normalizedPatterns.map(row => row.map(line => line = convertTmpToFinal(line,variableMap)))
     }
-
-    return { before: subpattern, after: newSubpattern };
+    return { before: pattern, after:  updatedPatterns };
 }
+//alignNumbersInPattern用のvariableMapをもとにtmp数字を置換する処理
+function convertTmpToFinal(line: string, variableMap: Map<string, string>): string {
+    let updatedLine = line;
+    let match = updatedLine.match(/tmp\d+/);
+
+    while (match) {
+        updatedLine = updatedLine.replace(match[0], variableMap.get(match[0])!);
+        match = updatedLine.match(/tmp\d+/);
+    }
+    return updatedLine;
+}
+
 export default {
     sortRespattern,
     removeDuplicate,
