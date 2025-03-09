@@ -7,7 +7,6 @@ package-lock.json
 Dockerfile
 dockercompose.yml
 .dockerignore
-src/__tests__/InputFile
 output
 diff
 allrepos
