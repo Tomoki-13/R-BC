@@ -72,15 +72,15 @@ export const useAst = async (allFiles: string[], libName: string,mode:number = 0
 
                         //抽象化
                         const base = "---";
-                        let uniqueInFileStr: string[] = [...new Set(inFileStr)];
                         let sortUniquefuncName = uniquefuncName.sort((a, b) => b.length - a.length);
+                        let uniqueInFileStr: string[] = [...new Set(inFileStr)];
                         for(const one of sortUniquefuncName){
                             let replaceString: string = base  + j.toString();
                             let mainregex = new RegExp(`(?<!["\`'])${one}(?!["\`'])`, 'g');
                             for(let k = 0; k < uniqueInFileStr.length;k++){
                                 //特殊処理：{}呼び出し系
                                 if(/import|require/.test(uniqueInFileStr[k]) && !/^\s*\/\//.test(uniqueInFileStr[k])&&/\{.*\}/.test(uniqueInFileStr[k])){
-                                    //asと:の場合で条件分け
+                                    //asと:の場合で条件分け　　(?<!["\`'])は"や`の前後(文字列)にマッチしないように
                                     let regex1 = new RegExp(`:\\s*(?<!["\`'])${one}(?!["\`'])`, 'g');
                                     let regex2 = new RegExp(`as\\s*(?<!["\`'])${one}(?!["\`'])`, 'g');
                                     if(regex1.test(uniqueInFileStr[k]) || regex2.test(uniqueInFileStr[k])){
@@ -135,7 +135,6 @@ export const useAst = async (allFiles: string[], libName: string,mode:number = 0
     // pattern = pattern.filter(subArray => subArray.length > 1);
 
     //空白削除　/t等も削除
-    
     for(let i = 0;i < pattern.length;i++) {
         pattern[i] = pattern[i].map(item => item.trim().replace(/\s+/g, ' '));
         //クライアント内でのパターンの重複統合

@@ -27,7 +27,6 @@ describe('useAst', () => {
 });
 describe('abstuse', () => {
     test('import', async () => {
-        const filepath:string[] = ['./src/__tests__/InputFile/import_require_Sample/importsample.ts'];
         const output = await useAst(filepath1,"module",1);
         const expectedOutput:string[][]= [[
             "import ---1 from 'module'",
@@ -38,5 +37,15 @@ describe('abstuse', () => {
         ]];
         expect(output).toEqual(expectedOutput);
     });
-
+    test('require ', async () => {
+        const output = await useAst(filepath2,"module",1);
+        const expectedOutput:string[][]= [[
+            "---1 = require('module')",
+            "---2 = require('module/v4')",
+            "{v4} = require('module')",
+            "{v1:---3,v5:---4} = require('module')",
+            "---5 = require('module').func"
+        ]];
+        expect(output).toEqual(expectedOutput);
+    });
 });
