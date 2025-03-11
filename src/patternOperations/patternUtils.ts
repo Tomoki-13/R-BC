@@ -109,6 +109,7 @@ function alignNumbersInPattern(pattern: string[][]): { before: string[][], after
     let variableMap: Map<string, string> = new Map();
     let numberIndex = 1;
     // ---数字が2つ以上ある行で---数字を置換するとエラーになる可能性あり，tmp数字に変換
+    //[ [ "{v1:---3,v5:---4} = require('module')" ] ]から[ [ "{v1:tmp3,v5:tmp4} = require('module')" ] ]
     let normalizedPatterns = pattern.map(row =>
         row.map(item => item.replace(/---(\d+)/g, "tmp$1"))
     );
@@ -116,10 +117,13 @@ function alignNumbersInPattern(pattern: string[][]): { before: string[][], after
         //　'---2' => '---1'のように移行先の数字を決定
         for(let j = 0; j < normalizedPatterns[i].length; j++) {
             let currentLine = normalizedPatterns[i][j];
-            let match = currentLine.match(/(tmp\d+)/);
-            if(match) {
-                if(!variableMap.has(match[1])) { 
-                    variableMap.set(match[1], `---${numberIndex++}`);
+            let matches = currentLine.matchAll(/tmp\d+/g);
+            if(matches) {
+                for (let match of matches) {
+                    let key = match[0];
+                    if (!variableMap.has(key)) {
+                        variableMap.set(key, `---${numberIndex++}`);
+                    }
                 }
             }
         }
@@ -127,6 +131,7 @@ function alignNumbersInPattern(pattern: string[][]): { before: string[][], after
     }
     return { before: pattern, after:  updatedPatterns };
 }
+
 //alignNumbersInPattern用のvariableMapをもとにtmp数字を置換する処理
 function convertTmpToFinal(line: string, variableMap: Map<string, string>): string {
     let updatedLine = line;

@@ -52,4 +52,12 @@ describe('alignNumbersInPattern', () => {
         };
         expect(patternUtils.alignNumbersInPattern(subpattern)).toEqual(expected);
     });
+    it('align numbers within two permutation locations per element', () => {
+        const subpattern = [["{v1:---3,v5:---4} = require('module')"]];
+        const expected = {
+            before: [["{v1:---3,v5:---4} = require('module')"]],
+            after: [["{v1:---1,v5:---2} = require('module')"]]
+        };
+        expect(patternUtils.alignNumbersInPattern(subpattern)).toEqual(expected);
+    });
 });
