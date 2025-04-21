@@ -3,47 +3,28 @@ import { promises as fsPromises } from 'fs';
 import traverse from "@babel/traverse";
 import * as t from "@babel/types";
 import { FunctionInfo, ExportFunctionInfo} from '../types/FunctionInfo';
-//コード内の機能取得　user定義関数系
+//特定の関数が使われているuser定義関数系列を取得 調整必要
 export const getFunc = async(filePath:string,funcName:string): Promise<FunctionInfo[]> => {
+    //例外処理
+    if(funcName.length === 0) {
+        console.log('funcName is empty');
+        return [];
+    }
     let resultArray: FunctionInfo[] = [];
     try {
         //ファイルの内容を取得
         if(filePath.endsWith('.js') || filePath.endsWith('.ts')) {
             const fileContent: string = await fsPromises.readFile(filePath, 'utf8');
             const parsed = parser.parse(fileContent, {sourceType: 'unambiguous', plugins: ["typescript",'decorators-legacy']});
-        
-            let exportedFunctions = new Set<ExportFunctionInfo>();
-            const isExportedFunction = (func: ExportFunctionInfo): boolean => {
-                for(const exportedFunc of exportedFunctions) {
-                    if(exportedFunc.name === func.name && exportedFunc.args.join(',') === func.args.join(',')) {
-                        return true;
-                    }
-                }
-                return false;
-            };
-            
-            const serializeFunction = (name: string, args: string[]): ExportFunctionInfo => {
-                return { name, args };
-            };
-            const checkRange = (location: number[][], start: number, end: number): boolean => {
-                try {
-                    let isContained = false;
-                    //locationの各要素についてループする
-                    for(const [locStart, locEnd] of location) {
-                        if(start <= locStart && end >= locEnd) {
-                            isContained = true;
-                            break;
-                        }
-                    }
-                    return isContained;
-                } catch (error) {
-                    console.error('Error checkRange:', error);
-                    return false;
-                }
-            };
+            let exportedFuncList = new Set<ExportFunctionInfo>();
             //位置の追跡
             const location: number[][] = await funcLocation(parsed, funcName);
+            console.log(location);
+            location.forEach(element => {
+                    console.log(fileContent.slice(element[0], element[1]));
+            });
             if(location.length>0){
+                //exportedFuncListにexport関数を登録
                 traverse(parsed, {
                     ExpressionStatement(path){
                         if(t.isCallExpression(path.node.expression)) {
@@ -61,7 +42,7 @@ export const getFunc = async(filePath:string,funcName:string): Promise<FunctionI
                                     }
                                 });
                                 const serializedFunc: ExportFunctionInfo = serializeFunction(name, params);
-                                exportedFunctions.add(serializedFunc);
+                                exportedFuncList.add(serializedFunc);
                             }
                         }
                     },
@@ -69,7 +50,7 @@ export const getFunc = async(filePath:string,funcName:string): Promise<FunctionI
                         if(t.isFunctionDeclaration(path.node.declaration) && path.node.declaration.id) {
                             const name: string = path.node.declaration.id.name;
                             const params: string[] = path.node.declaration.params.map(param => (t.isIdentifier(param) ? param.name : ''));
-                            exportedFunctions.add(serializeFunction(name, params));
+                            exportedFuncList.add(serializeFunction(name, params));
                         } else if(t.isVariableDeclaration(path.node.declaration)) {
                             const declarations = path.node.declaration.declarations;
                             for(const declarator of declarations) {
@@ -77,34 +58,19 @@ export const getFunc = async(filePath:string,funcName:string): Promise<FunctionI
                                     const name = declarator.id.name;
                                     const params = declarator.init.params.map(param => (t.isIdentifier(param) ? param.name : ''));
                                     const serializedFunc = serializeFunction(name, params);
-                                    exportedFunctions.add(serializedFunc);
+                                    exportedFuncList.add(serializedFunc);
                                 }
                             }
                         }
                     },
+                    //デフォルトエクスポートは，定義されたファイルがインポート時に無名関数(標準で呼び出される関数)になる(注意)
                     ExportDefaultDeclaration(path){
                         if(t.isFunctionDeclaration(path.node.declaration) && path.node.declaration.id) {
                             const name: string = path.node.declaration.id.name;
                             const params: string[] = path.node.declaration.params.map(param => (t.isIdentifier(param) ? param.name : ''));
-                            exportedFunctions.add(serializeFunction(name, params));
+                            exportedFuncList.add(serializeFunction(name, params));
                         } else if(t.isFunctionExpression(path.node.declaration) || t.isArrowFunctionExpression(path.node.declaration)) {
-                            exportedFunctions.add({ name: 'default', args: [''] });
-                        }
-                    },
-                    FunctionDeclaration(path){
-                        if(path.node.id &&checkRange(location, path.node?.start ?? 0, path.node.end ?? 0)) {
-                            const name: string = path.node.id.name;
-                            const params: string[] = path.node.params.map(param => (t.isIdentifier(param) ? param.name : ''));
-                            const serializedFunc: ExportFunctionInfo = serializeFunction(name, params);
-                            resultArray.push({ name: name, args: params, isExported: isExportedFunction(serializedFunc) , start: path.node.start ?? 0, end: path.node.end ?? 0 });
-                        }
-                    },
-                    VariableDeclarator(path){
-                        if(t.isIdentifier(path.node.id) && path.node.init && (t.isFunctionExpression(path.node.init) || t.isArrowFunctionExpression(path.node.init))&& checkRange(location, path.node?.start ?? 0, path.node.end ?? 0)) {
-                            const name: string = path.node.id.name;
-                            const params: string[] = path.node.init.params.map(param => (t.isIdentifier(param) ? param.name : ''));
-                            const serializedFunc: ExportFunctionInfo = serializeFunction(name, params);
-                            resultArray.push({ name: name, args: params, isExported: isExportedFunction(serializedFunc), start: path.node.start ?? 0, end: path.node.end ?? 0 });
+                            exportedFuncList.add({ name: 'default', args: [''] });
                         }
                     },
                     AssignmentExpression(path){
@@ -115,15 +81,44 @@ export const getFunc = async(filePath:string,funcName:string): Promise<FunctionI
                             if(t.isMemberExpression(path.node.left) && !path.node.left.computed && t.isIdentifier(path.node.left.property)) {
                                 name = path.node.left.property.name;
                                 if(t.isIdentifier(path.node.left.object) && (path.node.left.object.name === 'exports' || path.node.left.object.name === 'module')) {
-                                    exportedFunctions.add(serializeFunction(name, params));
+                                    exportedFuncList.add(serializeFunction(name, params));
                                 }
+                            }
+                        }
+                    },
+                });
+                //user関数の取得とexoirtの判定
+                traverse(parsed, {
+                    FunctionDeclaration(path){
+                        if(path.node.id) {
+                            const name: string = path.node.id.name;
+                            const params: string[] = path.node.params.map(param => (t.isIdentifier(param) ? param.name : ''));
+                            const serializedFunc: ExportFunctionInfo = serializeFunction(name, params);
+                            resultArray.push({ name: name, args: params, isExported: isExportedFunction(serializedFunc,exportedFuncList) , start: path.node.start ?? 0, end: path.node.end ?? 0 });
+                        }
+                    },
+                    VariableDeclarator(path){
+                        if(t.isIdentifier(path.node.id) && path.node.init && (t.isFunctionExpression(path.node.init) || t.isArrowFunctionExpression(path.node.init))) {
+                            const name: string = path.node.id.name;
+                            const params: string[] = path.node.init.params.map(param => (t.isIdentifier(param) ? param.name : ''));
+                            const serializedFunc: ExportFunctionInfo = serializeFunction(name, params);
+                            resultArray.push({ name: name, args: params, isExported: isExportedFunction(serializedFunc,exportedFuncList), start: path.node.start ?? 0, end: path.node.end ?? 0 });
+                        }
+                    },
+                    AssignmentExpression(path){
+                        if(t.isFunctionExpression(path.node.right) || t.isArrowFunctionExpression(path.node.right)) {
+                            let name: string | undefined;
+                            let params: string[] = path.node.right.params.map(param => (t.isIdentifier(param) ? param.name : ''));
+            
+                            if(t.isMemberExpression(path.node.left) && !path.node.left.computed && t.isIdentifier(path.node.left.property)) {
+                                name = path.node.left.property.name;
                             } else if(t.isIdentifier(path.node.left)) {
                                 name = path.node.left.name;
                             }
                             
-                            if(name&&checkRange(location, path.node?.start ?? 0, path.node.end ?? 0)) {
+                            if(name) {
                                 const serializedFunc: ExportFunctionInfo = serializeFunction(name, params);
-                                resultArray.push({ name: name, args: params, isExported: isExportedFunction(serializedFunc), start: path.node.start ?? 0, end: path.node.end ?? 0 });
+                                resultArray.push({ name: name, args: params, isExported: isExportedFunction(serializedFunc,exportedFuncList), start: path.node.start ?? 0, end: path.node.end ?? 0 });
                             }
                         }
                     },
@@ -156,15 +151,61 @@ export const getFunc = async(filePath:string,funcName:string): Promise<FunctionI
                         }
                     },
                 });
+                //resultArray locationのスコープに注意　
+                //関数を使用した部分を含むuser定義関数をフィルタリング
+                resultArray = resultArray.filter(func => checkRange(location, func.start, func.end));
             }
         }
     } catch (error) {
         console.log(`getFunc Failed to create AST forfile: ${filePath}`);
         //console.log(error);
     }
+    // console.log(resultArray.length);
+    // resultArray.forEach(element => {
+    //     console.log('============');
+    //     console.log(element.name);
+    //     console.log(element.args);
+    //     console.log(element.isExported);
+    //     console.log(element.start);
+    //     console.log(element.end);
+    //     console.log('============');
+    // });
     return resultArray;
 }
+// console.log(getFunc('../__tests__/InputFile/functionSample/data1.js','add'));
+// console.log(getFunc('../__tests__/InputFile/functionSample/getFunc/sample.ts',''));
+//関数がエクスポートされた関数リストに存在するかを返す
+const isExportedFunction = (func: ExportFunctionInfo,exportedFuncList: Set<ExportFunctionInfo>): boolean => {
+    for(const exportedFunc of exportedFuncList) {
+        if(exportedFunc.name === func.name && exportedFunc.args.join(',') === func.args.join(',')) {
+            return true;
+        }
+    }
+    return false;
+};
+//関数名と引数のリストを受け取り,ExportFunctionInfo型のオブジェクトを返す
+const serializeFunction = (name: string, args: string[]): ExportFunctionInfo => {
+    return { name, args };
+};
+//startとendがlocationの範囲内にあるかどうかを返す(funcNameの関数を利用)
+const checkRange = (location: number[][], start: number, end: number): boolean => {
+    try {
+        let isContained = false;
+        //locationの各要素についてループする
+        for(const [locStart, locEnd] of location) {
+            if(start <= locStart && end >= locEnd) {
+                isContained = true;
+                break;
+            }
+        }
+        return isContained;
+    } catch (error) {
+        console.error('Error checkRange:', error);
+        return false;
+    }
+};
 
+//関数(funcName)が定義された全部の位置を取得 [[0,20],[30,50]]
 const funcLocation = async (parsed:any, funcName: string): Promise<number[][]> => {
     let resultArray: number[][] = [];
     try {
@@ -176,8 +217,8 @@ const funcLocation = async (parsed:any, funcName: string): Promise<number[][]> =
                     if(init.arguments && init.arguments.some((arg: t.Expression | t.Identifier) => t.isIdentifier(arg) && arg.name.includes(funcName))) {
                         resultArray.push([declarationNode.node.start, declarationNode.node.end]);
                     }
-                } else if(t.isMemberExpression(path.node.init) && path.node.init.property.name === 'default') {
-                    //.default対応
+                } else if(t.isMemberExpression(path.node.init) && path.node.init.name === funcName && path.node.init.property.name === 'default') {
+                    //funcName.default対応
                     resultArray.push([declarationNode.node.start, declarationNode.node.end]);
                 }
             },

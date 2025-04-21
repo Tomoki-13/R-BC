@@ -1,5 +1,6 @@
 import {getFunc} from '../astRelated/getFunc';
 import {FunctionInfo} from '../types/FunctionInfo';
+import { analyzeAst } from '../astRelated/analyzeAst';
 //getFunc(filePath:string,funcName:string)
 describe('getFunc test', () => {
     const filePath1:string = "./src/__tests__/InputFile/functionSample/data1.js";
