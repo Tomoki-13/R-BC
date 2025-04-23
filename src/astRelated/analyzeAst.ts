@@ -4,6 +4,7 @@ import traverse from "@babel/traverse";
 import * as t from "@babel/types";
 import { traceArg } from "./argument/traceArg";
 import {FunctionInfo} from '../types/FunctionInfo';
+//パスと関数名から関数使用部分を抽出　
 export const analyzeAst = async (filePath: string, funcName: string): Promise<string[]> => {
     let resultArray: string[] = [];
     try {
@@ -21,7 +22,7 @@ export const analyzeAst = async (filePath: string, funcName: string): Promise<st
                             const code: string = fileContent.substring(declarationNode.node.start, declarationNode.node.end);
                             codes.push(code);
                         }
-                    } else if(t.isMemberExpression(path.node.init) && path.node.init.property.name === 'default') {
+                    } else if(t.isMemberExpression(path.node.init) &&  path.node.init.name === funcName && path.node.init.property.name === 'default') {
                         //.default対応
                         const code = fileContent.substring(declarationNode.node.start, declarationNode.node.end);
                         codes.push(code);
@@ -99,21 +100,41 @@ export const argplace = async (filePath: string, funcName: string): Promise<stri
                     if(t.isIdentifier(path.node.callee) && path.node.callee.name === funcName) {
                         let code = fileContent.substring(path.node.start, path.node.end);
                         if(path.node.arguments.length > 0) {
-                            //~~()の部分
+                            //~~()の部分　1,2,3
                             let placeword: string = fileContent.substring(path.node.arguments[0].start, path.node.arguments[path.node.arguments.length - 1].end);
                             //置き換え先
-                            let toplaceword: string = placeword;
-                            for(let i = 0; i < path.node.arguments.length - 1; i++) {
+                            console.log('path.node.arguments.length:',path.node.arguments.length);
+                            for(let i = 0; i <= path.node.arguments.length - 1; i++) {
+                                let toplaceword: string = placeword;
                                 const variableName: string = fileContent.substring(path.node.arguments[i].start, path.node.arguments[i].end);
-                                //a to name
+                                //変数名a to name
+                                //後で定義　変数でないものはそのまま処理したいため条件追加
+                                // const argument_i: string = fileContent.substring(path.node.start, path.node.end);
+                                // if(
+                                //     (argument_i.startsWith(`["'\`]`) && argument_i.endsWith(`["'\`]`)) ||  //文字列'~~'
+                                //     !(/[^0-9]/.test(argument_i))                                            //数値の場合 123
+                                // ){
+                                    
+                                // }
+                                console.log('path.node.arguments[i]:',path.node.arguments[i].name);
+                                console.log('i:',i);
                                 let toword: string = traceArg(parsed, variableName, fileContent, path.node.arguments[i].start);
                                 if(toword.length > 0) {
-                                    //置き換え
+                                    //置き換え 
+                                    console.log('origin:',placeword);
+                                    console.log('word1:'+toplaceword);
                                     toplaceword = toplaceword.replace(new RegExp(variableName), toword);
+                                    console.log('word2:'+toplaceword);
                                 }
-                            }
-                            if(placeword != toplaceword) {
-                                code = code.replace(new RegExp(placeword), toplaceword);
+                                function escapeRegExp(str: string): string {
+                                    return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                                }
+                                if(placeword != toplaceword) {
+                                    console.log('true');
+                                    const escaped = escapeRegExp(placeword);
+                                    code = code.replace(new RegExp(escaped), toplaceword);
+                                    placeword = toplaceword;
+                                }
                             }
                         }
                         codes.push(code);
