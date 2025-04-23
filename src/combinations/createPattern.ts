@@ -43,7 +43,7 @@ export const createPattern = async (patternDir: string,libName:string): Promise<
             }
         }
     }
-    //集約　ただ，集約数計算のために重複している
+    //集約 重複あり
     let lastpatterns = await processPatterns(respattern);
 
     //ファイル出力
@@ -59,6 +59,7 @@ export const createPattern = async (patternDir: string,libName:string): Promise<
     }
     //lastpatternsを一意にする
     lastpatterns = patternUtils.removeDuplicate(lastpatterns);
+    
     //標準出力
     console.log('failure alldirs',alldirs.length);
     console.log('make failure pattern',respattern.length);

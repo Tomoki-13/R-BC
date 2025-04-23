@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 
-//細かい粒度
+//細かい粒度　クライアントが初期設定以外のテストを持つ時 trueを返す
 export const jsonconf=(repoPath: string): boolean  =>{
     let returnJudge:boolean = true;
 
@@ -31,9 +31,9 @@ export const jsonconf=(repoPath: string): boolean  =>{
     }
     return returnJudge;
 }
-//ステータスをそのまま返す
-export const jsonconfStr =(repoPath: string): string  =>{
 
+//ステータスを分類後文字列で渡す
+export const jsonconfStr =(repoPath: string): string  =>{
     if (!repoPath) {
         console.error('path error');
         process.exit(1);
@@ -64,6 +64,7 @@ const findPackageJson=(dir: string): string | null =>{
     return findPackageJson(parentDir);
 }
 
+//standard||eslint：スタイルテスト  no test:テストの設定なし　client::初期設定ではない　no scripts:scriptsの要素がない
 const checkTestScript=(packageJsonPath: string): string|undefined=>{
     const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
     if(packageJson.scripts && packageJson.scripts.test) {

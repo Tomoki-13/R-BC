@@ -93,6 +93,7 @@ function escapeFunc(str: string): string {
     }
     return escapedStr;
 }
+
 //引数の抽象化
 function transformArgumrnt(str: string): string {
     str = str.replace(/[\r\n]/g, '');
@@ -116,6 +117,7 @@ function transformArgumrnt(str: string): string {
         return str
     }
 }
+
 //パターンへの変換
 function abstStr(respattern: string[][][]): string[][][] {
     let copiedRespattern:string[][][] = JSON.parse(JSON.stringify(respattern));
