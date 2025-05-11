@@ -7,89 +7,65 @@ export const collectVariableUsageInScopes = (
     parsed: t.File,
     variableName: string,
     fileContent: string,
-): {
-    values: string[],
-    usages: VariableUsage[]
-} => {
-const values: string[] = [];
-const usages: VariableUsage[] = [];
+):  string[] => {
+const usages: string[] = [];
 // 変数への代入履歴を取得
 traverse(parsed, {
     // 変数宣言の処理
     VariableDeclarator(path) {
-    const node = path.node;
-    if(
-        t.isIdentifier(node.id) &&
-        node.id.name === variableName &&
-        node.init &&
-        typeof node.init.start === 'number' &&
-        typeof node.init.end === 'number' 
-    ) {
-        values.push(fileContent.substring(node.init.start, node.init.end));
-    }
+        const { id, init } = path.node;
+        if (
+            t.isIdentifier(id) &&
+            id.name === variableName &&
+            init &&
+            typeof init.start === 'number' &&
+            typeof init.end === 'number'
+        ) {
+            const rhs = fileContent.substring(init.start, init.end);
+            usages.push(`${rhs}`);
+        }
     },
     // 代入式の処理
     AssignmentExpression(path) {
-        const node = path.node;
-        if(
-            t.isIdentifier(node.left) &&
-            node.left.name === variableName &&
-            typeof node.right.start === 'number' &&
-            typeof node.right.end === 'number' &&
-            typeof node.end === 'number' 
-        ){
-            const rightCode = fileContent.substring(node.right.start, node.right.end);
-            const rhs = ['+=', '-=', '*=', '/='].includes(node.operator)
-            ? `${variableName} ${node.operator[0]} ${rightCode}`
-            : rightCode;
-            values.push(rhs);
-        }
-    },
-    // 変数使用箇所の処理
-    Identifier(path) {
-        const node = path.node;
-
-        if(
-            node.name === variableName &&
-            !t.isVariableDeclarator(path.parent) &&
-            !t.isAssignmentExpression(path.parent)
+        const { left, right, operator } = path.node;
+        if (
+            t.isIdentifier(left) &&
+            left.name === variableName &&
+            typeof right.start === 'number' &&
+            typeof right.end === 'number'
         ) {
-            const parent = path.parentPath.node;
-            if(typeof parent.start === 'number' && typeof parent.end === 'number'){
-                const scopeStack: string[] = [];
-                let current: any = path;
-
-                while (current) {
-                    const blockNode = current.node;
-                    if (t.isFunctionDeclaration(blockNode)) {
-                    scopeStack.unshift(`function:${blockNode.id?.name || '<anonymous>'}`);
-                    } else if (t.isFunctionExpression(blockNode)) {
-                    scopeStack.unshift(`function:${(blockNode as t.FunctionExpression).id?.name || '<anonymous>'}`);
-                    } else if (t.isArrowFunctionExpression(blockNode)) {
-                    scopeStack.unshift('function:<anonymous>');
-                    } else if (t.isIfStatement(blockNode)) {
-                    scopeStack.unshift('if');
-                    } else if (t.isForStatement(blockNode)) {
-                    scopeStack.unshift('for');
-                    } else if (t.isWhileStatement(blockNode)) {
-                    scopeStack.unshift('while');
-                    } else if (t.isBlockStatement(blockNode)) {
-                    scopeStack.unshift('block');
-                    } else if (t.isProgram(blockNode)) {
-                    scopeStack.unshift('program');
+            const rhsCode = fileContent.substring(right.start, right.end);
+            // +=, -= などは a = a + 1 のように展開する
+            const opMap: Record<string, string> = {
+            '+=': '+',
+            '-=': '-',
+            '*=': '*',
+            '/=': '/',
+            '%=': '%'
+            };
+            const expandedRhs = opMap[operator]
+            ? `${variableName} ${opMap[operator]} ${rhsCode}`
+            : `${rhsCode}`;
+            usages.push(expandedRhs);
+        }
+        },
+        // 変数使用箇所の処理
+        Identifier(path) {
+            const node = path.node;
+            if(
+                node.name === variableName &&
+                !t.isVariableDeclarator(path.parent) &&
+                !t.isAssignmentExpression(path.parent)
+            ) {
+                const parent = path.parentPath.node;
+                if(typeof parent.start === 'number' && typeof parent.end === 'number'){
+                    if(!fileContent.substring(parent.start, parent.end).includes('console.log')){
+                        usages.push(fileContent.substring(parent.start, parent.end));
                     }
-                current = current.parentPath;
-            }
-
-            usages.push({
-                type: parent.type,
-                code: fileContent.substring(parent.start, parent.end),
-                scopePath: scopeStack.join(' > ')
-            });
+                }
             }
         }
-    }
-  });
+    });
 
-  return { values, usages };
+  return usages;
 };
