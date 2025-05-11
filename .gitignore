@@ -13,3 +13,4 @@ allrepos
 coverage
 src/index.ts
 compare
+src/preDev
