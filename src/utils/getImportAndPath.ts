@@ -30,8 +30,7 @@ export const getImportAndPath = (path:string): ModuleList[] => {
     return result; 
 }
 //get_perFunc_importAndPathに変わってget_importAndPathの出力にかませばいい版
-//get_perFunc_importAndPath消して組み込む可能性あり
-const get_perFunc = (moduleList:ModuleList[]) : CallModuleAndFuncList[] => {
+export const get_perFunc = (moduleList:ModuleList[]) : CallModuleAndFuncList[] => {
     let result:CallModuleAndFuncList[] = [];
     moduleList.forEach(moduleInfo => {
         const funcNames = funcNameIdentifiers(moduleInfo.code,moduleInfo.modulename);
@@ -41,6 +40,8 @@ const get_perFunc = (moduleList:ModuleList[]) : CallModuleAndFuncList[] => {
     });
     return result;
 }
+
+//関数単位までデータを抽出
 export const get_perFunc_importAndPath = (path:string): CallModuleAndFuncList[] => {
     const code = fs.readFileSync(path, 'utf8');
     let result:CallModuleAndFuncList[] = [];

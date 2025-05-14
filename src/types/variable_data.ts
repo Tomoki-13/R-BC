@@ -4,8 +4,7 @@ export interface ScopeRange {
 }
 
 export interface VariableUsage {
-  type: string;
-  code: string;
-  scopePath: string;
+  code: string[];
+  varScopeStart: number;
+  varScopeEnd: number;
 }
-
