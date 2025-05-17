@@ -13,3 +13,7 @@ src/runcode.tsのファイル内のパスを書き換えたのち，以下を実
 ```bash
 ts-node runcode.ts libName
 ```
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](./LICENSE) file for details.
