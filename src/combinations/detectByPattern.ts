@@ -81,19 +81,19 @@ export const detectByPattern = async (matchDir: string,libName:string,detectPatt
     const outputDirectory = path.resolve(__dirname, '../../output');
     output_json.createOutputDirectory(outputDirectory);
     const output1:DetectionOutput = { patterns: detectedUserPattern,totalClients: sumDetectClient};
-    //検出に使ったパターンの検出数
-    //fs.writeFileSync(output_json.getUniqueOutputPath(outputDirectory,path.basename(matchDir),'Detectioncount'), JSON.stringify(output1, null, 4));
-    //検出対象2
+    //検出対象
+    // fs.writeFileSync(output_json.getUniqueOutputPath(outputDirectory,path.basename(matchDir),'detect'), JSON.stringify(detectedUserPattern, null, 2), 'utf8');
     fs.writeFileSync(output_json.getUniqueOutputPath(outputDirectory,path.basename(matchDir),'matchResults'), JSON.stringify(matchCliantPatternJson, null, 2), 'utf8');
     
     if(matchDir.includes('success')){
         //標準出力
         console.log('success');
         console.log('nopackage.json:'+noPackagejson+' noscript:'+noscript+'notest:'+notest+'standard or eslint:'+standard);
-        // console.log('detectedUsedPattern:',detectedUserPattern.length);
+        console.log('detectedUsedPattern:',detectedUserPattern.length);
         console.log('alldirs',matchAlldirs.length);
         console.log('sumDetectClient:',sumDetectClient);
-    }else if(matchDir.includes('failure')){
+    }
+    if(matchDir.includes('failure')){
         //標準出力
         console.log('failure');
         console.log('nopackage.json:'+noPackagejson+' noscript:'+noscript+'notest:'+notest+'standard or eslint:'+standard);

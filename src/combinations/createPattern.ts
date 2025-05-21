@@ -14,6 +14,7 @@ import patternUtils from '../patternOperations/patternUtils';
 export const createPattern = async (patternDir: string,libName:string): Promise<string[][][]>=>{
     let JsonRows:JsonRow[] = [];
     let respattern: string[][][] = [];
+    //クライアントのディレクトリを抽出
     const alldirs: string[] = await getSubDir(patternDir);
     for(const subdir of alldirs) {
         let extract_pattern1: string[][] = [];
