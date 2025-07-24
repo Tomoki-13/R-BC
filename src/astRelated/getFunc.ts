@@ -3,6 +3,7 @@ import { promises as fsPromises } from 'fs';
 import traverse from "@babel/traverse";
 import * as t from "@babel/types";
 import { FunctionInfo, ExportFunctionInfo} from '../types/FunctionInfo';
+import { createAstFromFile } from './createAstFromFile';
 //特定の関数が使われているuser定義関数系列を取得 調整必要
 export const getFunc = async(filePath:string,funcName:string): Promise<FunctionInfo[]> => {
     //例外処理
@@ -15,7 +16,10 @@ export const getFunc = async(filePath:string,funcName:string): Promise<FunctionI
         //ファイルの内容を取得
         if(filePath.endsWith('.js') || filePath.endsWith('.ts')) {
             const fileContent: string = await fsPromises.readFile(filePath, 'utf8');
-            const parsed = parser.parse(fileContent, {sourceType: 'unambiguous', plugins: ["typescript",'decorators-legacy']});
+            const parsed = createAstFromFile(filePath,fileContent);
+            if(parsed === null){
+                return [];
+            }
             let exportedFuncList = new Set<ExportFunctionInfo>();
             //位置の追跡
             const location: number[][] = await funcLocation(parsed, funcName);

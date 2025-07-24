@@ -4,6 +4,7 @@ import { promises as fsPromises } from 'fs';
 import traverse from "@babel/traverse";
 import * as t from "@babel/types";
 import { module_export_prperty } from "../types/FunctionInfo";
+import { createAstFromFile } from './createAstFromFile';
 
 // module.exports.propertyを持つか否かの抽出
 export const getExceptionModule = async (filePath: string, funcName: string,codes:string[]=[]): Promise<string[]> => {
@@ -12,7 +13,10 @@ export const getExceptionModule = async (filePath: string, funcName: string,code
         //ファイルの内容を取得
         if(filePath.endsWith('.js') || filePath.endsWith('.ts')) {
             const fileContent: string = await fsPromises.readFile(filePath, 'utf8');
-            const parsed = parser.parse(fileContent, { sourceType: 'unambiguous', plugins: ["typescript", 'decorators-legacy'] });
+            const parsed = createAstFromFile(filePath,fileContent);
+            if(parsed === null){
+                return [];
+            }
             //module.exports.propertyでの種類 例：module.exports.hasMagic
             traverse(parsed, {
                 AssignmentExpression(path: any) {
@@ -33,7 +37,7 @@ export const getExceptionModule = async (filePath: string, funcName: string,code
             });
         }
         if(codes.length > 0) {
-            console.log(`codes ${codes}`);
+            //console.log(`codes ${codes}`);
             resultArray = resultArray.concat(codes);
         }
     } catch (error) {

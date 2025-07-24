@@ -4,13 +4,19 @@ import patternUtils from './patternUtils';
 import patternConversion from "./patternConversion";
 //入力の中で収束させる　IntegrationPattern：abststrしていないもの対象
 //ここでは，収束のためpatternMatchで1つだけをマッチング
+//newpatterns：生データ（IntegrationPatternの重複削除前）
+//IntegrationPattern：軽く重複を消しただけのデータ
+
 async function processIntegration(newpatterns: string[][][],IntegrationPattern: string[][][]): Promise<string[][][]> {
     let lastpatterns: string[][][] = [];
+    if(newpatterns.length === 0) {
+        return lastpatterns;
+    }
     for(const subrespattern of newpatterns) {
         if(Array.isArray(subrespattern) && subrespattern.every(Array.isArray)) {
             let tmppattern: string[][][] = JSON.parse(JSON.stringify(IntegrationPattern));
             tmppattern = patternUtils.removeSubpattern(tmppattern, subrespattern);
-            //以降変換後
+            //IntegrationPatternの正規表現へ変換 これを用いて集約
             tmppattern = patternConversion.abstStr(tmppattern);
             let isMatch1: boolean = false;
             let matchedPattern1: string[][] | null = null;
@@ -56,6 +62,12 @@ async function processIntegration(newpatterns: string[][][],IntegrationPattern: 
             }
         }
     }
+    //検証用ペア確認
+    // let tmppattern: string[][][] = JSON.parse(JSON.stringify(newpatterns));
+    // tmppattern = patternConversion.abstStr(tmppattern);
+    // console.log('newpatterns.len', tmppattern.length);
+    // console.log('lastpatterns.len', lastpatterns.length);
+
     return lastpatterns;
 }
 
