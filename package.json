@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "description": "",
-  "main": "src",
+  "main": "src/index.ts",
   "directories": {
     "test": "test"
   },
@@ -31,6 +31,7 @@
     "@babel/traverse": "^7.24.1",
     "acorn-walk": "^8.3.2",
     "csv-parser": "^3.0.0",
+    "dotenv": "^17.2.1",
     "fs": "^0.0.1-security"
   }
 }

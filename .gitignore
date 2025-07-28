@@ -11,6 +11,7 @@ output
 diff
 allrepos
 coverage
-src/index.ts
 compare
 src/preDev
+allrepos-origin
+.env

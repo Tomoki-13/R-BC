@@ -2,12 +2,17 @@ import * as parser from "@babel/parser";
 import { promises as fsPromises } from 'fs';
 import traverse from "@babel/traverse"; 
 import * as t from "@babel/types";
+import { createAstFromFile } from "../createAstFromFile";
+
 export const getArgAst = async(filePath:string,funcName:string): Promise<string[][]> => {
     let resultArray:string[][]=[];
     try {
         if(filePath.endsWith('.js') || filePath.endsWith('.ts')) {
             const fileContent: string = await fsPromises.readFile(filePath, 'utf8');
-            const parsed = parser.parse(fileContent, {sourceType: 'unambiguous', plugins: ["typescript",'decorators-legacy']});
+            const parsed = createAstFromFile(filePath,fileContent);
+            if(parsed === null){
+                return [];
+            }
             traverse(parsed, {
                 CallExpression(path: any) {
                     const node = path.node;
