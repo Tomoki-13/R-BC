@@ -11,7 +11,7 @@ import { useAst } from "./useAst";
 import { combinePatterns } from '../patternOperations/patternCount';
 
 //単一検出 mode = 0 ,重複検出 mode =1
-export const detectByPattern = async (matchDir: string,libName:string,detectPattern:string[][][],mode:number = 0): Promise<DetectionOutput>=>{
+export const detectByPattern = async (matchDir: string,libName:string,detectPattern:string[][][],outputDir:string,mode:number = 0): Promise<DetectionOutput>=>{
     let notest:number = 0;
     let standard:number = 0;
     let noscript:number = 0;
@@ -71,6 +71,19 @@ export const detectByPattern = async (matchDir: string,libName:string,detectPatt
                     sumDetectClient++;
                 }
             }
+            // if(test === 'standard') {
+            //     //console.log('standard',subdir);
+            //     standard++
+            // }else if(test === 'no test') {
+            //     //console.log('no test',subdir);
+            //     notest++;
+            // } else if(test === 'no scripts'){
+            //     //console.log('no scripts',subdir);
+            //     noscript++
+            // } else if(test === 'noPackage.json'){
+            //     //console.log('no scripts',subdir);
+            //     noPackagejson++
+            // }
         }
     }
     const search_patterns = JSON.parse(JSON.stringify(countmatchedpatterns));
@@ -78,41 +91,45 @@ export const detectByPattern = async (matchDir: string,libName:string,detectPatt
     detectedUserPattern.sort((a, b) => b.count - a.count);
     
     //出力
-    const outputDirectory = path.resolve(__dirname, '../../output');
-    output_json.createOutputDirectory(outputDirectory);
     const output1:DetectionOutput = { patterns: detectedUserPattern,totalClients: sumDetectClient};
     //検出対象
-    // fs.writeFileSync(output_json.getUniqueOutputPath(outputDirectory,path.basename(matchDir),'detect'), JSON.stringify(detectedUserPattern, null, 2), 'utf8');
-    fs.writeFileSync(output_json.getUniqueOutputPath(outputDirectory,path.basename(matchDir),'matchResults'), JSON.stringify(matchCliantPatternJson, null, 2), 'utf8');
+    // fs.writeFileSync(output_json.getUniqueOutputPath(outputDir,path.basename(matchDir),'detect'), JSON.stringify(detectedUserPattern, null, 2), 'utf8');
+    fs.writeFileSync(output_json.getUniqueOutputPath(outputDir,path.basename(matchDir),'matchResults'), JSON.stringify(matchCliantPatternJson, null, 2), 'utf8');
     
     if(matchDir.includes('success')){
         //標準出力
-        console.log('success');
+        console.log('============detect success==========');
         console.log('nopackage.json:'+noPackagejson+' noscript:'+noscript+'notest:'+notest+'standard or eslint:'+standard);
         console.log('detectedUsedPattern:',detectedUserPattern.length);
-        console.log('alldirs',matchAlldirs.length);
+        console.log('alldirs:',matchAlldirs.length);
         console.log('sumDetectClient:',sumDetectClient);
     }
     if(matchDir.includes('failure')){
         //標準出力
-        console.log('failure');
+        console.log('============detect failure==========');
         console.log('nopackage.json:'+noPackagejson+' noscript:'+noscript+'notest:'+notest+'standard or eslint:'+standard);
-        console.log('alldirs',matchAlldirs.length);
+        console.log('alldirs:',matchAlldirs.length);
         console.log('sumDetectClient:',sumDetectClient);
     }
+    console.log('=================================');
     return output1;
 }
-export const support_detectByPattern = async (failureDir: string, successDir: string,libName:string,detectPattern:string[][][]): Promise<PatternCount[]>=>{
+
+export const support_detectByPattern = async (
+    failureDir: string,
+    successDir: string,
+    libName:string,
+    detectPattern:string[][][],
+    outputDir:string
+): Promise<PatternCount[]>=>{
     //テスト失敗からパターンによって検出
-    const failureResult:DetectionOutput = await detectByPattern(failureDir,libName,detectPattern,1);
-    //テスト成功からパターンによって検出
-    const successResult:DetectionOutput = await detectByPattern(successDir,libName,detectPattern,1);
-    const outputDirectory = path.resolve(__dirname, '../../output');
-    output_json.createOutputDirectory(outputDirectory);
-    //全クライアントにおけるパターンの検出結果
+    const failureResult:DetectionOutput = await detectByPattern(failureDir,libName,detectPattern,outputDir,1);
+    // テスト成功からパターンによって検出
+    const successResult:DetectionOutput = await detectByPattern(successDir,libName,detectPattern,outputDir,1);
+    // 全クライアントにおけるパターンの検出結果
     let combineClient:PatternCount[] = combinePatterns(failureResult.patterns,successResult.patterns);
-    fs.writeFileSync(output_json.getUniqueOutputPath(outputDirectory,path.basename(failureDir),'detect'), JSON.stringify(failureResult, null, 2), 'utf8');
-    fs.writeFileSync(output_json.getUniqueOutputPath(outputDirectory,path.basename(successDir),'detect'), JSON.stringify(successResult, null, 2), 'utf8');
-    fs.writeFileSync(output_json.getUniqueOutputPath(outputDirectory,path.basename(successDir+'combine'),'preCount'), JSON.stringify(combineClient, null, 2), 'utf8');
+    fs.writeFileSync(output_json.getUniqueOutputPath(outputDir,path.basename(failureDir),'detect'), JSON.stringify(failureResult, null, 2), 'utf8');
+    fs.writeFileSync(output_json.getUniqueOutputPath(outputDir,path.basename(successDir),'detect'), JSON.stringify(successResult, null, 2), 'utf8');
+    fs.writeFileSync(output_json.getUniqueOutputPath(outputDir,path.basename(successDir+'combine'),'preCount'), JSON.stringify(combineClient, null, 2), 'utf8');
     return combineClient;
 }

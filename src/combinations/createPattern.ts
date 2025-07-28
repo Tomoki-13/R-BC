@@ -11,7 +11,7 @@ import { processPatterns } from "./processPatterns";
 import patternUtils from '../patternOperations/patternUtils';
 
 //作成処理
-export const createPattern = async (patternDir: string,libName:string): Promise<string[][][]>=>{
+export const createPattern = async (patternDir: string,libName:string,outputDir:string): Promise<string[][][]>=>{
     let JsonRows:JsonRow[] = [];
     let respattern: string[][][] = [];
     //クライアントのディレクトリを抽出
@@ -48,22 +48,26 @@ export const createPattern = async (patternDir: string,libName:string): Promise<
     let lastpatterns = await processPatterns(respattern);
 
     //ファイル出力
-    const outputDirectory = path.resolve(__dirname, '../../output');
-    //fs.writeFileSync(output_json.getUniqueOutputPath(outputDirectory,path.basename(patternDir),'rawpattern'), JSON.stringify(JsonRows, null, 4), 'utf8');
+    //fs.writeFileSync(output_json.getUniqueOutputPath(outputDir,path.basename(patternDir),'rawpattern'), JSON.stringify(JsonRows, null, 4), 'utf8');
     let mergepattern: PatternCount[] = countPatterns(lastpatterns);
 
     mergepattern.sort((a, b) => b.count - a.count);
     const totalCount2 = mergepattern.reduce((acc, item) => acc + item.count, 0);
     const output2:DetectionOutput = {patterns: mergepattern,totalClients: totalCount2};
     if (mergepattern) {
-        fs.writeFileSync(output_json.getUniqueOutputPath(outputDirectory,path.basename(patternDir),'detectpatternlist'), JSON.stringify(output2, null, 4), 'utf8');
+        fs.writeFileSync(output_json.getUniqueOutputPath(outputDir,path.basename(patternDir),'detectpatternlist'), JSON.stringify(output2, null, 4), 'utf8');
     }
+    // //パターンペア出力
+    // fs.writeFileSync(output_json.getUniqueOutputPath(outputDir,path.basename(patternDir),'integrate_pair'), JSON.stringify(lastpatterns, null, 4), 'utf8');
+
     //lastpatternsを一意にする
     lastpatterns = patternUtils.removeDuplicate(lastpatterns);
     
     //標準出力
+    console.log('========== createPattern ============');
     console.log('failure alldirs',alldirs.length);
     console.log('make failure pattern',respattern.length);
     console.log('lastapatterns',lastpatterns.length);
+    console.log('=====================================');
     return lastpatterns;
 }
