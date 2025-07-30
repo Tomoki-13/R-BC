@@ -97,24 +97,21 @@ export const detectByPattern = async (matchDir: string,libName:string,detectPatt
     fs.writeFileSync(output_json.getUniqueOutputPath(outputDir,path.basename(matchDir),'matchResults'), JSON.stringify(matchCliantPatternJson, null, 2), 'utf8');
     
     if(matchDir.includes('success')){
-        //標準出力
         console.log('============detect success==========');
-        console.log('nopackage.json:'+noPackagejson+' noscript:'+noscript+'notest:'+notest+'standard or eslint:'+standard);
-        console.log('detectedUsedPattern:',detectedUserPattern.length);
-        console.log('alldirs:',matchAlldirs.length);
-        console.log('sumDetectClient:',sumDetectClient);
-    }
-    if(matchDir.includes('failure')){
-        //標準出力
+    }else if(matchDir.includes('failure')){
         console.log('============detect failure==========');
-        console.log('nopackage.json:'+noPackagejson+' noscript:'+noscript+'notest:'+notest+'standard or eslint:'+standard);
-        console.log('alldirs:',matchAlldirs.length);
-        console.log('sumDetectClient:',sumDetectClient);
+    } else {
+        console.log('============================');
     }
+    console.log('matchDir:',matchDir);
+    console.log('detectedUsedPattern:',detectedUserPattern.length);
+    console.log('nopackage.json:'+noPackagejson+' noscript:'+noscript+'notest:'+notest+'standard or eslint:'+standard);
+    console.log('alldirs:',matchAlldirs.length);
+    console.log('sumDetectClient:',sumDetectClient);
     console.log('=================================');
     return output1;
 }
-
+//重複を許して検出し，テストが失敗した方も検出対象としている
 export const support_detectByPattern = async (
     failureDir: string,
     successDir: string,
