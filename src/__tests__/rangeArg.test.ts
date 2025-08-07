@@ -6,7 +6,7 @@ describe('rangeArg test', () => {
     const filePath1:string = "./src/__tests__/InputFile/argment/rangeArgFile.ts";
     test('Basic usage', async () => {
         const fileContent = fs.readFileSync(filePath1, 'utf-8');
-        const usages:VariableUsage[] = rangeArg(fileContent, 'foo');
+        const usages:VariableUsage[] = rangeArg(filePath1,fileContent, 'foo');
         const expectedOutput:VariableUsage[] = [
             {
                 code: ['1', 'foo + 2', 'foo + 3', 'foo * x'],
