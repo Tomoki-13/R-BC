@@ -1,4 +1,4 @@
-import { useAst } from "../combinations/useAst";
+import { useAst } from "../core/useAst";
 const filepath1:string[] = ['./src/__tests__/InputFile/import_require_Sample/importsample.ts'];
 const filepath2:string[] = ['./src/__tests__/InputFile/import_require_Sample/requiresample.js'];
 describe('useAst', () => {
