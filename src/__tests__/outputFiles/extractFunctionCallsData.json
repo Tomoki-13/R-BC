@@ -1,0 +1,95 @@
+{
+  "tracks constant arguments within the same file": [
+    {
+      "FunctionCallCodes": [
+        "roop_divide(81, 3)"
+      ],
+      "argTypes": [
+        [
+          "number"
+        ],
+        [
+          "number"
+        ]
+      ],
+      "argContexts": [
+        [
+          "81"
+        ],
+        [
+          "3"
+        ]
+      ]
+    }
+  ],
+  "tracks variable arguments defined within the same file": [
+    {
+      "FunctionCallCodes": [
+        "roop_divide(a, b)"
+      ],
+      "argTypes": [
+        [
+          "number"
+        ],
+        [
+          "number"
+        ]
+      ],
+      "argContexts": [
+        [
+          "81",
+          "a + 1"
+        ],
+        [
+          "3"
+        ]
+      ]
+    }
+  ],
+  "tracks variable arguments from an external file": {
+    "division": [
+      {
+        "FunctionCallCodes": [
+          "divide(a, b)"
+        ],
+        "argTypes": [
+          [
+            "number",
+            "string"
+          ],
+          [
+            "number"
+          ]
+        ],
+        "argContexts": [
+          [
+            "81",
+            "a + 1",
+            "\"this is not a number\""
+          ],
+          [
+            "3"
+          ]
+        ]
+      }
+    ],
+    "logger_wrapper": [
+      {
+        "FunctionCallCodes": [
+          "logger.info(message)"
+        ],
+        "argTypes": [
+          [
+            "string"
+          ]
+        ],
+        "argContexts": [
+          [
+            "\"User logged in\"",
+            "\"System shutdown\""
+          ]
+        ]
+      }
+    ]
+  }
+}
