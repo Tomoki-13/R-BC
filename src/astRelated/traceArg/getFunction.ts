@@ -2,9 +2,11 @@ import { promises as fs } from 'fs';
 import * as parser from '@babel/parser';
 import traverse from '@babel/traverse';
 import * as t from '@babel/types';
+
 import { FunctionMetaInfo, FunctionInfo_funcRange } from '../../types/FunctionMetaInfo';
 
 //mode = 0:exportされている関数のみを抽出，,mode = 1:全ての関数を抽出
+// 関数の定義は、アロー関数から関数宣言まで対応
 export const getFunc = async (filePath: string, mode = 0): Promise<FunctionInfo_funcRange[]> => {
   const resultArray: FunctionMetaInfo[] = [];
 
@@ -196,14 +198,3 @@ function toExportedFunctionInfo(data: FunctionMetaInfo[]): FunctionInfo_funcRang
     }));
   return result;
 }
-
-// (async () => {
-//     const absolutePath = path.resolve('../rangeArg/sample');
-//     const allpath:string[] = await getAllFiles(absolutePath);
-//     allpath.forEach(async (filePath) => {
-//         const func = await getFunc(filePath,1);
-//         console.log(func);
-//     })
-// })();
-
-//module.id.exportsも考慮するようにしないといけない

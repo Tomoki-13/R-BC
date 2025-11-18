@@ -2,12 +2,13 @@ import { promises as fsPromises } from 'fs';
 import * as parser from '@babel/parser';
 import traverse, { NodePath } from '@babel/traverse';
 import * as t from '@babel/types';
-import { FunctionInfo_funcRange } from '../types/FunctionMetaInfo';
-import { getFunc } from './getFunc';
+
+import { FunctionInfo_funcRange } from '../../types/FunctionMetaInfo';
+import { getFunc } from './getFunction';
 import { rangeArg } from '../rangeArg/rangeArg';
-import { InboundFunctionDependencies } from '../types/FileDependencies';
-import { VariableUsage } from '../types/VariableUsage';
-import { ExtractFunctionCallsResult } from '../types/ExtractFunctionCallsResult';
+import { InboundFunctionDependencies } from '../../types/FileDependencies';
+import { VariableUsage } from '../../types/VariableUsage';
+import { ExtractFunctionCallsResult } from '../../types/ExtractFunctionCallsResult';
 
 /**
  * 引数を解析し、その型とコンテキストを特定するヘルパー関数
@@ -17,13 +18,9 @@ import { ExtractFunctionCallsResult } from '../types/ExtractFunctionCallsResult'
  * @param funcDepend 逆引きされた依存関係情報
  * @returns 引数の型とコンテキストの解析結果
  */
+
 async function analyzeArguments(
-  args: (
-    | t.Expression
-    | t.SpreadElement
-    | t.JSXNamespacedName
-    | t.ArgumentPlaceholder
-  )[],
+  args: (t.Expression | t.SpreadElement | t.JSXNamespacedName | t.ArgumentPlaceholder)[],
   fileContent: string,
   allFunctions: FunctionInfo_funcRange[],
   funcDepend: InboundFunctionDependencies[],
@@ -358,44 +355,3 @@ function inferTypeFromCode(
   if (/^.*\(.+\)/.test(code)) return 'unknown'; // 関数呼び出しの結果などは'unknown'
   return 'unknown';
 }
-
-// import { FunctionInfo } from '../types/FunctionInfo';
-// import { getAllFiles } from '../utils/getAllFiles';
-// import { reverseDependencies } from './reverseDependencies';
-// import { getFileRelated } from './getFileRelated';
-// import { OutboundFileDependencies,} from '../types/FileDependencies';
-// (async () => {
-//   try {
-//     const allFiles: string[] = await getAllFiles('./sample');
-//     const groupedDependencies: OutboundFileDependencies[] =
-//       getFileRelated(allFiles);
-//     // 依存関係を逆転させる
-//     const reversed: InboundFunctionDependencies[] =
-//       reverseDependencies(groupedDependencies);
-
-//     // 定数
-//     let result: ExtractFunctionCallsResult[] = await extractFunctionCalls('./sample/constant.js', 'roop_divide', reversed);
-//     // // 変数：ファイル内入力
-//     // let result: ExtractFunctionCallsResult[] = await extractFunctionCalls('./sample/main.js', 'roop_divide', reversed);
-//     // // // 変数：ファイル外入力
-//     // let result: ExtractFunctionCallsResult[] = await extractFunctionCalls('./sample/division.js', 'divide', reversed);
-//     // let result: ExtractFunctionCallsResult[] = await extractFunctionCalls('./sample/user_factory.js', 'User', reversed);
-//     const result: ExtractFunctionCallsResult[] = await extractFunctionCalls(
-//       './sample/logger_wrapper.js',
-//       'logger',
-//       reversed,
-//     );
-//     // eslint-disable-next-line no-console
-//     console.log(
-//       'extractFunctionCalls Result:',
-//       JSON.stringify(result, null, 2),
-//     );
-//   } catch (e: unknown) { // Use 'unknown' for catch
-//     console.error('Execution failed:');
-//     if (e instanceof Error) {
-//       console.error(e.message);
-//     } else {
-//       console.error('An unknown error occurred', e);
-//     }
-//   }
-// })();

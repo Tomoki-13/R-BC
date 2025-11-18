@@ -1,6 +1,6 @@
 import * as path from 'path';
 import { CallModuleAndFuncList } from '../../types/ModuleList';
-import { get_perFunc_importAndPath } from './getImportAndPath';
+import { getImportAndPath } from '../../utils/getImportAndPath';
 import { OutboundFileDependencies } from '../../types/FileDependencies';
 
 // 解析対象とするファイルの拡張子
@@ -13,13 +13,13 @@ const SUPPORTED_EXTENSIONS = ['.js', '.ts', '.jsx', '.tsx'];
  */
 export function getFileRelated(all_filePaths: string[]): OutboundFileDependencies[] {
   const relevantFiles = all_filePaths.filter((filePath) => SUPPORTED_EXTENSIONS.some((ext) => filePath.endsWith(ext)));
-  const allCalledUserFunc = relevantFiles.flatMap((filePath) => get_perFunc_importAndPath(filePath));
+  const allCalledUserFunc: CallModuleAndFuncList[] = relevantFiles.flatMap((filePath) =>
+    getImportAndPath(filePath, 0) as CallModuleAndFuncList[]
+  );
   return getDependRelated(allCalledUserFunc);
 }
 
-/**
- * 呼び出し関係の生データを受け取り、ファイルごとの依存関係に整理する
- */
+// 呼び出し関係の生データを受け取り、ファイルごとの依存関係に整理する
 function getDependRelated(data: CallModuleAndFuncList[]): OutboundFileDependencies[] {
   const resultMap = new Map<string, Map<string, Set<string>>>();
 

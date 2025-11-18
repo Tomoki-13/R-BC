@@ -1,7 +1,4 @@
 import { OutboundFileDependencies, InboundFunctionDependencies, DependencyInfo } from '../../types/FileDependencies';
-import { getFileRelated } from './getFileRelated';
-import { getAllFiles } from '../../utils/getAllFiles';
-import * as path from 'path';
 
 //あるファイルが呼び出されているファイルを網羅的に取得する例：AがBとCに呼び出されている)
 export function reverseDependencies(fileDeps: OutboundFileDependencies[]): InboundFunctionDependencies[] {
@@ -50,13 +47,3 @@ export function reverseDependencies(fileDeps: OutboundFileDependencies[]): Inbou
 
   return result;
 }
-
-(async () => {
-  const absolutePath = path.resolve('../rangeArg');
-  const allpath: string[] = await getAllFiles(absolutePath);
-  const groupedDependencies = getFileRelated(allpath);
-  console.log(JSON.stringify(groupedDependencies, null, 2));
-  // 依存関係を逆転させる
-  const reversed = reverseDependencies(groupedDependencies);
-  console.log(JSON.stringify(reversed, null, 2));
-})();
