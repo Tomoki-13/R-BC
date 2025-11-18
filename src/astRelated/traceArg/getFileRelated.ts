@@ -12,12 +12,8 @@ const SUPPORTED_EXTENSIONS = ['.js', '.ts', '.jsx', '.tsx'];
  * @returns ファイルごとの（アウトバウンド）依存関係の配列
  */
 export function getFileRelated(all_filePaths: string[]): OutboundFileDependencies[] {
-  // 1. パース可能なファイル（JS/TS系）のみに絞り込む
   const relevantFiles = all_filePaths.filter((filePath) => SUPPORTED_EXTENSIONS.some((ext) => filePath.endsWith(ext)));
-
-  // flatMapを使って、全ファイルから依存関係リストをフラットに取得
   const allCalledUserFunc = relevantFiles.flatMap((filePath) => get_perFunc_importAndPath(filePath));
-
   return getDependRelated(allCalledUserFunc);
 }
 
@@ -59,10 +55,3 @@ function getDependRelated(data: CallModuleAndFuncList[]): OutboundFileDependenci
     return { filepath, dependence };
   });
 }
-
-// (async () => {
-//     const absolutePath = path.resolve('../rangeArg');
-//     let allpath:string[] = await getAllFiles(absolutePath);
-//     const groupedDependencies = getFileRelated(allpath);
-//     console.log(JSON.stringify(groupedDependencies, null, 2));
-// })();
