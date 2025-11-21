@@ -3,7 +3,7 @@ import { ModuleList, CallModuleAndFuncList } from '../types/ModuleList';
 describe('getImportAndPath test(mode 1)', () => {
   const filePath3: string = "./src/__tests__/inputFiles/functionSample/funcsample3.ts";
   test('imput relative path', () => {
-    const lines = getImportAndPath(filePath3,1);
+    const lines = getImportAndPath(filePath3, 1);
     const expectedOutput: ModuleList[] = [
       {
         code: "import fsPromises from 'fs/promises';",

@@ -3,7 +3,7 @@ describe('analyzeAst.ts test', () => {
   const filePath1: string = "./src/__tests__/inputFiles/functionSample/funcsample.ts";
   const filePath2: string = "./src/__tests__/inputFiles/functionSample/funcsample2.js";
   test('Function usage', async () => {
-    const expectedOutput: string[] = ['sum(a,b)', 'sum(b,c)'];
+    const expectedOutput: string[] = ['sum(a, b)', 'sum(b, c)'];
     await expect(analyzeAst(filePath1, 'sum')).resolves.toEqual(expectedOutput);
   });
   test('namespace usage', async () => {

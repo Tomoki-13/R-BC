@@ -2,10 +2,9 @@ import * as path from 'path';
 import * as fs from 'fs';
 
 import { getFunction } from "../../astRelated/traceArg/getFunction";
-import { FunctionInfo, FunctionInfo_funcRange } from '../../types/FunctionInfo';
+import { FunctionInfo_funcRange } from '../../types/FunctionInfo';
 
-//getFunc(filePath:string,funcName:string)
-describe('getFunc test', () => {
+describe('getFunction test', () => {
   const filePath: string = "./src/__tests__/inputFiles/functionSample/data1.js";
   const outputPath = path.resolve(__dirname, '../outputFiles/getFunctionData.json');
   const jsonData = JSON.parse(fs.readFileSync(outputPath, 'utf-8'));
