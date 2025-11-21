@@ -7,12 +7,15 @@ module.exports = {
   ],
   testPathIgnorePatterns: [
     "/node_modules/",
-    "/src/__tests__/InputFile/", 
+    "/src/__tests__/inputFiles/",
+    "/src/__tests__/outputFiles/",
     "/Sample/",
-    "/allrepos/"
+    "/allrepos/",
+    "/allrepos-origin/"
   ],
   modulePathIgnorePatterns: [
     "<rootDir>/Sample/",
-    "<rootDir>/allrepos/"
+    "<rootDir>/allrepos/",
+    "<rootDir>/allrepos-origin/"
   ],
 };

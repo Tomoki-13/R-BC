@@ -12,7 +12,18 @@
   },
   "keywords": [],
   "author": "",
-  "license": "MIT",
+  "lint-staged": {
+    "src/**/*.{js,ts,tsx}": [
+      "eslint --max-warnings=0"
+    ],
+    "ignore": [
+      ".eslintrc.js",
+      "eslint.config.js",
+      "node_modules/",
+      "dist/",
+      "build/"
+    ]
+  },
   "devDependencies": {
     "@babel/plugin-transform-modules-commonjs": "^7.24.1",
     "@babel/preset-env": "^7.24.5",
