@@ -293,12 +293,3 @@ function toExportedFunctionInfo(data: FunctionMetaInfo[]): FunctionInfo_funcRang
       end: func.end,
     }));
 }
-(async () => {
-  try {
-    // 実行結果のログ出力
-    const result = await getFunction('../../__tests__/inputFiles/functionSample/data1.js', 1);
-    console.log(JSON.stringify(result, null, 2));
-  } catch (e) {
-    console.error(e);
-  }
-})();

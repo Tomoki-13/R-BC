@@ -1,13 +1,13 @@
-import {getArgument} from "./getArgument";
+import { getArgument } from "./getArgument";
 //patternにコードの配列
-export const FisrstAnalyzeArgument = (patterns:string[], funcName:string):string[] => {
-    let ArgumentResult:string[] = [];
-    for(const pattern of patterns){
-        let result = getArgument(pattern,funcName,1);
-        if(result != null){
-            ArgumentResult = ArgumentResult.concat(result);
-        }
+export const FisrstAnalyzeArgument = (patterns: string[], funcName: string): string[] => {
+  let ArgumentResult: string[] = [];
+  for (const pattern of patterns) {
+    let result = getArgument(pattern, funcName, 1);
+    if (result != null) {
+      ArgumentResult = ArgumentResult.concat(result);
     }
-    console.log(ArgumentResult);
-    return ArgumentResult;
+  }
+  console.log(ArgumentResult);
+  return ArgumentResult;
 }

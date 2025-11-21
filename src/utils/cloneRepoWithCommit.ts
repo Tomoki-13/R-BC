@@ -20,49 +20,49 @@ const sleep = (ms: number): Promise<void> => new Promise(resolve => setTimeout(r
  * @returns クローンされたリポジトリのローカルパス。失敗した場合はnullを返します。
  */
 export const cloneRepoWithCommit = async (repo: string, clone_dir: string, commit: string): Promise<string | null> => {
-    // 環境変数からトークンを取得
-    const token = process.env.GITHUB_ACCESS_TOKEN;
+  // 環境変数からトークンを取得
+  const token = process.env.GITHUB_ACCESS_TOKEN;
 
-    // トークンがある場合は認証情報付きのURLを、ない場合は通常のURLを使用
-    const repoUrl = token
-        ? `https://x-access-token:${token}@github.com/${repo}.git`
-        : `https://github.com/${repo}.git`;
+  // トークンがある場合は認証情報付きのURLを、ない場合は通常のURLを使用
+  const repoUrl = token
+    ? `https://x-access-token:${token}@github.com/${repo}.git`
+    : `https://github.com/${repo}.git`;
 
-    const match = repo.match(/(.+?)\/(.+)/);
-    if (!match) {
-        console.error("無効なリポジトリ形式です。'user/repo'の形式で指定してください。");
-        return 'exist';
-    }
+  const match = repo.match(/(.+?)\/(.+)/);
+  if (!match) {
+    console.error("無効なリポジトリ形式です。'user/repo'の形式で指定してください。");
+    return 'exist';
+  }
 
-    const userName = match[1];
-    const repoName = match[2];
-    const userDir = path.join(clone_dir, userName);
-    const repoDir = path.join(userDir, repoName);
-    output_json.createOutputDirectory(userDir);
+  const userName = match[1];
+  const repoName = match[2];
+  const userDir = path.join(clone_dir, userName);
+  const repoDir = path.join(userDir, repoName);
+  output_json.createOutputDirectory(userDir);
 
+  if (fs.existsSync(repoDir)) {
+    console.warn(`指定されたリポジトリのディレクトリは既に存在します: ${repoDir}`);
+    return '';
+  }
+
+  try {
+
+    const cloneCommand = `git clone ${repoUrl} ${repoDir}`;
+    await execAsync(cloneCommand);
+    await sleep(1000);
+
+    const checkoutCommand = `git checkout ${commit}`;
+    await execAsync(checkoutCommand, { cwd: repoDir });
+
+    console.log(`クローンとチェックアウトが正常に完了しました: ${repo} (commit: ${commit})`);
+    return repoDir;
+
+  } catch (error) {
+    console.error(`リポジトリのクローンまたはチェックアウト中にエラーが発生しました: ${repo}`, error);
     if (fs.existsSync(repoDir)) {
-        console.warn(`指定されたリポジトリのディレクトリは既に存在します: ${repoDir}`);
-        return '';
+      fs.rmSync(repoDir, { recursive: true, force: true });
+      console.log(`エラーのためディレクトリを削除しました: ${repoDir}`);
     }
-
-    try {
-        
-        const cloneCommand = `git clone ${repoUrl} ${repoDir}`;
-        await execAsync(cloneCommand);
-        await sleep(1000);
-
-        const checkoutCommand = `git checkout ${commit}`;
-        await execAsync(checkoutCommand, { cwd: repoDir });
-
-        console.log(`クローンとチェックアウトが正常に完了しました: ${repo} (commit: ${commit})`);
-        return repoDir;
-
-    } catch (error) {
-        console.error(`リポジトリのクローンまたはチェックアウト中にエラーが発生しました: ${repo}`, error);
-        if (fs.existsSync(repoDir)) {
-            fs.rmSync(repoDir, { recursive: true, force: true });
-            console.log(`エラーのためディレクトリを削除しました: ${repoDir}`);
-        }
-        return null;
-    }
+    return null;
+  }
 };

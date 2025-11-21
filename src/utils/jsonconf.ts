@@ -2,85 +2,85 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 //細かい粒度　クライアントが初期設定以外のテストを持つ時 trueを返す
-export const jsonconf=(repoPath: string): boolean  =>{
-    let returnJudge:boolean = true;
+export const jsonconf = (repoPath: string): boolean => {
+  let returnJudge: boolean = true;
 
-    if (!repoPath) {
-        console.error('path error');
-        process.exit(1);
-    }
+  if (!repoPath) {
+    console.error('path error');
+    process.exit(1);
+  }
 
-    const packageJsonPath = findPackageJson(repoPath);
-    if (packageJsonPath) {
-        const testStatus = checkTestScript(packageJsonPath);
-        if (testStatus === 'standard') {
-            //console.log('code style:' + packageJsonPath);
-            returnJudge = false;
-        } else if (testStatus === 'client') {
-            //console.log('client test' + packageJsonPath);
-        } else if (testStatus === 'no test') {
-            //console.log('no test' + packageJsonPath);
-            returnJudge = false;
-        } else if(testStatus === 'no scripts'){
-            //console.log('no script' + packageJsonPath);
-            returnJudge = false;
-        }
-    } else {
-        //console.log('no package.json');
-        returnJudge = false;
+  const packageJsonPath = findPackageJson(repoPath);
+  if (packageJsonPath) {
+    const testStatus = checkTestScript(packageJsonPath);
+    if (testStatus === 'standard') {
+      //console.log('code style:' + packageJsonPath);
+      returnJudge = false;
+    } else if (testStatus === 'client') {
+      //console.log('client test' + packageJsonPath);
+    } else if (testStatus === 'no test') {
+      //console.log('no test' + packageJsonPath);
+      returnJudge = false;
+    } else if (testStatus === 'no scripts') {
+      //console.log('no script' + packageJsonPath);
+      returnJudge = false;
     }
-    return returnJudge;
+  } else {
+    //console.log('no package.json');
+    returnJudge = false;
+  }
+  return returnJudge;
 }
 
 //ステータスを分類後文字列で渡す
-export const jsonconfStr =(repoPath: string): string  =>{
-    if (!repoPath) {
-        console.error('path error');
-        process.exit(1);
-    }
+export const jsonconfStr = (repoPath: string): string => {
+  if (!repoPath) {
+    console.error('path error');
+    process.exit(1);
+  }
 
-    const packageJsonPath = findPackageJson(repoPath);
-    if (packageJsonPath) {
-        const testStatus = checkTestScript(packageJsonPath);
-        if(testStatus){
-            return testStatus;
-        }
-    } else {
-        //console.log('no package.json');
-        return 'noPackage.json';
+  const packageJsonPath = findPackageJson(repoPath);
+  if (packageJsonPath) {
+    const testStatus = checkTestScript(packageJsonPath);
+    if (testStatus) {
+      return testStatus;
     }
+  } else {
+    //console.log('no package.json');
     return 'noPackage.json';
+  }
+  return 'noPackage.json';
 }
 
-const findPackageJson=(dir: string): string | null =>{
-    const filePath = path.join(dir, 'package.json');
-    if(fs.existsSync(filePath)) {
-        return filePath;
-    }
-    const parentDir = path.dirname(dir);
-    if(parentDir === dir) {
-        return null;
-    }
-    return findPackageJson(parentDir);
+const findPackageJson = (dir: string): string | null => {
+  const filePath = path.join(dir, 'package.json');
+  if (fs.existsSync(filePath)) {
+    return filePath;
+  }
+  const parentDir = path.dirname(dir);
+  if (parentDir === dir) {
+    return null;
+  }
+  return findPackageJson(parentDir);
 }
 
 //standard||eslint：スタイルテスト  no test:テストの設定なし　client::初期設定ではない　no scripts:scriptsの要素がない
-const checkTestScript=(packageJsonPath: string): string|undefined=>{
-    const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
-    if(packageJson.scripts && packageJson.scripts.test) {
-        const testScript = packageJson.scripts.test.toLowerCase();
-        //console.log('testScript:'+testScript);
-        if(!testScript.includes('&&') && (testScript.includes('standard') || testScript.includes('eslint'))) {
-            //console.log('testScript:'+testScript);
-            return 'standard';
-        }
-        if(testScript.includes('no test')) {
-            //console.log('testScript:'+testScript);
-            return 'no test';
-        }
-        return 'client';
-    }else{
-        //console.log('testScript:');
-        return 'no scripts';
+const checkTestScript = (packageJsonPath: string): string | undefined => {
+  const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+  if (packageJson.scripts && packageJson.scripts.test) {
+    const testScript = packageJson.scripts.test.toLowerCase();
+    //console.log('testScript:'+testScript);
+    if (!testScript.includes('&&') && (testScript.includes('standard') || testScript.includes('eslint'))) {
+      //console.log('testScript:'+testScript);
+      return 'standard';
     }
+    if (testScript.includes('no test')) {
+      //console.log('testScript:'+testScript);
+      return 'no test';
+    }
+    return 'client';
+  } else {
+    //console.log('testScript:');
+    return 'no scripts';
+  }
 }
