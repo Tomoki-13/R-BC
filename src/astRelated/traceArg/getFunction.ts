@@ -1,22 +1,26 @@
 import { promises as fs } from 'fs';
-import * as parser from '@babel/parser';
 import traverse from '@babel/traverse';
 import * as t from '@babel/types';
 
-import { FunctionMetaInfo, FunctionInfo_funcRange } from '../../types/FunctionMetaInfo';
+import { createAstFromFile } from '../createAstFromFile';
+import { FunctionMetaInfo, FunctionInfo_funcRange } from '../../types/FunctionInfo';
 
-//mode = 0:exportされている関数のみを抽出，,mode = 1:全ての関数を抽出
-// 関数の定義は、アロー関数から関数宣言まで対応
-export const getFunc = async (filePath: string, mode = 0): Promise<FunctionInfo_funcRange[]> => {
+// mode = 0:exportされている関数のみを抽出, mode = 1:全ての関数を抽出
+export const getFunction = async (filePath: string, mode = 0): Promise<FunctionInfo_funcRange[]> => {
   const resultArray: FunctionMetaInfo[] = [];
+  const explicitlyExportedNames = new Set<string>();
 
   try {
-    if (filePath.endsWith('.js') || filePath.endsWith('.ts')) {
+    if (filePath.endsWith('.js') || filePath.endsWith('.ts') || filePath.endsWith('.jsx') || filePath.endsWith('.tsx')) {
       const fileContent: string = await fs.readFile(filePath, 'utf8');
-      const parsed = parser.parse(fileContent, {
-        sourceType: 'unambiguous',
-        plugins: ['typescript', 'decorators-legacy'],
-      });
+
+      // createAstFromFileを使用
+      const parsed = createAstFromFile(filePath, fileContent);
+
+      if (!parsed) {
+        console.log(`getFunc Failed to create AST via helper for file: ${filePath}`);
+        return [];
+      }
 
       const exportedFunctions = new Set<{ name: string; args: string[] }>();
 
@@ -33,11 +37,15 @@ export const getFunc = async (filePath: string, mode = 0): Promise<FunctionInfo_
         return { name, args };
       };
 
+      // パラメータ名を抽出するヘルパー
+      const getParams = (params: any[]) => params.map((param) => (t.isIdentifier(param) ? param.name : ''));
+
       traverse(parsed, {
+        // 関数宣言
         FunctionDeclaration(path) {
           if (path.node.id) {
             const name: string = path.node.id.name;
-            const params = path.node.params.map((param) => (t.isIdentifier(param) ? param.name : ''));
+            const params = getParams(path.node.params);
             const serializedFunc = serializeFunction(name, params);
 
             if (!resultArray.some((func) => func.name === name)) {
@@ -53,53 +61,65 @@ export const getFunc = async (filePath: string, mode = 0): Promise<FunctionInfo_
           }
         },
 
+        // 名前付きエクスポート
         ExportNamedDeclaration(path) {
-          if (t.isFunctionDeclaration(path.node.declaration) && path.node.declaration.id) {
-            const name: string = path.node.declaration.id.name;
-            const params = path.node.declaration.params.map((param) => (t.isIdentifier(param) ? param.name : ''));
-            exportedFunctions.add(serializeFunction(name, params));
+          if (path.node.declaration) {
+            if (t.isFunctionDeclaration(path.node.declaration) && path.node.declaration.id) {
+              const name: string = path.node.declaration.id.name;
+              const params = getParams(path.node.declaration.params);
+              exportedFunctions.add(serializeFunction(name, params));
 
-            if (!resultArray.some((func) => func.name === name)) {
-              resultArray.push({
-                name,
-                isExported: true,
-                arg: params,
-                filePath,
-                start: path.node.declaration.start,
-                end: path.node.declaration.end,
-              });
-            }
-          } else if (t.isVariableDeclaration(path.node.declaration)) {
-            for (const declarator of path.node.declaration.declarations) {
-              if (
-                t.isVariableDeclarator(declarator) &&
-                t.isIdentifier(declarator.id) &&
-                declarator.init &&
-                (t.isFunctionExpression(declarator.init) || t.isArrowFunctionExpression(declarator.init))
-              ) {
-                const name: string = declarator.id.name;
-                const params = declarator.init.params.map((param) => (t.isIdentifier(param) ? param.name : ''));
-                exportedFunctions.add(serializeFunction(name, params));
+              if (!resultArray.some((func) => func.name === name)) {
+                resultArray.push({
+                  name,
+                  isExported: true,
+                  arg: params,
+                  filePath,
+                  start: path.node.declaration.start,
+                  end: path.node.declaration.end,
+                });
+              }
+            } else if (t.isVariableDeclaration(path.node.declaration)) {
+              for (const declarator of path.node.declaration.declarations) {
+                if (
+                  t.isVariableDeclarator(declarator) &&
+                  t.isIdentifier(declarator.id) &&
+                  declarator.init &&
+                  (t.isFunctionExpression(declarator.init) || t.isArrowFunctionExpression(declarator.init))
+                ) {
+                  const name: string = declarator.id.name;
+                  const params = getParams(declarator.init.params);
+                  exportedFunctions.add(serializeFunction(name, params));
 
-                if (!resultArray.some((func) => func.name === name)) {
-                  resultArray.push({
-                    name,
-                    isExported: true,
-                    arg: params,
-                    filePath,
-                    start: declarator.init.start,
-                    end: declarator.init.end,
-                  });
+                  if (!resultArray.some((func) => func.name === name)) {
+                    resultArray.push({
+                      name,
+                      isExported: true,
+                      arg: params,
+                      filePath,
+                      start: declarator.init.start,
+                      end: declarator.init.end,
+                    });
+                  }
                 }
               }
             }
           }
+
+          if (path.node.specifiers && path.node.specifiers.length > 0) {
+            path.node.specifiers.forEach((spec) => {
+              if (t.isExportSpecifier(spec) && t.isIdentifier(spec.local)) {
+                explicitlyExportedNames.add(spec.local.name);
+              }
+            });
+          }
         },
 
+        // デフォルトエクスポート
         ExportDefaultDeclaration(path) {
           if (t.isFunctionDeclaration(path.node.declaration) && path.node.declaration.id) {
             const name: string = path.node.declaration.id.name;
-            const params = path.node.declaration.params.map((param) => (t.isIdentifier(param) ? param.name : ''));
+            const params = getParams(path.node.declaration.params);
             exportedFunctions.add(serializeFunction(name, params));
 
             if (!resultArray.some((func) => func.name === name)) {
@@ -112,13 +132,16 @@ export const getFunc = async (filePath: string, mode = 0): Promise<FunctionInfo_
                 end: path.node.declaration.end,
               });
             }
+          } else if (t.isIdentifier(path.node.declaration)) {
+            explicitlyExportedNames.add(path.node.declaration.name);
           }
         },
 
+        // 変数宣言（アロー関数など）
         VariableDeclarator(path) {
           if (t.isIdentifier(path.node.id) && path.node.init && (t.isFunctionExpression(path.node.init) || t.isArrowFunctionExpression(path.node.init))) {
             const name: string = path.node.id.name;
-            const params = path.node.init.params.map((param) => (t.isIdentifier(param) ? param.name : ''));
+            const params = getParams(path.node.init.params);
             const serializedFunc = serializeFunction(name, params);
 
             if (!resultArray.some((func) => func.name === name)) {
@@ -134,14 +157,23 @@ export const getFunc = async (filePath: string, mode = 0): Promise<FunctionInfo_
           }
         },
 
+        // CommonJS exports への代入 (module.exports.func = ... 対応)
         AssignmentExpression(path) {
           if (t.isFunctionExpression(path.node.right) || t.isArrowFunctionExpression(path.node.right)) {
             let name: string | undefined;
-            const params = path.node.right.params.map((param) => (t.isIdentifier(param) ? param.name : ''));
+            const params = getParams(path.node.right.params);
 
             if (t.isMemberExpression(path.node.left) && !path.node.left.computed && t.isIdentifier(path.node.left.property)) {
-              name = path.node.left.property.name;
-              if (t.isIdentifier(path.node.left.object) && (path.node.left.object.name === 'exports' || path.node.left.object.name === 'module')) {
+              // exports.func = ...
+              // module.exports.func = ...
+              const object = path.node.left.object;
+              const isExportsIdentifier = t.isIdentifier(object) && object.name === 'exports';
+              const isModuleExports = t.isMemberExpression(object) &&
+                t.isIdentifier(object.object) && object.object.name === 'module' &&
+                t.isIdentifier(object.property) && object.property.name === 'exports';
+
+              if (isExportsIdentifier || isModuleExports) {
+                name = path.node.left.property.name;
                 exportedFunctions.add(serializeFunction(name, params));
               }
             } else if (t.isIdentifier(path.node.left)) {
@@ -163,32 +195,96 @@ export const getFunc = async (filePath: string, mode = 0): Promise<FunctionInfo_
             }
           }
         },
+
+        // クラスメソッド
+        ClassMethod(path) {
+          if (t.isIdentifier(path.node.key)) {
+            const name = path.node.key.name;
+            const params = getParams(path.node.params);
+
+            const parentClass = path.findParent((p) => p.isClassDeclaration());
+            let isExported = false;
+
+            if (parentClass) {
+              if (t.isExportNamedDeclaration(parentClass.parent) || t.isExportDefaultDeclaration(parentClass.parent)) {
+                isExported = true;
+              }
+            }
+
+            if (!resultArray.some((func) => func.name === name)) {
+              resultArray.push({
+                name,
+                isExported: isExported,
+                arg: params,
+                filePath,
+                start: path.node.start,
+                end: path.node.end,
+              });
+            }
+          }
+        },
+
+        // クラスプロパティ (アロー関数など: prop = () => {})
+        ClassProperty(path) {
+          if (
+            t.isIdentifier(path.node.key) &&
+            path.node.value &&
+            (t.isArrowFunctionExpression(path.node.value) || t.isFunctionExpression(path.node.value))
+          ) {
+            const name = path.node.key.name;
+            const params = getParams(path.node.value.params);
+
+            const parentClass = path.findParent((p) => p.isClassDeclaration());
+            let isExported = false;
+
+            if (parentClass) {
+              if (t.isExportNamedDeclaration(parentClass.parent) || t.isExportDefaultDeclaration(parentClass.parent)) {
+                isExported = true;
+              }
+            }
+
+            if (!resultArray.some((func) => func.name === name)) {
+              resultArray.push({
+                name,
+                isExported: isExported,
+                arg: params,
+                filePath,
+                start: path.node.value.start,
+                end: path.node.value.end,
+              });
+            }
+          }
+        }
+      });
+
+      resultArray.forEach((func) => {
+        if (explicitlyExportedNames.has(func.name)) {
+          func.isExported = true;
+        }
       });
     }
   } catch (error) {
-    console.log(`getFunc Failed to create AST for file: ${filePath}. Error: ${error}`);
+    console.log(`getFunc Failed to process file: ${filePath}. Error: ${error}`);
   }
+
   if (mode === 0) {
-    const filteredResult: FunctionInfo_funcRange[] = toExportedFunctionInfo(resultArray);
-    return filteredResult;
+    return toExportedFunctionInfo(resultArray);
   } else if (mode === 1) {
-    const filteredResult: FunctionInfo_funcRange[] = resultArray.map((func) => ({
+    return resultArray.map((func) => ({
       funcname: func.name,
       arg: func.arg,
       filePath: func.filePath,
       start: func.start,
       end: func.end,
     }));
-    return filteredResult;
   } else {
     throw new Error('Invalid mode specified. Use 0 for exported functions only or 1 for all functions.');
   }
-
 };
 
 function toExportedFunctionInfo(data: FunctionMetaInfo[]): FunctionInfo_funcRange[] {
-  const result = data
-    .filter((func) => func.isExported) //外部にexportされている関数のみを抽出
+  return data
+    .filter((func) => func.isExported)
     .map((func) => ({
       funcname: func.name,
       arg: func.arg,
@@ -196,5 +292,13 @@ function toExportedFunctionInfo(data: FunctionMetaInfo[]): FunctionInfo_funcRang
       start: func.start,
       end: func.end,
     }));
-  return result;
 }
+(async () => {
+  try {
+    // 実行結果のログ出力
+    const result = await getFunction('../../__tests__/inputFiles/functionSample/data1.js', 1);
+    console.log(JSON.stringify(result, null, 2));
+  } catch (e) {
+    console.error(e);
+  }
+})();

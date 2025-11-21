@@ -22,7 +22,7 @@ export const extractVariableScopes = (
       ) {
         const { start, end } = binding.scope.block;
         if (!variableScopeRanges.find(r => r.start === start && r.end === end)) {
-            variableScopeRanges.push({ start, end });
+          variableScopeRanges.push({ start, end });
         }
       }
     }

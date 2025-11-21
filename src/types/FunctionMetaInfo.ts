@@ -15,3 +15,8 @@ export interface FunctionInfo_funcRange {
   start: number | null | undefined;
   end: number | null | undefined;
 }
+
+export interface ModuleExportProperty {
+  property_name: string;
+  right_func: string;
+}

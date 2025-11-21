@@ -3,8 +3,8 @@ import * as parser from '@babel/parser';
 import traverse, { NodePath } from '@babel/traverse';
 import * as t from '@babel/types';
 
-import { FunctionInfo_funcRange } from '../../types/FunctionMetaInfo';
-import { getFunc } from './getFunction';
+import { FunctionInfo_funcRange } from '../../types/FunctionInfo';
+import { getFunction } from './getFunction';
 import { rangeArg } from '../rangeArg/rangeArg';
 import { InboundFunctionDependencies } from '../../types/FileDependencies';
 import { VariableUsage } from '../../types/VariableUsage';
@@ -153,7 +153,7 @@ export const extractFunctionCalls = async (
       plugins: ['typescript', 'jsx', 'decorators-legacy'],
     });
 
-    const allFunctions: FunctionInfo_funcRange[] = await getFunc(filePath, 1);
+    const allFunctions: FunctionInfo_funcRange[] = await getFunction(filePath, 1);
 
     traverse(parsed, {
       VariableDeclarator(path: NodePath<t.VariableDeclarator>) {
