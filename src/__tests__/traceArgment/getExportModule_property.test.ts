@@ -1,7 +1,7 @@
 import { promises as fsPromises } from 'fs';
 
 import { getExportModuleProperty, } from '../../utils/getExportModuleProperty';
-import { ModuleExportProperty } from '../../types/FunctionMetaInfo';
+import { ModuleExportProperty } from '../../types/FunctionInfo';
 
 jest.mock('fs', () => ({
   promises: {

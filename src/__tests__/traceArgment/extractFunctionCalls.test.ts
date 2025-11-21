@@ -8,7 +8,6 @@ import { OutboundFileDependencies, InboundFunctionDependencies } from '../../typ
 import { reverseDependencies } from '../../astRelated/traceArg/reverseDependencies';
 
 describe('extractFunctionCalls test', () => {
-  // __dirname はこのファイルのあるディレクトリを指す
   const filePath = path.resolve(__dirname, '../outputFiles/extractFunctionCallsData.json');
   const jsonData = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
 
