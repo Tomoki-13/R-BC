@@ -1,4 +1,4 @@
-import { reverseDependencies } from '../../astRelated/traceArg/reverseDependencies';
+import { reverseDependencies } from '../../astRelated/trace/reverseDependencies';
 import { OutboundFileDependencies, InboundFunctionDependencies } from '../../types/FileDependencies';
 
 describe('reverseDependencies.ts test', () => {

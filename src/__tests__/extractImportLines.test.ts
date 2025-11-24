@@ -26,7 +26,7 @@ describe('extractImportLines.ts test', () => {
       'import { funcNameIdentifiers, secfuncNameIdentifiers } from "../../utils/funcNameIdentifiers";',
       'import { extractImportLines } from "../../utils/extractImportLines";',
       "const lodash = require('lodash');",
-      'import { analyzeAst,argplace } from "../../astRelated/analyzeAst";'];
+      'import { analyzeMethod, argplace } from "../../astRelated/analyzeMethod";'];
     expect(lines).toEqual(expectedOutput);
   });
 })

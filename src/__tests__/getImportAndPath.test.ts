@@ -27,8 +27,8 @@ describe('getImportAndPath test(mode 1)', () => {
         path: filePath3
       },
       {
-        code: 'import { analyzeAst,argplace } from "../../astRelated/analyzeAst";',
-        modulename: '../../astRelated/analyzeAst',
+        code: 'import { analyzeMethod, argplace } from "../../astRelated/analyzeMethod";',
+        modulename: '../../astRelated/analyzeMethod',
         path: filePath3
       }
     ];
@@ -71,14 +71,14 @@ describe('getImportAndPath test(mode 0)', () => {
         path: filePath3
       },
       {
-        code: 'import { analyzeAst,argplace } from "../../astRelated/analyzeAst";',
-        call_modulename: '../../astRelated/analyzeAst',
-        funcname: 'analyzeAst',
+        code: 'import { analyzeMethod, argplace } from "../../astRelated/analyzeMethod";',
+        call_modulename: '../../astRelated/analyzeMethod',
+        funcname: 'analyzeMethod',
         path: filePath3
       },
       {
-        code: 'import { analyzeAst,argplace } from "../../astRelated/analyzeAst";',
-        call_modulename: '../../astRelated/analyzeAst',
+        code: 'import { analyzeMethod, argplace } from "../../astRelated/analyzeMethod";',
+        call_modulename: '../../astRelated/analyzeMethod',
         funcname: 'argplace',
         path: filePath3
       }

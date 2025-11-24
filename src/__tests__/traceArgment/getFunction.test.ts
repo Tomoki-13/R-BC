@@ -1,7 +1,7 @@
 import * as path from 'path';
 import * as fs from 'fs';
 
-import { getFunction } from "../../astRelated/traceArg/getFunction";
+import { getFunction } from "../../astRelated/trace/getFunction";
 import { FunctionInfo_funcRange } from '../../types/FunctionInfo';
 
 describe('getFunction test', () => {

@@ -1,4 +1,4 @@
-import { getFileRelated } from '../../astRelated/traceArg/getFileRelated';
+import { getFileRelated } from '../../astRelated/trace/getFileRelated';
 import { getImportAndPath } from '../../utils/getImportAndPath';
 import { CallModuleAndFuncList } from '../../types/ModuleList';
 import { OutboundFileDependencies } from '../../types/FileDependencies';
