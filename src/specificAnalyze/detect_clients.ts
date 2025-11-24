@@ -2,7 +2,7 @@ import path from "path";
 import fs from 'fs';
 import output_json from "../utils/output_json";
 import { DetectionOutput } from "../types/outputTypes";
-import { detectByPattern } from "../core/detectByPattern";
+import { detectByPattern } from "../core/methodUnit/detectByPattern";
 type dataType = {
   libName: string;
   pattrnListPath: string;

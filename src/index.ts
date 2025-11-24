@@ -1,5 +1,5 @@
-import { createPattern } from "./core/createPattern";
-import { support_detectByPattern } from "./core/detectByPattern";
+import { createPattern } from "./core/method/createPattern";
+import { support_detectByPattern } from "./core/method/detectByPattern";
 import { PatternCount } from './types/outputTypes';
 import output_json from "./utils/output_json";
 import fs from 'fs';

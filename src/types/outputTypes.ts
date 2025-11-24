@@ -1,20 +1,20 @@
 export interface JsonRow {
-    failureclient: string;
-    detectPatterns: string[][];
+  failureclient: string;
+  detectPatterns: string[][];
 }
 
 export interface MatchClientPattern {
-    client: string;
-    pattern: string[][];
-    detectPattern: string[][][];
+  client: string;
+  pattern: string[][];
+  detectPattern: string[][][];
 }
 
 export interface PatternCount {
-    pattern: string[][];
-    count: number;
+  pattern: string[][];
+  count: number;
 }
 
 export interface DetectionOutput {
-    patterns: PatternCount[];
-    totalClients: number;
+  patterns: PatternCount[];
+  totalClients: number;
 }

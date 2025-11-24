@@ -1,10 +1,10 @@
 import fsPromises from 'fs/promises';
-import { funcNameIdentifiers, secfuncNameIdentifiers } from "../utils/funcNameIdentifiers";
-import { extractImportLines } from "../utils/extractImportLines";
-import { analyzeAst } from "../astRelated/analyzeAst";
-import { getExceptionModule } from '../astRelated/getExceptionModule';
-import patternConversion from '../patternOperations/patternConversion';
-import patternUtils from '../patternOperations/patternUtils';
+import { funcNameIdentifiers, secfuncNameIdentifiers } from "../../utils/funcNameIdentifiers";
+import { extractImportLines } from "../../utils/extractImportLines";
+import { analyzeMethod } from "../../astRelated/analyzer/analyzeMethod";
+import { getExportModuleProperty } from '../../astRelated/analyzer/getExportModuleProperty';
+import patternConversion from '../../patternOperations/patternConversion';
+import patternUtils from '../../patternOperations/patternUtils';
 //createPattern用(抽象化あり) mode = 1,detectByPattern用 mode = 0
 export const useAst = async (allFiles: string[], libName: string, mode: number = 0): Promise<string[][]> => {
   let pattern: string[][] = [];
@@ -39,7 +39,7 @@ export const useAst = async (allFiles: string[], libName: string, mode: number =
       if (funcName.length > 0) {
         const uniquefuncName: string[] = [...new Set(funcName)];
         for (const one of uniquefuncName) {
-          let result: string[] = await analyzeAst(filePath, one);
+          let result: string[] = await analyzeMethod(filePath, one);
           //let result:string[] = await argplace(filePath,one);
           if (result.length > 0) {
             if (mode === 1) {
@@ -51,7 +51,8 @@ export const useAst = async (allFiles: string[], libName: string, mode: number =
                 }
               }
               //module.export.~~を除外 引数の時に一緒に追跡
-              let except_str: string[] = await getExceptionModule(filePath, one);
+              // TODO: ここで更なる追跡を行い、他ファイルでの使用方法も抽出
+              let except_str = await getExportModuleProperty(filePath, one);
               if (except_str.length > 0) {
                 return [];
               }

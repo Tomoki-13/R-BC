@@ -1,14 +1,14 @@
 import fs from 'fs';
 import path from "path";
-import { DetectionOutput, MatchClientPattern, PatternCount } from '../types/outputTypes';
-import { getAllFiles } from "../utils/getAllFiles";
-import { getSubDir } from "../utils/getSubDir";
-import { jsonconfStr } from "../utils/jsonconf";
-import output_json from "../utils/output_json";
-import { countPatterns } from '../patternOperations/patternCount';
-import { patternMatch, allPatternMatch } from "../patternOperations/patternMatch";
+import { DetectionOutput, MatchClientPattern, PatternCount } from '../../types/outputTypes';
+import { getAllFiles } from "../../utils/getAllFiles";
+import { getSubDir } from "../../utils/getSubDir";
+import { jsonconfStr } from "../../utils/jsonconf";
+import output_json from "../../utils/output_json";
+import { countPatterns } from '../../patternOperations/patternCount';
+import { patternMatch, allPatternMatch } from "../../patternOperations/patternMatch";
 import { useAst } from "./useAst";
-import { combinePatterns } from '../patternOperations/patternCount';
+import { combinePatterns } from '../../patternOperations/patternCount';
 
 //単一検出 mode = 0 ,重複検出 mode =1
 export const detectByPattern = async (matchDir: string, libName: string, detectPattern: string[][][], outputDir: string, mode: number = 0): Promise<DetectionOutput> => {

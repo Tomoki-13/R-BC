@@ -1,14 +1,14 @@
 import fs from 'fs';
 import path from "path";
 import { useAst } from "./useAst";
-import { checkAst } from "../astRelated/checkAst";
-import { countPatterns } from '../patternOperations/patternCount';
-import { getAllFiles } from "../utils/getAllFiles";
-import { getSubDir } from "../utils/getSubDir";
-import { JsonRow, PatternCount, DetectionOutput } from '../types/outputTypes';
-import output_json from "../utils/output_json";
+import { checkAst } from "../../astRelated/base/checkAst";
+import { countPatterns } from '../../patternOperations/patternCount';
+import { getAllFiles } from "../../utils/getAllFiles";
+import { getSubDir } from "../../utils/getSubDir";
+import { JsonRow, PatternCount, DetectionOutput } from '../../types/outputTypes';
+import output_json from "../../utils/output_json";
 import { processPatterns } from "./processPatterns";
-import patternUtils from '../patternOperations/patternUtils';
+import patternUtils from '../../patternOperations/patternUtils';
 
 //作成処理
 export const createPattern = async (patternDir: string, libName: string, outputDir: string): Promise<string[][][]> => {

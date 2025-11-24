@@ -1,6 +1,6 @@
-import { createPattern } from "./core/createPattern";
+import { createPattern } from "./core/method/createPattern";
 import { DetectionOutput } from './types/outputTypes';
-import { detectByPattern } from "./core/detectByPattern";
+import { detectByPattern } from "./core/method/detectByPattern";
 import output_json from "./utils/output_json";
 import fs from 'fs';
 import path from 'path';
