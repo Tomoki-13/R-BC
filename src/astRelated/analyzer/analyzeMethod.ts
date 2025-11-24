@@ -2,9 +2,10 @@ import { promises as fsPromises } from 'fs';
 import traverse from "@babel/traverse";
 import * as t from "@babel/types";
 
-import { createAstFromFile } from './createAstFromFile';
-//パスと関数名から関数使用部分を抽出　
-export const analyzeAst = async (filePath: string, funcName: string): Promise<string[]> => {
+import { createAstFromFile } from '../base/createAstFromFile';
+// パスと関数名から関数使用部分を抽出　
+// メソッド単位までのパターン生成
+export const analyzeMethod = async (filePath: string, funcName: string): Promise<string[]> => {
   let resultArray: string[] = [];
   try {
     let codes: string[] = [];
@@ -81,7 +82,7 @@ export const analyzeAst = async (filePath: string, funcName: string): Promise<st
       resultArray = resultArray.concat(codes);
     }
   } catch (error) {
-    //console.log(`analyzeAst: Failed to create AST for file: ${filePath}`);
+    //console.log(`analyzeMethod: Failed to create AST for file: ${filePath}`);
     //console.log(error);
   }
   return resultArray;

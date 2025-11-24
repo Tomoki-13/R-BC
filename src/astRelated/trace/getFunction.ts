@@ -2,7 +2,7 @@ import { promises as fs } from 'fs';
 import traverse from '@babel/traverse';
 import * as t from '@babel/types';
 
-import { createAstFromFile } from '../createAstFromFile';
+import { createAstFromFile } from '../base/createAstFromFile';
 import { FunctionMetaInfo, FunctionInfo_funcRange } from '../../types/FunctionInfo';
 
 // mode = 0:exportされている関数のみを抽出, mode = 1:全ての関数を抽出

@@ -4,11 +4,12 @@ import traverse, { NodePath } from '@babel/traverse';
 import * as t from '@babel/types';
 
 import { FunctionInfo_funcRange } from '../../types/FunctionInfo';
-import { getFunction } from './getFunction';
-import { rangeArg } from '../rangeArg/rangeArg';
+import { getFunction } from '../trace/getFunction';
+import { rangeArg } from '../scope/rangeArg';
 import { InboundFunctionDependencies } from '../../types/FileDependencies';
 import { VariableUsage } from '../../types/VariableUsage';
 import { ExtractFunctionCallsResult } from '../../types/ExtractFunctionCallsResult';
+import { createAstFromFile } from '../base/createAstFromFile';
 
 /**
  * 引数を解析し、その型とコンテキストを特定するヘルパー関数
@@ -18,7 +19,7 @@ import { ExtractFunctionCallsResult } from '../../types/ExtractFunctionCallsResu
  * @param funcDepend 逆引きされた依存関係情報
  * @returns 引数の型とコンテキストの解析結果
  */
-
+//引数まで考慮したパターンの作成
 async function analyzeArguments(
   args: (t.Expression | t.SpreadElement | t.JSXNamespacedName | t.ArgumentPlaceholder)[],
   fileContent: string,
@@ -89,7 +90,7 @@ async function analyzeArguments(
           );
           for (const checker of filterData) {
             for (const outFileDep of checker.dependence) {
-              const recursiveResult = await extractFunctionCalls(
+              const recursiveResult = await extractFunctionCallsArgument(
                 outFileDep.dep_filepath,
                 one,
                 funcDepend,
@@ -129,7 +130,7 @@ async function analyzeArguments(
   return { finalArgTypes, finalArgContexts };
 }
 
-export const extractFunctionCalls = async (
+export const extractFunctionCallsArgument = async (
   filePath: string,
   funcName: string,
   funcDepend: InboundFunctionDependencies[],
@@ -148,11 +149,11 @@ export const extractFunctionCalls = async (
     }
 
     const fileContent: string = await fsPromises.readFile(filePath, 'utf8');
-    const parsed: t.File = parser.parse(fileContent, {
-      sourceType: 'unambiguous',
-      plugins: ['typescript', 'jsx', 'decorators-legacy'],
-    });
-
+    const parsed = createAstFromFile(filePath, fileContent);
+    if (parsed === null) {
+      console.error(`extractFunctionCalls: AST creation failed for file: ${filePath}`);
+      return [];
+    }
     const allFunctions: FunctionInfo_funcRange[] = await getFunction(filePath, 1);
 
     traverse(parsed, {
