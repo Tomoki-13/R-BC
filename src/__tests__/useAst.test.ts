@@ -1,4 +1,4 @@
-import { useAst } from "../core/method/useAst";
+import { useAst } from "../core/methodUnit/useAst";
 const filepath1: string[] = ['./src/__tests__/inputFiles/import_require_Sample/importsample.ts'];
 const filepath2: string[] = ['./src/__tests__/inputFiles/import_require_Sample/requiresample.js'];
 describe('useAst', () => {

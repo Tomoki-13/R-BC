@@ -11,126 +11,8 @@ import { VariableUsage } from '../../types/VariableUsage';
 import { ExtractFunctionCallsResult } from '../../types/ExtractFunctionCallsResult';
 import { createAstFromFile } from '../base/createAstFromFile';
 
-/**
- * 引数を解析し、その型とコンテキストを特定するヘルパー関数
- * @param args 解析対象の引数ノードの配列
- * @param fileContent ファイルの全コンテンツ
- * @param allFunctions ファイル内の全関数情報
- * @param funcDepend 逆引きされた依存関係情報
- * @returns 引数の型とコンテキストの解析結果
- */
-//引数まで考慮したパターンの作成
-async function analyzeArguments(
-  args: (t.Expression | t.SpreadElement | t.JSXNamespacedName | t.ArgumentPlaceholder)[],
-  fileContent: string,
-  allFunctions: FunctionInfo_funcRange[],
-  funcDepend: InboundFunctionDependencies[],
-): Promise<{ finalArgTypes: string[][]; finalArgContexts: string[][] }> {
-  const finalArgTypes: string[][] = Array.from(
-    { length: args.length },
-    () => [],
-  );
-  const finalArgContexts: string[][] = Array.from(
-    { length: args.length },
-    () => [],
-  );
-
-  for (const [index, arg] of args.entries()) {
-    if (
-      !arg ||
-      !(
-        'start' in arg &&
-        'end' in arg &&
-        arg.start !== null &&
-        arg.end !== null
-      )
-    )
-      continue;
-
-    if (t.isIdentifier(arg)) {
-      const usages: VariableUsage[] = rangeArg(fileContent, arg.name);
-      let isUserFuncArg = false;
-      const relatedFuncs = new Set<string>();
-
-      for (const usage of usages) {
-        for (const func of allFunctions) {
-          if (
-            func.arg.includes(arg.name) &&
-            typeof func.start === 'number' &&
-            typeof func.end === 'number' &&
-            usage.varScopeStart !== undefined &&
-            usage.varScopeEnd !== undefined &&
-            func.start <= usage.varScopeStart &&
-            func.end >= usage.varScopeEnd
-          ) {
-            if (
-              arg.start !== undefined &&
-              arg.end !== undefined &&
-              arg.start >= func.start &&
-              arg.end <= func.end
-            ) {
-              isUserFuncArg = true;
-              relatedFuncs.add(func.funcname);
-            }
-          }
-        }
-      }
-
-      if (isUserFuncArg) {
-        for (const one of relatedFuncs) {
-          const outerFuncDef = allFunctions.find((f) => f.funcname === one);
-          const outerArgIndex = outerFuncDef ?
-            outerFuncDef.arg.indexOf(arg.name) :
-            -1;
-          if (outerArgIndex === -1) continue;
-
-          // Fix typo: fillterData -> filterData
-          const filterData = funcDepend.filter(
-            (item) => item.funcNameInFilepath === one,
-          );
-          for (const checker of filterData) {
-            for (const outFileDep of checker.dependence) {
-              const recursiveResult = await extractFunctionCallsArgument(
-                outFileDep.dep_filepath,
-                one,
-                funcDepend,
-              );
-              for (const recResult of recursiveResult) {
-                const typesFromRec = recResult.argTypes[outerArgIndex] || [];
-                const contextsFromRec =
-                  recResult.argContexts[outerArgIndex] || [];
-                finalArgTypes[index].push(...typesFromRec);
-                finalArgContexts[index].push(...contextsFromRec);
-              }
-            }
-          }
-        }
-      } else {
-        const argType_tmp: string[] = [];
-        const argContexts_tmp: string[] = [];
-        for (const usageItem of usages) {
-          for (const codeSnippet of usageItem.code) {
-            argType_tmp.push(inferTypeFromCode(codeSnippet));
-            argContexts_tmp.push(codeSnippet);
-          }
-        }
-        finalArgTypes[index].push(...argType_tmp);
-        finalArgContexts[index].push(...argContexts_tmp);
-      }
-    } else {
-      if (arg.start !== undefined && arg.end !== undefined) {
-        const snippet = fileContent.substring(arg.start, arg.end);
-        finalArgTypes[index].push(inferTypeFromCode(snippet));
-        finalArgContexts[index].push(snippet);
-      } else {
-        console.warn('arg.start,');
-      }
-    }
-  }
-  return { finalArgTypes, finalArgContexts };
-}
-
-export const extractFunctionCallsArgument = async (
+// 引数まで考慮した関数呼び出しの解析
+export const analyzeArgAndMethod = async (
   filePath: string,
   funcName: string,
   funcDepend: InboundFunctionDependencies[],
@@ -339,20 +221,146 @@ export const extractFunctionCallsArgument = async (
 };
 
 /**
+ * 引数を解析し、その型とコンテキストを特定するヘルパー関数
+ * @param args 解析対象の引数ノードの配列
+ * @param fileContent ファイルの全コンテンツ
+ * @param allFunctions ファイル内の全関数情報
+ * @param funcDepend 逆引きされた依存関係情報
+ * @returns 引数の型とコンテキストの解析結果
+ */
+
+//引数まで考慮したパターンの作成
+async function analyzeArguments(
+  args: (t.Expression | t.SpreadElement | t.JSXNamespacedName | t.ArgumentPlaceholder)[],
+  fileContent: string,
+  allFunctions: FunctionInfo_funcRange[],
+  funcDepend: InboundFunctionDependencies[],
+): Promise<{ finalArgTypes: string[][]; finalArgContexts: string[][] }> {
+  const finalArgTypes: string[][] = Array.from(
+    { length: args.length },
+    () => [],
+  );
+  const finalArgContexts: string[][] = Array.from(
+    { length: args.length },
+    () => [],
+  );
+
+  for (const [index, arg] of args.entries()) {
+    if (
+      !arg ||
+      !('start' in arg && 'end' in arg &&
+        arg.start !== null && arg.end !== null
+      )
+    )
+      continue;
+
+    if (t.isIdentifier(arg)) {
+      const usages: VariableUsage[] = rangeArg(fileContent, arg.name);
+      let isUserFuncArg = false;
+      const relatedFuncs = new Set<string>();
+
+      for (const usage of usages) {
+        for (const func of allFunctions) {
+          if (
+            func.arg.includes(arg.name) &&
+            typeof func.start === 'number' &&
+            typeof func.end === 'number' &&
+            usage.varScopeStart !== undefined &&
+            usage.varScopeEnd !== undefined &&
+            func.start <= usage.varScopeStart &&
+            func.end >= usage.varScopeEnd
+          ) {
+            if (
+              arg.start !== undefined &&
+              arg.end !== undefined &&
+              arg.start >= func.start &&
+              arg.end <= func.end
+            ) {
+              isUserFuncArg = true;
+              relatedFuncs.add(func.funcname);
+            }
+          }
+        }
+      }
+
+      if (isUserFuncArg) {
+        for (const one of relatedFuncs) {
+          const outerFuncDef = allFunctions.find((f) => f.funcname === one);
+          const outerArgIndex = outerFuncDef ?
+            outerFuncDef.arg.indexOf(arg.name) :
+            -1;
+          if (outerArgIndex === -1) continue;
+
+          // Fix typo: fillterData -> filterData
+          const filterData = funcDepend.filter(
+            (item) => item.funcNameInFilepath === one,
+          );
+          for (const checker of filterData) {
+            for (const outFileDep of checker.dependence) {
+              const recursiveResult = await analyzeArgAndMethod(
+                outFileDep.dep_filepath,
+                one,
+                funcDepend,
+              );
+              for (const recResult of recursiveResult) {
+                const typesFromRec = recResult.argTypes[outerArgIndex] || [];
+                const contextsFromRec =
+                  recResult.argContexts[outerArgIndex] || [];
+                finalArgTypes[index].push(...typesFromRec);
+                finalArgContexts[index].push(...contextsFromRec);
+              }
+            }
+          }
+        }
+      } else {
+        const argType_tmp: string[] = [];
+        const argContexts_tmp: string[] = [];
+        for (const usageItem of usages) {
+          for (const codeSnippet of usageItem.code) {
+            argType_tmp.push(inferTypeFromCode(codeSnippet));
+            argContexts_tmp.push(codeSnippet);
+          }
+        }
+        finalArgTypes[index].push(...argType_tmp);
+        finalArgContexts[index].push(...argContexts_tmp);
+      }
+    } else {
+      if (arg.start !== undefined && arg.end !== undefined) {
+        const snippet = fileContent.substring(arg.start, arg.end);
+        finalArgTypes[index].push(inferTypeFromCode(snippet));
+        finalArgContexts[index].push(snippet);
+      } else {
+        console.warn('arg.start,');
+      }
+    }
+  }
+  return { finalArgTypes, finalArgContexts };
+}
+
+/**
  * コードスニペットから簡易的な型推論を行う
  * @param code 評価するコードの文字列
  * @returns 推論された型名
  */
 function inferTypeFromCode(
   code: string,
-): 'number' | 'string' | 'boolean' | 'unknown' {
-  if (/^\d+(\.\d+)?$/.test(code)) return 'number';
+): 'number' | 'string' | 'boolean' | 'null' | 'undefined' | 'array' | 'object' | 'function' | 'unknown' {
+  code = code.trim();
+  if (/^-?\d+(\.\d+)?$/.test(code)) return 'number';
   if (/^(['"]).*\1$/.test(code)) return 'string';
+  if (/^`.*`$/s.test(code)) return 'string';
   if (code === 'true' || code === 'false') return 'boolean';
-  const regStr = new RegExp('[+*/%-]');
-  if (regStr.test(code)) return 'number';
+  if (code === 'null') return 'null';
+  if (code === 'undefined') return 'undefined';
+  if (/^\[.*\]$/s.test(code)) return 'array';
+  if (/^\{.*\}$/s.test(code)) return 'object';
+  if (/^(\(.*\)|[^=\s]+)\s*=>/.test(code)) return 'function';
+  if (/^function\s*\(/.test(code)) return 'function';
+  if (/^new\s+/.test(code)) return 'object';
+
+  // Simple heuristics for operations
+  if (/[\+\-\*\/%]/.test(code) && !/['"`]/.test(code)) return 'number';
   if (/[><=!]=?/.test(code)) return 'boolean';
-  if (/&&|\|\|/.test(code)) return 'boolean';
-  if (/^.*\(.+\)/.test(code)) return 'unknown'; // 関数呼び出しの結果などは'unknown'
+
   return 'unknown';
 }
