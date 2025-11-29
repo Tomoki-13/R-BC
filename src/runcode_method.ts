@@ -1,14 +1,14 @@
-import { createPattern } from "./core/method/createPattern";
+import { createPattern } from "./core/methodUnit/createPattern";
 import { DetectionOutput } from './types/outputTypes';
-import { detectByPattern } from "./core/method/detectByPattern";
+import { detectByPattern } from "./core/methodUnit/detectByPattern";
 import output_json from "./utils/output_json";
 import fs from 'fs';
 import path from 'path';
 
 // シンプルな実行例
 (async () => {
-  const getPatternDir: string = "../allrepos/";
-  const matchDir: string = ".../allrepos/";
+  const getPatternDir: string = "../allrepos/~~~failure";
+  const matchDir: string = ".../allrepos/~~~success";
   const libName: string = process.argv[2];
   let lastpatterns: string[][][] = [];
 

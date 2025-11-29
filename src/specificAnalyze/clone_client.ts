@@ -6,8 +6,7 @@ import { cloneRepoWithCommit } from "../utils/cloneRepoWithCommit";
 import output_json from "../utils/output_json";
 
 async function clone() {
-  let data_path = path.resolve(process.cwd(), '../../datasets/input/2025-07-29-02-39-07-success/xommit');
-  // console.log("data_path", data_path);
+  let data_path = path.resolve(process.cwd(), '../../datasets/input/2025-07-29-02-39-07-success/commit');
   const data_files: string[] = await getAllFilesRecursively(data_path);
   for (let i = 0; i < data_files.length; i++) {
     const data: specificCommit[] = JSON.parse(fs.readFileSync(data_files[i], 'utf-8'));

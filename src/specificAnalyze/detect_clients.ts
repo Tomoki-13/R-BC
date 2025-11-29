@@ -12,7 +12,8 @@ type dataType = {
 function extractAllPatterns(detectionOutput: DetectionOutput): string[][][] {
   return detectionOutput.patterns.map(p => p.pattern);
 }
-
+// specific_data：クライアントで特定のバージョンを超えたものを対象
+// 更新後のクライアントに対してパターン検出を実行
 (async () => {
   let absolutePath = path.resolve(__dirname, '../../datasets/input/specific/specific_data.json');
   let data: dataType[] = JSON.parse(fs.readFileSync(absolutePath, 'utf-8'));
@@ -29,6 +30,5 @@ function extractAllPatterns(detectionOutput: DetectionOutput): string[][][] {
 
     let matchCliantPatternJson: DetectionOutput = await detectByPattern('../' + targetDir, libName, patternList, detect_outputDir, 1);
   }
-
 })();
 
