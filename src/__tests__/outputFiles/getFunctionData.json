@@ -2,21 +2,29 @@
   "exportedFunctions": [
     {
       "funcname": "exportedFunctionDeclaration",
-      "arg": ["a", "b"],
+      "arg": [
+        "a",
+        "b"
+      ],
       "filePath": "./src/__tests__/inputFiles/functionSample/data1.js",
       "start": 970,
       "end": 1032
     },
     {
       "funcname": "exportedArrowFunction",
-      "arg": ["a", "b"],
+      "arg": [
+        "a",
+        "b"
+      ],
       "filePath": "./src/__tests__/inputFiles/functionSample/data1.js",
       "start": 1140,
       "end": 1155
     },
     {
       "funcname": "exportedAsyncExpression",
-      "arg": ["url"],
+      "arg": [
+        "url"
+      ],
       "filePath": "./src/__tests__/inputFiles/functionSample/data1.js",
       "start": 1269,
       "end": 1320
@@ -44,28 +52,38 @@
     },
     {
       "funcname": "defaultFunction",
-      "arg": ["x"],
+      "arg": [
+        "x"
+      ],
       "filePath": "./src/__tests__/inputFiles/functionSample/data1.js",
       "start": 1963,
       "end": 2010
     },
     {
       "funcname": "cjsModuleExportsFunction",
-      "arg": ["a", "b"],
+      "arg": [
+        "a",
+        "b"
+      ],
       "filePath": "./src/__tests__/inputFiles/functionSample/data1.js",
       "start": 2193,
       "end": 2228
     },
     {
       "funcname": "cjsExportsArrowFunction",
-      "arg": ["a", "b"],
+      "arg": [
+        "a",
+        "b"
+      ],
       "filePath": "./src/__tests__/inputFiles/functionSample/data1.js",
       "start": 2309,
       "end": 2347
     },
     {
       "funcname": "exportedClassMethod",
-      "arg": ["a"],
+      "arg": [
+        "a"
+      ],
       "filePath": "./src/__tests__/inputFiles/functionSample/data1.js",
       "start": 2574,
       "end": 2616
@@ -86,7 +104,9 @@
     },
     {
       "funcname": "exportedClassArrowProperty",
-      "arg": ["val"],
+      "arg": [
+        "val"
+      ],
       "filePath": "./src/__tests__/inputFiles/functionSample/data1.js",
       "start": 2880,
       "end": 2910
@@ -95,21 +115,28 @@
   "allFunctions": [
     {
       "funcname": "localFunctionDeclaration",
-      "arg": ["a", "b"],
+      "arg": [
+        "a",
+        "b"
+      ],
       "filePath": "./src/__tests__/inputFiles/functionSample/data1.js",
       "start": 308,
       "end": 367
     },
     {
       "funcname": "localArrowFunction",
-      "arg": ["x"],
+      "arg": [
+        "x"
+      ],
       "filePath": "./src/__tests__/inputFiles/functionSample/data1.js",
       "start": 458,
       "end": 484
     },
     {
       "funcname": "localFunctionExpression",
-      "arg": ["y"],
+      "arg": [
+        "y"
+      ],
       "filePath": "./src/__tests__/inputFiles/functionSample/data1.js",
       "start": 574,
       "end": 608
@@ -123,21 +150,29 @@
     },
     {
       "funcname": "exportedFunctionDeclaration",
-      "arg": ["a", "b"],
+      "arg": [
+        "a",
+        "b"
+      ],
       "filePath": "./src/__tests__/inputFiles/functionSample/data1.js",
       "start": 970,
       "end": 1032
     },
     {
       "funcname": "exportedArrowFunction",
-      "arg": ["a", "b"],
+      "arg": [
+        "a",
+        "b"
+      ],
       "filePath": "./src/__tests__/inputFiles/functionSample/data1.js",
       "start": 1140,
       "end": 1155
     },
     {
       "funcname": "exportedAsyncExpression",
-      "arg": ["url"],
+      "arg": [
+        "url"
+      ],
       "filePath": "./src/__tests__/inputFiles/functionSample/data1.js",
       "start": 1269,
       "end": 1320
@@ -165,28 +200,38 @@
     },
     {
       "funcname": "defaultFunction",
-      "arg": ["x"],
+      "arg": [
+        "x"
+      ],
       "filePath": "./src/__tests__/inputFiles/functionSample/data1.js",
       "start": 1963,
       "end": 2010
     },
     {
       "funcname": "cjsModuleExportsFunction",
-      "arg": ["a", "b"],
+      "arg": [
+        "a",
+        "b"
+      ],
       "filePath": "./src/__tests__/inputFiles/functionSample/data1.js",
       "start": 2193,
       "end": 2228
     },
     {
       "funcname": "cjsExportsArrowFunction",
-      "arg": ["a", "b"],
+      "arg": [
+        "a",
+        "b"
+      ],
       "filePath": "./src/__tests__/inputFiles/functionSample/data1.js",
       "start": 2309,
       "end": 2347
     },
     {
       "funcname": "exportedClassMethod",
-      "arg": ["a"],
+      "arg": [
+        "a"
+      ],
       "filePath": "./src/__tests__/inputFiles/functionSample/data1.js",
       "start": 2574,
       "end": 2616
@@ -207,17 +252,33 @@
     },
     {
       "funcname": "exportedClassArrowProperty",
-      "arg": ["val"],
+      "arg": [
+        "val"
+      ],
       "filePath": "./src/__tests__/inputFiles/functionSample/data1.js",
       "start": 2880,
       "end": 2910
     },
     {
       "funcname": "localClassMethod",
-      "arg": ["b"],
+      "arg": [
+        "b"
+      ],
       "filePath": "./src/__tests__/inputFiles/functionSample/data1.js",
       "start": 2982,
       "end": 3021
+    }
+  ],
+  "setDefaultValue": [
+    {
+      "funcname": "add_default",
+      "arg": [
+        "a = 1",
+        "b"
+      ],
+      "filePath": "./src/__tests__/inputFiles/functionSample/data1_defaultValue.js",
+      "start": 0,
+      "end": 50
     }
   ]
 }

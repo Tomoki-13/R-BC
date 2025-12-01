@@ -38,8 +38,14 @@ export const getFunction = async (filePath: string, mode = 0): Promise<FunctionI
       };
 
       // パラメータ名を抽出するヘルパー
-      const getParams = (params: any[]) => params.map((param) => (t.isIdentifier(param) ? param.name : ''));
-
+      const getParams = (params: any[]) => params.map((param) => {
+        if (t.isIdentifier(param)) {
+          return param.name;
+        } else if (param.start != null && param.end != null) {
+          return fileContent.substring(param.start, param.end);
+        }
+        return '';
+      });
       traverse(parsed, {
         // 関数宣言
         FunctionDeclaration(path) {
