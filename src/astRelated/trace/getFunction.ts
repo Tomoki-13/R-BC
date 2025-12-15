@@ -165,25 +165,61 @@ export const getFunction = async (filePath: string, mode = 0): Promise<FunctionI
 
         // CommonJS exports への代入 (module.exports.func = ... 対応)
         AssignmentExpression(path) {
-          if (t.isFunctionExpression(path.node.right) || t.isArrowFunctionExpression(path.node.right)) {
-            let name: string | undefined;
-            const params = getParams(path.node.right.params);
+          const left = path.node.left;
+          const right = path.node.right;
+          // module.exports = { func1: func1, func2: func2 } の場合
+          if (t.isObjectExpression(right)) {
+            let isModuleExports = false;
+            if (t.isIdentifier(left) && left.name === 'exports') {
+              isModuleExports = true;
+            } else if (
+              t.isMemberExpression(left) &&
+              t.isIdentifier(left.object) && left.object.name === 'module' &&
+              t.isIdentifier(left.property) && left.property.name === 'exports'
+            ) {
+              isModuleExports = true;
+            }
 
-            if (t.isMemberExpression(path.node.left) && !path.node.left.computed && t.isIdentifier(path.node.left.property)) {
+            if (isModuleExports) {
+              // オブジェクトのプロパティを再帰的に探索する関数
+              const collectExportedNamesFromObject = (properties: (t.ObjectMethod | t.ObjectProperty | t.SpreadElement)[]) => {
+                properties.forEach((prop) => {
+                  if (t.isObjectProperty(prop)) {
+                    // ケース: getRgba: getRgba (値が識別子の場合)
+                    if (t.isIdentifier(prop.value)) {
+                      explicitlyExportedNames.add(prop.value.name);
+                    }
+                    // ケース: to: { ... } (値がネストされたオブジェクトの場合)
+                    else if (t.isObjectExpression(prop.value)) {
+                      collectExportedNamesFromObject(prop.value.properties);
+                    }
+                  }
+                });
+              };
+
+              collectExportedNamesFromObject(right.properties);
+            }
+          }
+
+          if (t.isFunctionExpression(right) || t.isArrowFunctionExpression(right)) {
+            let name: string | undefined;
+            const params = getParams(right.params);
+
+            if (t.isMemberExpression(left) && !left.computed && t.isIdentifier(left.property)) {
               // exports.func = ...
               // module.exports.func = ...
-              const object = path.node.left.object;
+              const object = left.object;
               const isExportsIdentifier = t.isIdentifier(object) && object.name === 'exports';
               const isModuleExports = t.isMemberExpression(object) &&
                 t.isIdentifier(object.object) && object.object.name === 'module' &&
                 t.isIdentifier(object.property) && object.property.name === 'exports';
 
               if (isExportsIdentifier || isModuleExports) {
-                name = path.node.left.property.name;
+                name = left.property.name;
                 exportedFunctions.add(serializeFunction(name, params));
               }
-            } else if (t.isIdentifier(path.node.left)) {
-              name = path.node.left.name;
+            } else if (t.isIdentifier(left)) {
+              name = left.name;
             }
 
             if (name) {
@@ -194,8 +230,8 @@ export const getFunction = async (filePath: string, mode = 0): Promise<FunctionI
                   isExported: isExportedFunction(serializedFunc),
                   arg: params,
                   filePath,
-                  start: path.node.right.start,
-                  end: path.node.right.end,
+                  start: right.start,
+                  end: right.end,
                 });
               }
             }
