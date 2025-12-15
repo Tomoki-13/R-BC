@@ -5,8 +5,8 @@ import { getFunction } from "../../astRelated/trace/getFunction";
 import { FunctionInfo_funcRange } from '../../types/FunctionInfo';
 
 describe('getFunction test', () => {
-  const filePath1: string = "./src/__tests__/inputFiles/functionSample/data1.js";
-  const filePath2: string = "./src/__tests__/inputFiles/functionSample/data1_defaultValue.js";
+  const filePath1: string = "./src/__tests__/inputFiles/functionSample/getFunc_default.js";
+  const filePath2: string = "./src/__tests__/inputFiles/functionSample/getFunc_sub.js";
   const outputPath = path.resolve(__dirname, '../outputFiles/getFunctionData.json');
   const jsonData = JSON.parse(fs.readFileSync(outputPath, 'utf-8'));
 
@@ -22,8 +22,14 @@ describe('getFunction test', () => {
     expect(actual).toEqual(expected);
   });
 
-  test('value is set for the argument', async () => {
-    const expected: FunctionInfo_funcRange[] = jsonData.setDefaultValue;
+  test('get only exportedFunctions_sub', async () => {
+    const expected: FunctionInfo_funcRange[] = jsonData.exportedFunctions_sub;
+    const actual = await getFunction(filePath2, 0);
+    expect(actual).toEqual(expected);
+  });
+
+  test('get all functions_sub', async () => {
+    const expected: FunctionInfo_funcRange[] = jsonData.allFunctions_sub;
     const actual = await getFunction(filePath2, 1);
     expect(actual).toEqual(expected);
   });
