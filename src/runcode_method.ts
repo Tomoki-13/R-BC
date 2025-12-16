@@ -7,8 +7,8 @@ import path from 'path';
 
 // シンプルな実行例
 (async () => {
-  const getPatternDir: string = "../allrepos/~~~failure";
-  const matchDir: string = ".../allrepos/~~~success";
+  const getPatternDir: string = "../allrepos/repos_failure";
+  const matchDir: string = "../allrepos/repos_success";
   const libName: string = process.argv[2];
   let lastpatterns: string[][][] = [];
 
@@ -23,7 +23,7 @@ import path from 'path';
   output_json.createOutputDirectory(detect_outputDir);
   //パターン作成
   lastpatterns = await createPattern(getPatternDir, libName, create_outputDir);
+
   //検出
-  // let matchCliantPatternJson:MatchClientPattern[] = await detectByPattern(matchDir,libName,lastpatterns);
-  let matchCliantPatternJson: DetectionOutput = await detectByPattern(getPatternDir, libName, lastpatterns, detect_outputDir, 1);
+  let matchCliantPatternJson: DetectionOutput = await detectByPattern(matchDir, libName, lastpatterns, detect_outputDir, 1);
 })();
