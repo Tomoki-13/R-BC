@@ -10,17 +10,13 @@ dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 const execAsync = promisify(exec);
 const sleep = (ms: number): Promise<void> => new Promise(resolve => setTimeout(resolve, ms));
 
-
 /**
  * 指定されたGitHubリポジトリの特定コミットをクローンします。
- * .envファイルにGITHUB_ACCESS_TOKENがあれば認証付きでクローンします。
- * @param repo - クローンするリポジトリ（例: "user/repo"）
+ * @param repo - クローンするリポジトリ（形式: "user/repo"）
  * @param clone_dir - クローン先ディレクトリのベースパス
  * @param commit - チェックアウトするコミットのハッシュ
- * @returns クローンされたリポジトリのローカルパス。失敗した場合はnullを返します。
  */
 export const cloneRepoWithCommit = async (repo: string, clone_dir: string, commit: string): Promise<string | null> => {
-  // 環境変数からトークンを取得
   const token = process.env.GITHUB_ACCESS_TOKEN;
 
   // トークンがある場合は認証情報付きのURLを、ない場合は通常のURLを使用
@@ -28,25 +24,31 @@ export const cloneRepoWithCommit = async (repo: string, clone_dir: string, commi
     ? `https://x-access-token:${token}@github.com/${repo}.git`
     : `https://github.com/${repo}.git`;
 
-  const match = repo.match(/(.+?)\/(.+)/);
+  // user/repo 形式であることを確認し分割
+  const match = repo.match(/^([^/]+)\/([^/]+)$/);
   if (!match) {
-    console.error("無効なリポジトリ形式です。'user/repo'の形式で指定してください。");
-    return 'exist';
+    console.error(`無効なリポジトリ形式です。'user/repo'の形式で指定してください: ${repo}`);
+    return null;
   }
 
   const userName = match[1];
   const repoName = match[2];
+
+  // ディレクトリ階層: output/user/repo
   const userDir = path.join(clone_dir, userName);
   const repoDir = path.join(userDir, repoName);
-  output_json.createOutputDirectory(userDir);
+
+  // ユーザーディレクトリがなければ作成
+  if (!fs.existsSync(userDir)) {
+    fs.mkdirSync(userDir, { recursive: true });
+  }
 
   if (fs.existsSync(repoDir)) {
     console.warn(`指定されたリポジトリのディレクトリは既に存在します: ${repoDir}`);
-    return '';
+    return repoDir;
   }
 
   try {
-
     const cloneCommand = `git clone ${repoUrl} ${repoDir}`;
     await execAsync(cloneCommand);
     await sleep(1000);

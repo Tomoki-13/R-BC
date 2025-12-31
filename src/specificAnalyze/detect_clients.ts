@@ -15,7 +15,8 @@ function extractAllPatterns(detectionOutput: DetectionOutput): string[][][] {
 // specific_data：クライアントで特定のバージョンを超えたものを対象
 // 更新後のクライアントに対してパターン検出を実行
 (async () => {
-  let absolutePath = path.resolve(__dirname, '../../datasets/input/specific/specific_data.json');
+  // let absolutePath = path.resolve(__dirname, '../../datasets/input/specific/specific_data.json');
+  let absolutePath = path.resolve(__dirname, '../../datasets/input/2025-12-23-07-04-43/specific_data(12-23).json');
   let data: dataType[] = JSON.parse(fs.readFileSync(absolutePath, 'utf-8'));
 
   const now = new Date();
@@ -27,7 +28,8 @@ function extractAllPatterns(detectionOutput: DetectionOutput): string[][][] {
     output_json.createOutputDirectory(detect_outputDir);
     let patternListAndcount: DetectionOutput = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../' + pattrnListPath), 'utf-8'));
     let patternList: string[][][] = extractAllPatterns(patternListAndcount)
-
+    console.log(`ライブラリ: ${libName} - パターン数: ${patternList.length}`);
+    console.log(`ターゲットディレクトリ: ../${targetDir}`);
     let matchCliantPatternJson: DetectionOutput = await detectByPattern('../' + targetDir, libName, patternList, detect_outputDir, 1);
   }
 })();
