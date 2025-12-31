@@ -1,4 +1,4 @@
-//置換処理
+// 置換処理
 function prep_repl(inputs: string[]): string[] {
   const replLoc: RegExp = /---(\d+)/g;
   let replacedIndexes: { [key: string]: string } = {};
@@ -22,7 +22,7 @@ function prep_repl(inputs: string[]): string[] {
   });
 }
 
-//'`" ,*,/の設定
+// '`" ,*,/の設定
 const replaceQuoteAndasterisk = (inputs: string[]): string[] => {
   for (let i = 0; i < inputs.length; i++) {
     inputs[i] = inputs[i].replace(/\//g, `\\/`);
@@ -33,7 +33,7 @@ const replaceQuoteAndasterisk = (inputs: string[]): string[] => {
 }
 
 
-//全てのパターンの末尾に.が来ないように
+// 全てのパターンの末尾に.が来ないように
 const checkDot = (inputs: string[]): string[] => {
   for (let i = 0; i < inputs.length; i++) {
     inputs[i] = inputs[i].concat("[^.]*");
@@ -41,49 +41,39 @@ const checkDot = (inputs: string[]): string[] => {
   return inputs;
 }
 
-//(?<variable2>[\\w-]+) 以外の()の処理
+// (?<variable2>[\\w-]+) 以外の()の処理、(?!\\.)も除外
+// TODO:　文字列の中の(は変換しない方がいいかも？)
 function escapeFunc(str: string): string {
   let escapedStr = '';
   let i = 0;
   const length = str.length;
-  let insideQuote = false;
-  let quoteChar = '';
   let insideSpecialPart = false;
-  const specialPartStart = /\(\?\<[\w-]+\>/;
+
+  // 名前付きグループ(?<name>) または 否定先読み(?!...) の開始を検出
+  const specialPartStart = /^\(\?(\<[\w-]+\>|!)/;
+
   while (i < length) {
     const char = str[i];
-    //引用符の開始を検出
-    if (char === '"' || char === "'") {
-      if (!insideQuote) {
-        insideQuote = true;
-        quoteChar = char;
-      } else if (char === quoteChar) {
-        insideQuote = false;
-        quoteChar = '';
-      }
-      escapedStr += char;
-      i++;
-      continue;
-    }
-    //特定の部分の検出と処理
+
+    // 特定の部分の検出と処理
     if (insideSpecialPart) {
-      //特定の部分の処理
       if (char === ')') {
         insideSpecialPart = false;
       }
       escapedStr += char;
     } else {
-      //普通の括弧処理
+      // 普通の括弧処理
       if (char === '(') {
-        //開き括弧のエスケープ
+        // 特殊なパターンの開始かどうかチェック
         if (str.substring(i).match(specialPartStart)) {
           insideSpecialPart = true;
           escapedStr += char;
         } else {
+          // 開き括弧のエスケープ
           escapedStr += '\\(';
         }
       } else if (char === ')') {
-        //閉じ括弧のエスケープ
+        // 閉じ括弧のエスケープ
         escapedStr += '\\)';
       } else {
         escapedStr += char;
