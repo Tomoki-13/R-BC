@@ -1,5 +1,4 @@
 import { promises as fsPromises } from 'fs';
-import * as parser from '@babel/parser';
 import traverse, { NodePath } from '@babel/traverse';
 import * as t from '@babel/types';
 
@@ -33,7 +32,7 @@ export const analyzeArgAndMethod = async (
     const fileContent: string = await fsPromises.readFile(filePath, 'utf8');
     const parsed = createAstFromFile(filePath, fileContent);
     if (parsed === null) {
-      console.error(`extractFunctionCalls: AST creation failed for file: ${filePath}`);
+      // console.error(`extractFunctionCalls: AST creation failed for file: ${filePath}`);
       return [];
     }
     const allFunctions: FunctionInfo_funcRange[] = await getFunction(filePath, 1);
@@ -63,10 +62,6 @@ export const analyzeArgAndMethod = async (
                 t.isIdentifier(arg) &&
                 new RegExp(`^${funcName}(?![a-zA-Z])`).test(arg.name)
               ) {
-                // eslint-disable-next-line no-console
-                console.log(
-                  `Variable found in _interopRequireDefault argument for ${funcName}: ${arg.name}`,
-                );
                 return true;
               }
               return false;
@@ -82,7 +77,7 @@ export const analyzeArgAndMethod = async (
                 declarationNode.node.end,
               );
               syncResults.push({
-                FunctionCallCodes: [code],
+                FunctionCallCode: code,
                 argTypes: [[]],
                 argContexts: [[]],
               });
@@ -103,7 +98,7 @@ export const analyzeArgAndMethod = async (
               declarationNode.node.end,
             );
             syncResults.push({
-              FunctionCallCodes: [code],
+              FunctionCallCode: code,
               argTypes: [[]],
               argContexts: [[]],
             });
@@ -149,7 +144,7 @@ export const analyzeArgAndMethod = async (
               ...new Set(contexts),
             ]);
             return {
-              FunctionCallCodes: [code],
+              FunctionCallCode: code,
               argTypes: dedupedArgTypes,
               argContexts: dedupedArgContexts,
             };
@@ -190,7 +185,7 @@ export const analyzeArgAndMethod = async (
               ...new Set(contexts),
             ]);
             return {
-              FunctionCallCodes: [code],
+              FunctionCallCode: code,
               argTypes: dedupedArgTypes,
               argContexts: dedupedArgContexts,
             };
@@ -208,9 +203,7 @@ export const analyzeArgAndMethod = async (
 
     return syncResults.concat(validAsyncResults);
   } catch (error: unknown) {
-    console.error(
-      `extractFunctionCalls: Failed to create AST for file: ${filePath}`,
-    );
+    // console.error(`extractFunctionCalls: Failed to create AST for file: ${filePath}`,);
     if (error instanceof Error) {
       console.error(error.message);
     } else {
@@ -229,7 +222,7 @@ export const analyzeArgAndMethod = async (
  * @returns 引数の型とコンテキストの解析結果
  */
 
-//引数まで考慮したパターンの作成
+// 引数まで考慮したパターンの作成
 async function analyzeArguments(
   args: (t.Expression | t.SpreadElement | t.JSXNamespacedName | t.ArgumentPlaceholder)[],
   fileContent: string,
@@ -253,7 +246,7 @@ async function analyzeArguments(
       )
     )
       continue;
-
+    // 引数が「変数名（識別子）」の場合
     if (t.isIdentifier(arg)) {
       const usages: VariableUsage[] = rangeArg(fileContent, arg.name);
       let isUserFuncArg = false;
@@ -282,7 +275,7 @@ async function analyzeArguments(
           }
         }
       }
-
+      // 親関数から渡された引数だった場合
       if (isUserFuncArg) {
         for (const one of relatedFuncs) {
           const outerFuncDef = allFunctions.find((f) => f.funcname === one);
@@ -291,7 +284,6 @@ async function analyzeArguments(
             -1;
           if (outerArgIndex === -1) continue;
 
-          // Fix typo: fillterData -> filterData
           const filterData = funcDepend.filter(
             (item) => item.funcNameInFilepath === one,
           );
@@ -312,30 +304,43 @@ async function analyzeArguments(
             }
           }
         }
-      } else {
-        const argType_tmp: string[] = [];
-        const argContexts_tmp: string[] = [];
-        for (const usageItem of usages) {
-          for (const codeSnippet of usageItem.code) {
-            argType_tmp.push(inferTypeFromCode(codeSnippet));
-            argContexts_tmp.push(codeSnippet);
-          }
-        }
-        finalArgTypes[index].push(...argType_tmp);
-        finalArgContexts[index].push(...argContexts_tmp);
       }
+      // 変数追跡の結果、関数引数以外の場合
+      const argType_tmp: string[] = [];
+      const argContexts_tmp: string[] = [];
+      for (const usageItem of usages) {
+        for (const codeSnippet of usageItem.code) {
+          argType_tmp.push(inferTypeFromCode(codeSnippet));
+          argContexts_tmp.push(codeSnippet);
+        }
+      }
+      finalArgTypes[index].push(...argType_tmp);
+      finalArgContexts[index].push(...argContexts_tmp);
+
+      // FIXME: 変数で、追跡・解析の結果、何も得られなかった場合のフォールバック処理を追加
+      if (finalArgTypes[index].length === 0) {
+        if (arg.start !== undefined && arg.end !== undefined) {
+          const snippet = fileContent.substring(arg.start, arg.end);
+          // 型が特定できない場合は 'unknown' とし、コードそのものをコンテキストとする
+          finalArgTypes[index].push('unknown');
+          finalArgContexts[index].push(snippet);
+        }
+      }
+
     } else {
+      // 識別子以外（リテラルや式など）の処理
       if (arg.start !== undefined && arg.end !== undefined) {
         const snippet = fileContent.substring(arg.start, arg.end);
         finalArgTypes[index].push(inferTypeFromCode(snippet));
         finalArgContexts[index].push(snippet);
       } else {
-        console.warn('arg.start,');
+        console.warn('arg.start or arg.end is undefined');
       }
     }
   }
   return { finalArgTypes, finalArgContexts };
 }
+
 
 /**
  * コードスニペットから簡易的な型推論を行う
@@ -357,6 +362,7 @@ function inferTypeFromCode(
   if (/^(\(.*\)|[^=\s]+)\s*=>/.test(code)) return 'function';
   if (/^function\s*\(/.test(code)) return 'function';
   if (/^new\s+/.test(code)) return 'object';
+  if (/^[\w$]+\.(assign|create|fromEntries|merge)\b/.test(code)) return 'object';
 
   // Simple heuristics for operations
   if (/[\+\-\*\/%]/.test(code) && !/['"`]/.test(code)) return 'number';

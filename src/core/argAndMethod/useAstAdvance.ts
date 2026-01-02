@@ -32,14 +32,16 @@ export const useAstAdvance = async (allFiles: string[], libName: string, mode: n
       const fileContent = await fsPromises.readFile(filePath, 'utf8');
 
       // Import行の抽出
-      const lines = extractImportLines(fileContent, libName);
+      const lines: string[] = extractImportLines(fileContent, libName);
 
       let inFileStr: ExtractFunctionCallsResult[] = [];
       if (lines.length > 0) {
-        inFileStr.push({
-          FunctionCallCodes: lines,
-          argTypes: lines.map(() => []),    // import文に引数型はないため空配列
-          argContexts: lines.map(() => [])  // import文に引数コンテキストはないため空配列
+        lines.forEach(line => {
+          inFileStr.push({
+            FunctionCallCode: line,
+            argTypes: [line].map(() => []),    // import文に引数型はないため空配列
+            argContexts: [line].map(() => [])  // import文に引数コンテキストはないため空配列
+          });
         });
       }
 
@@ -70,8 +72,8 @@ export const useAstAdvance = async (allFiles: string[], libName: string, mode: n
               const checkstr = 'mock';
               let hasMock = false;
               for (const subresult of result) {
-                // FunctionCallCodes配列のいずれかに 'mock' が含まれるか
-                if (subresult.FunctionCallCodes.some(code => code.includes(checkstr))) {
+                // FunctionCallCode配列のいずれかに 'mock' が含まれるか
+                if (subresult.FunctionCallCode.includes(checkstr)) {
                   hasMock = true;
                   break;
                 }
@@ -98,37 +100,32 @@ export const useAstAdvance = async (allFiles: string[], libName: string, mode: n
 
             // 各 Result オブジェクトに対して処理
             for (let resIndex = 0; resIndex < inFileStr.length; resIndex++) {
-              let codes = inFileStr[resIndex].FunctionCallCodes;
+              let code = inFileStr[resIndex].FunctionCallCode;
 
               // let/const/var 削除
-              for (let k = 0; k < codes.length; k++) {
-                codes[k] = codes[k].replace(letregex, '').trimStart();
-              }
+              code = code.replace(letregex, '').trimStart();
 
               for (const one of sortUniquefuncName) {
-
 
                 let replaceString: string = base + j.toString(); // 元のロジック通りならここで j を使う
                 let mainregex = new RegExp(`(?<!["\`'])${one}(?!["\`'])`, 'g');
 
                 // 現在のResultオブジェクト内のコード全てに対して置換実行
-                for (let k = 0; k < codes.length; k++) {
-                  // 特殊処理：{}呼び出し系
-                  if (/import|require/.test(codes[k]) && !/^\s*\/\//.test(codes[k]) && /\{.*\}/.test(codes[k])) {
-                    let regex1 = new RegExp(`:\\s*(?<!["\`'])${one}(?!["\`'])`, 'g');
-                    let regex2 = new RegExp(`as\\s*(?<!["\`'])${one}(?!["\`'])`, 'g');
-                    if (regex1.test(codes[k]) || regex2.test(codes[k])) {
-                      codes[k] = codes[k].replace(mainregex, replaceString);
-                    }
-                  } else {
-                    codes[k] = codes[k].replace(mainregex, replaceString);
+                // 特殊処理：{}呼び出し系
+                if (/import|require/.test(code) && !/^\s*\/\//.test(code) && /\{.*\}/.test(code)) {
+                  let regex1 = new RegExp(`:\\s*(?<!["\`'])${one}(?!["\`'])`, 'g');
+                  let regex2 = new RegExp(`as\\s*(?<!["\`'])${one}(?!["\`'])`, 'g');
+                  if (regex1.test(code) || regex2.test(code)) {
+                    code = code.replace(mainregex, replaceString);
                   }
+                } else {
+                  code = code.replace(mainregex, replaceString);
                 }
                 j++; // 変数ひとつ処理するごとに番号を進める
               }
 
               // 処理結果を戻す
-              inFileStr[resIndex].FunctionCallCodes = codes;
+              inFileStr[resIndex].FunctionCallCode = code;
             }
             pattern.push(inFileStr);
           }
@@ -139,19 +136,32 @@ export const useAstAdvance = async (allFiles: string[], libName: string, mode: n
     }
   }
 
-  for (let i = 0; i < pattern.length; i++) { // ファイルごとの配列
+  for (let i = 0; i < pattern.length; i++) {
+    // 配列の後ろからループ（削除時のインデックスずれ防止）
     for (let resIndex = pattern[i].length - 1; resIndex >= 0; resIndex--) {
-      const codes = pattern[i][resIndex].FunctionCallCodes;
-      // コード長が400を超えるものを削除
-      for (let k = codes.length - 1; k >= 0; k--) {
-        if (codes[k].length > 400) {
-          codes.splice(k, 1);
-        }
+      let code = pattern[i][resIndex].FunctionCallCode; // string
+
+      // 文字数制限チェック
+      if (code.length > 400) {
+        pattern[i].splice(resIndex, 1);
+        continue; // 削除したので次の処理へ
       }
 
-      // コードが空になった Result オブジェクトを削除
-      if (codes.length === 0) {
+      // フォーマット処理
+      if (typeof code === 'string') {
+        code = code.replace(/[\r\n]/g, '');
+        code = code.replace(/^,|,$/g, '');
+        if (code.endsWith(';')) {
+          code = code.slice(0, -1);
+        }
+        code = code.trim().replace(/\s+/g, ' ');
+      }
+
+      if (code.length === 0) {
         pattern[i].splice(resIndex, 1);
+      } else {
+        // 更新された文字列を戻す
+        pattern[i][resIndex].FunctionCallCode = code;
       }
     }
   }
@@ -162,22 +172,19 @@ export const useAstAdvance = async (allFiles: string[], libName: string, mode: n
   if (pattern.length > 0) {
     for (let i = 0; i < pattern.length; i++) {
       for (let resIndex = 0; resIndex < pattern[i].length; resIndex++) {
-        let codes = pattern[i][resIndex].FunctionCallCodes;
+        let c = pattern[i][resIndex].FunctionCallCode;
 
-        codes = codes.map(code => {
-          let c = code;
-          if (typeof c === 'string') {
-            c = c.replace(/[\r\n]/g, '');
-            c = c.replace(/^,|,$/g, '');
-            if (c.endsWith(';')) {
-              c = c.slice(0, -1);
-            }
-            c = c.trim().replace(/\s+/g, ' ');
+        if (typeof c === 'string') {
+          c = c.replace(/[\r\n]/g, '');
+          c = c.replace(/^,|,$/g, '');
+          if (c.endsWith(';')) {
+            c = c.slice(0, -1);
           }
-          return c;
-        });
+          c = c.trim().replace(/\s+/g, ' ');
+        }
 
-        pattern[i][resIndex].FunctionCallCodes = codes;
+        // 処理結果を再代入
+        pattern[i][resIndex].FunctionCallCode = c;
       }
     }
   }
