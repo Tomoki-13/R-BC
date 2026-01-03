@@ -1,93 +1,52 @@
 {
   "tracks constant arguments within the same file": [
     {
-      "FunctionCallCodes": [
-        "roop_divide(81, 3)"
-      ],
+      "FunctionCallCode": "roop_divide(81, 3)",
       "argTypes": [
-        [
-          "number"
-        ],
-        [
-          "number"
-        ]
+        ["number"],
+        ["number"]
       ],
       "argContexts": [
-        [
-          "81"
-        ],
-        [
-          "3"
-        ]
+        ["81"],
+        ["3"]
       ]
     }
   ],
   "tracks variable arguments defined within the same file": [
     {
-      "FunctionCallCodes": [
-        "roop_divide(a, b)"
-      ],
+      "FunctionCallCode": "roop_divide(a, b)",
       "argTypes": [
-        [
-          "number"
-        ],
-        [
-          "number"
-        ]
+        ["number"],
+        ["number"]
       ],
       "argContexts": [
-        [
-          "81",
-          "a + 1"
-        ],
-        [
-          "3"
-        ]
+        ["81", "a + 1"],
+        ["3"]
       ]
     }
   ],
   "tracks variable arguments from an external file": {
     "division": [
       {
-        "FunctionCallCodes": [
-          "divide(a, b)"
-        ],
+        "FunctionCallCode": "divide(a, b)",
         "argTypes": [
-          [
-            "number",
-            "string"
-          ],
-          [
-            "number"
-          ]
+          ["number", "string"],
+          ["number"]
         ],
         "argContexts": [
-          [
-            "81",
-            "a + 1",
-            "\"this is not a number\""
-          ],
-          [
-            "3"
-          ]
+          ["81", "a + 1", "\"this is not a number\""],
+          ["3"]
         ]
       }
     ],
     "logger_wrapper": [
       {
-        "FunctionCallCodes": [
-          "logger.info(message)"
-        ],
+        "FunctionCallCode": "logger.info(message)",
         "argTypes": [
-          [
-            "string"
-          ]
+          ["string"]
         ],
         "argContexts": [
-          [
-            "\"User logged in\"",
-            "\"System shutdown\""
-          ]
+          ["\"User logged in\"", "\"System shutdown\""]
         ]
       }
     ]

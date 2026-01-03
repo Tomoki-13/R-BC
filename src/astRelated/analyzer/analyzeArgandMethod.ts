@@ -11,6 +11,7 @@ import { ExtractFunctionCallsResult } from '../../types/ExtractFunctionCallsResu
 import { createAstFromFile } from '../base/createAstFromFile';
 
 // 引数まで考慮した関数呼び出しの解析
+// BUG?: 関数定義箇所も検出対象(一旦テストはfailさせておく)
 export const analyzeArgAndMethod = async (
   filePath: string,
   funcName: string,
