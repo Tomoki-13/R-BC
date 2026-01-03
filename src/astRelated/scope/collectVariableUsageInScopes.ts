@@ -4,15 +4,26 @@ import * as t from '@babel/types';
 // 指定された変数名に対応するスコープ範囲（複数ある場合も）を抽出
 // 入力するparsedは、@babel/parserでパースしたスコープ範囲内のデータを想定
 //jsとtsで処理を変えることも検討
+// TODO: デフォルト値の処理で定義されているものを考慮しない方針
 export const collectVariableUsageInScopes = (
   parsed: t.File,
   variableName: string,
   fileContent: string,
+  scopeRange?: { start: number; end: number }
 ): string[] => {
   const usages: string[] = [];
   // 変数への代入履歴を取得
   traverse(parsed, {
     VariableDeclarator(path) {
+      if (scopeRange) {
+        if (typeof path.node.start === 'number' && typeof path.node.end === 'number') {
+           // ノードが指定範囲の外にある場合はスキップ
+           if (path.node.start < scopeRange.start || path.node.end > scopeRange.end) {
+             return;
+           }
+        }
+      }
+
       const { id, init } = path.node;
       if (
         t.isIdentifier(id) &&
@@ -27,6 +38,14 @@ export const collectVariableUsageInScopes = (
     },
 
     AssignmentExpression(path) {
+      if (scopeRange) {
+        if (typeof path.node.start === 'number' && typeof path.node.end === 'number') {
+           if (path.node.start < scopeRange.start || path.node.end > scopeRange.end) {
+             return;
+           }
+        }
+      }
+      
       const { left, right, operator } = path.node;
       if (
         t.isIdentifier(left) &&

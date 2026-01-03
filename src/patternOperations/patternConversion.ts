@@ -1,3 +1,4 @@
+import { ExtractFunctionCallsResult } from '../types/ExtractFunctionCallsResult';
 // 置換処理
 function prep_repl(inputs: string[]): string[] {
   const replLoc: RegExp = /---(\d+)/g;
@@ -11,11 +12,10 @@ function prep_repl(inputs: string[]): string[] {
       const varName = `variable${p1}`;
       if (!firstOccurrences.hasOwnProperty(varName)) {
         firstOccurrences[varName] = true;
-        //\\w+だと-は取得不可
+        // \\w+だと-は取得不可
         replacedIndexes[varName] = `(?<${varName}>[\\w-]+)`;
         return replacedIndexes[varName];
       } else {
-        //変数に入れた文字列には${importMatch?.groups[${varName}]}が機能しない
         return `${varName}`;
       }
     });
@@ -42,7 +42,6 @@ const checkDot = (inputs: string[]): string[] => {
 }
 
 // (?<variable2>[\\w-]+) 以外の()の処理、(?!\\.)も除外
-// TODO:　文字列の中の(は変換しない方がいいかも？)
 function escapeFunc(str: string): string {
   let escapedStr = '';
   let i = 0;
@@ -89,27 +88,49 @@ function transformArgumrnt(str: string): string {
   str = str.replace(/[\r\n]/g, '');
   const match = str.match(/^(.*?)\((.*?)\)$/);
   if (!match) return str;
-  //関数名と引数部分を取得
+
   const functionName = match[1];
-  let args = match[2];
-  args = args.replace(/:\s*\[.*?\]/g, ':[]');
-  args = args.replace(/\{[^}]*\}/g, 'argument');
-  //引数がカンマで区切られている場合
-  if (args.includes(',')) {
-    //引数をカンマで分割し、それぞれに [^,]* を適用
-    const parts = args.split(',');
-    const transformedArgs = parts.slice(0, -1).map(() => '[^,]*').concat('[^,]*').join(',');
-    return `${functionName}\(${transformedArgs}\)`;
-  } else if (args.length > 0) {
-    //引数がカンマで区切られていない場合はそのまま返す
-    return `${functionName}\([^,]*\)`;
-  } else {
-    return str
+  const args = match[2];
+
+  if (args.trim().length === 0) {
+    return str;
   }
+
+  // ネストとクォートを考慮して引数を分割
+  let argCount = 1;
+  let depth = 0;
+  let inQuote = false;
+  let quoteChar = '';
+
+  for (let i = 0; i < args.length; i++) {
+    const char = args[i];
+
+    if (inQuote) {
+      if (char === quoteChar && args[i - 1] !== '\\') {
+        inQuote = false;
+      }
+    } else {
+      if (char === '"' || char === "'" || char === '`') {
+        inQuote = true;
+        quoteChar = char;
+      } else if (char === '[' || char === '{' || char === '(') {
+        depth++;
+      } else if (char === ']' || char === '}' || char === ')') {
+        depth--;
+      } else if (char === ',' && depth === 0) {
+        // トップレベルのカンマでのみ分割カウントを増やす
+        argCount++;
+      }
+    }
+  }
+
+  // 引数の数だけ [^,]* を生成して結合
+  const transformedArgs = new Array(argCount).fill('[^,]*').join(',');
+  return `${functionName}\(${transformedArgs}\)`;
 }
 
 //パターンへの変換
-function abstStr(respattern: string[][][]): string[][][] {
+function abstStr(respattern: string[][][], mode: number = 0): string[][][] {
   let copiedRespattern: string[][][] = JSON.parse(JSON.stringify(respattern));
   for (let i = 0; copiedRespattern.length > i; i++) {
     for (let j = 0; copiedRespattern[i].length > j; j++) {
@@ -124,8 +145,12 @@ function abstStr(respattern: string[][][]): string[][][] {
       copiedRespattern[i][j] = checkDot(copiedRespattern[i][j]);
     }
   }
+
+  if (mode === 1) {
+    return copiedRespattern;
+  }
+
   //重複パターンの削除copiedRespattern[i][j]
-  //console.log(copiedRespattern.length);
   for (let i = copiedRespattern.length - 1; i >= 0; i--) {
     if (Array.isArray(copiedRespattern[i])) {
       for (let j = copiedRespattern[i].length - 1; j >= 0; j--) {
@@ -147,7 +172,27 @@ function abstStr(respattern: string[][][]): string[][][] {
   return copiedRespattern;
 }
 
+function typeAwareAbstStr(respattern: ExtractFunctionCallsResult[][][]): ExtractFunctionCallsResult[][][] {
+  let copiedRespattern: ExtractFunctionCallsResult[][][] = JSON.parse(JSON.stringify(respattern));
+  // string[][][]に変換してabstStrを適用
+  let tempStringPattern: string[][][] = copiedRespattern.map(patternGroup =>
+    patternGroup.map(block =>
+      block.map(item => item.FunctionCallCode).flat()
+    ));
+  tempStringPattern = abstStr(tempStringPattern, 1);
+
+  for (let i = 0; i < copiedRespattern.length; i++) {
+    for (let j = 0; j < copiedRespattern[i].length; j++) {
+      for (let k = 0; k < copiedRespattern[i][j].length; k++) {
+        copiedRespattern[i][j][k].FunctionCallCode = tempStringPattern[i][j][k];
+      }
+    }
+  }
+  return copiedRespattern;
+}
+
 export default {
   escapeFunc,
   abstStr,
+  typeAwareAbstStr,
 };
