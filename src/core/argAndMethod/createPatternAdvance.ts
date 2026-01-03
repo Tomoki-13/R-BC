@@ -6,6 +6,7 @@ import { getAllFiles } from "../../utils/getAllFiles";
 import { getSubDir } from "../../utils/getSubDir";
 import output_json from "../../utils/output_json";
 import { ExtractFunctionCallsResult } from '../../types/ExtractFunctionCallsResult';
+import patternConversion from '../../patternOperations/patternConversion';
 
 interface RawJsonRow {
   failureclient: string;
@@ -54,18 +55,23 @@ export const createPatternAdvance = async (patternDir: string, libName: string, 
       }
     }
   }
-  // TODO: パターンの集約や重複排除は未実装
+  // TODO: パターンの集約や重複排除,パターンへの変換は未実装
+  //abstStrの再構築
 
   // ファイル出力 (rawpattern)
   const outputPath = output_json.getUniqueOutputPath(outputDir, path.basename(patternDir), 'rawpattern');
   fs.writeFileSync(outputPath, JSON.stringify(JsonRows, null, 4), 'utf8');
 
+  const lastpatterns = patternConversion.typeAwareAbstStr(respattern);
+  const outputPath2 = output_json.getUniqueOutputPath(outputDir, path.basename(patternDir), 'patternList');
+  fs.writeFileSync(outputPath2, JSON.stringify(lastpatterns, null, 4), 'utf8');
   // 標準出力
   console.log('========== createPattern (Raw Output) ============');
   console.log('failure alldirs:', alldirs.length);
   console.log('make failure pattern (clients):', respattern.length);
   console.log('Raw Output saved to:', outputPath);
+  console.log('pattern:', outputPath2);
   console.log('==================================================');
 
-  return respattern;
+  return lastpatterns;
 }

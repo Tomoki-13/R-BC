@@ -1,5 +1,11 @@
 //パターンマッチング用関数　userpatterns対象　respattern検出用
 import patternConversion from "./patternConversion";
+/**
+ * 型情報を考慮したパターンマッチング関数
+ * @param userpattern 解析済みのユーザーコードデータ (ファイル単位の配列の配列)
+ * @param resPattern 検出したいパターン群
+ * @returns [マッチしたか, マッチしたパターン]
+ */
 export const patternMatch = async (userpatterns: string[][], respattern: string[][][]): Promise<[boolean, string[][] | null]> => {
   //配列の要素を変えることを想定して
   let search_patterns: string[][][] = JSON.parse(JSON.stringify(respattern));
