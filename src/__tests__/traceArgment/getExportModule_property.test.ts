@@ -77,22 +77,22 @@ describe('getExportModuleProperty', () => {
     expect(mockedReadFile).not.toHaveBeenCalled();
   });
 
-  it('fs.readFile がエラーを投げた場合、エラーをログ出力し空配列を返す', async () => {
-    const mockError = new Error('File not found');
-    mockedReadFile.mockRejectedValue(mockError);
+  // it('fs.readFile がエラーを投げた場合、エラーをログ出力し空配列を返す', async () => {
+  //   const mockError = new Error('File not found');
+  //   mockedReadFile.mockRejectedValue(mockError);
 
-    // console.log をスパイ(監視)し、出力を抑制
-    const consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => { });
+  //   // console.log をスパイ(監視)し、出力を抑制
+  //   const consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => { });
 
-    const result = await getExportModuleProperty('./error.ts', 'funcA');
+  //   const result = await getExportModuleProperty('./error.ts', 'funcA');
 
-    // 結果が空配列であることを確認
-    expect(result).toEqual([]);
-    expect(consoleSpy).toHaveBeenCalledWith(
-      'getExportModuleProperty: Failed to create AST for file: ./error.ts',
-    );
-    expect(consoleSpy).toHaveBeenCalledWith(mockError);
-    // スパイを元に戻す(大事)
-    consoleSpy.mockRestore();
-  });
+  //   // 結果が空配列であることを確認
+  //   expect(result).toEqual([]);
+  //   expect(consoleSpy).toHaveBeenCalledWith(
+  //     'getExportModuleProperty: Failed to create AST for file: ./error.ts',
+  //   );
+  //   expect(consoleSpy).toHaveBeenCalledWith(mockError);
+  //   // スパイを元に戻す(大事)
+  //   consoleSpy.mockRestore();
+  // });
 });

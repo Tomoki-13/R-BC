@@ -11,7 +11,7 @@ import { ExtractFunctionCallsResult } from '../../types/ExtractFunctionCallsResu
 import { createAstFromFile } from '../base/createAstFromFile';
 
 // 引数まで考慮した関数呼び出しの解析
-// BUG?: 関数定義箇所も検出対象(一旦テストはfailさせておく)
+// TODO: 関数定義箇所も検出対象(一旦テストはfailさせておく)
 export const analyzeArgAndMethod = async (
   filePath: string,
   funcName: string,
@@ -33,7 +33,6 @@ export const analyzeArgAndMethod = async (
     const fileContent: string = await fsPromises.readFile(filePath, 'utf8');
     const parsed = createAstFromFile(filePath, fileContent);
     if (parsed === null) {
-      // console.error(`extractFunctionCalls: AST creation failed for file: ${filePath}`);
       return [];
     }
     const allFunctions: FunctionInfo_funcRange[] = await getFunction(filePath, 1);
@@ -57,7 +56,6 @@ export const analyzeArgAndMethod = async (
           const init = initNode;
           if (
             init.arguments &&
-            // Avoid 'any' type
             init.arguments.some((arg) => {
               if (
                 t.isIdentifier(arg) &&
@@ -68,7 +66,6 @@ export const analyzeArgAndMethod = async (
               return false;
             })
           ) {
-            // Add null check instead of using '!'
             if (
               declarationNode.node.start != null &&
               declarationNode.node.end != null
@@ -89,7 +86,6 @@ export const analyzeArgAndMethod = async (
           t.isIdentifier(initNode.object, { name: funcName }) &&
           t.isIdentifier(initNode.property, { name: 'default' })
         ) {
-          // Add null check instead of using '!'
           if (
             declarationNode.node.start != null &&
             declarationNode.node.end != null
@@ -109,7 +105,6 @@ export const analyzeArgAndMethod = async (
 
       CallExpression(path: NodePath<t.CallExpression>) {
         const processCall = async (): Promise<ExtractFunctionCallsResult | null> => {
-          // Add null check for start/end
           if (path.node.start == null || path.node.end == null) {
             return null;
           }
@@ -129,7 +124,6 @@ export const analyzeArgAndMethod = async (
           }
 
           if (isTargetFound) {
-            // Use node.start/end directly after null check
             const code: string = fileContent.substring(path.node.start, path.node.end);
             const { finalArgTypes, finalArgContexts } = await analyzeArguments(
               path.node.arguments,
@@ -166,7 +160,6 @@ export const analyzeArgAndMethod = async (
             t.isIdentifier(callee) &&
             new RegExp(`^${funcName}(?![a-zA-Z])`).test(callee.name)
           ) {
-            // Use node.start/end directly after null check
             const code: string = fileContent.substring(
               path.node.start,
               path.node.end,
@@ -204,7 +197,6 @@ export const analyzeArgAndMethod = async (
 
     return syncResults.concat(validAsyncResults);
   } catch (error: unknown) {
-    // console.error(`extractFunctionCalls: Failed to create AST for file: ${filePath}`,);
     if (error instanceof Error) {
       console.error(error.message);
     } else {
@@ -215,15 +207,13 @@ export const analyzeArgAndMethod = async (
 };
 
 /**
- * 引数を解析し、その型とコンテキストを特定するヘルパー関数
+ * 引数を解析し、その型とコンテキストを特定する関数
  * @param args 解析対象の引数ノードの配列
  * @param fileContent ファイルの全コンテンツ
  * @param allFunctions ファイル内の全関数情報
  * @param funcDepend 逆引きされた依存関係情報
  * @returns 引数の型とコンテキストの解析結果
  */
-
-// 引数まで考慮したパターンの作成
 async function analyzeArguments(
   args: (t.Expression | t.SpreadElement | t.JSXNamespacedName | t.ArgumentPlaceholder)[],
   fileContent: string,
@@ -247,6 +237,7 @@ async function analyzeArguments(
       )
     )
       continue;
+
     // 引数が「変数名（識別子）」の場合
     if (t.isIdentifier(arg)) {
       const usages: VariableUsage[] = rangeArg(fileContent, arg.name);
@@ -299,8 +290,11 @@ async function analyzeArguments(
                 const typesFromRec = recResult.argTypes[outerArgIndex] || [];
                 const contextsFromRec =
                   recResult.argContexts[outerArgIndex] || [];
+                
                 finalArgTypes[index].push(...typesFromRec);
-                finalArgContexts[index].push(...contextsFromRec);
+                finalArgContexts[index].push(
+                   ...contextsFromRec.map(cleanCodeSnippet)
+                );
               }
             }
           }
@@ -312,19 +306,17 @@ async function analyzeArguments(
       for (const usageItem of usages) {
         for (const codeSnippet of usageItem.code) {
           argType_tmp.push(inferTypeFromCode(codeSnippet));
-          argContexts_tmp.push(codeSnippet);
+          argContexts_tmp.push(cleanCodeSnippet(codeSnippet));
         }
       }
       finalArgTypes[index].push(...argType_tmp);
       finalArgContexts[index].push(...argContexts_tmp);
 
-      // FIXME: 変数で、追跡・解析の結果、何も得られなかった場合のフォールバック処理を追加
       if (finalArgTypes[index].length === 0) {
         if (arg.start !== undefined && arg.end !== undefined) {
           const snippet = fileContent.substring(arg.start, arg.end);
-          // 型が特定できない場合は 'unknown' とし、コードそのものをコンテキストとする
           finalArgTypes[index].push('unknown');
-          finalArgContexts[index].push(snippet);
+          finalArgContexts[index].push(cleanCodeSnippet(snippet));
         }
       }
 
@@ -333,7 +325,7 @@ async function analyzeArguments(
       if (arg.start !== undefined && arg.end !== undefined) {
         const snippet = fileContent.substring(arg.start, arg.end);
         finalArgTypes[index].push(inferTypeFromCode(snippet));
-        finalArgContexts[index].push(snippet);
+        finalArgContexts[index].push(cleanCodeSnippet(snippet));
       } else {
         console.warn('arg.start or arg.end is undefined');
       }
@@ -342,32 +334,47 @@ async function analyzeArguments(
   return { finalArgTypes, finalArgContexts };
 }
 
-
 /**
  * コードスニペットから簡易的な型推論を行う
- * @param code 評価するコードの文字列
+ *  * @param code 評価するコードの文字列
  * @returns 推論された型名
  */
 function inferTypeFromCode(
   code: string,
 ): 'number' | 'string' | 'boolean' | 'null' | 'undefined' | 'array' | 'object' | 'function' | 'unknown' {
-  code = code.trim();
-  if (/^-?\d+(\.\d+)?$/.test(code)) return 'number';
-  if (/^(['"]).*\1$/.test(code)) return 'string';
-  if (/^`.*`$/s.test(code)) return 'string';
-  if (code === 'true' || code === 'false') return 'boolean';
-  if (code === 'null') return 'null';
-  if (code === 'undefined') return 'undefined';
-  if (/^\[.*\]$/s.test(code)) return 'array';
-  if (/^\{.*\}$/s.test(code)) return 'object';
-  if (/^(\(.*\)|[^=\s]+)\s*=>/.test(code)) return 'function';
-  if (/^function\s*\(/.test(code)) return 'function';
-  if (/^new\s+/.test(code)) return 'object';
-  if (/^[\w$]+\.(assign|create|fromEntries|merge)\b/.test(code)) return 'object';
+  const cleanCode = cleanCodeSnippet(code);
 
-  // Simple heuristics for operations
-  if (/[\+\-\*\/%]/.test(code) && !/['"`]/.test(code)) return 'number';
-  if (/[><=!]=?/.test(code)) return 'boolean';
+  if (/^-?\d+(\.\d+)?$/.test(cleanCode)) return 'number';
+  if (/^(['"]).*\1$/.test(cleanCode)) return 'string';
+  if (/^`.*`$/s.test(cleanCode)) return 'string';
+  if (cleanCode === 'true' || cleanCode === 'false') return 'boolean';
+  if (cleanCode === 'null') return 'null';
+  if (cleanCode === 'undefined') return 'undefined';
+  
+  if (/^(\(.*\)|[^=\s]+)\s*=>/.test(cleanCode)) return 'function';
+  if (/^function\s*\(/.test(cleanCode)) return 'function';
+
+  if (/^\[.*\]$/s.test(cleanCode)) return 'array';
+  if (/^\{.*\}$/s.test(cleanCode)) return 'object';
+  if (/^new\s+/.test(cleanCode)) return 'object';
+  if (/^[\w$]+\.(assign|create|fromEntries|merge|keys|values)\b/.test(cleanCode)) return 'object';
+
+  if (/(===|!==|==|!=|<=|>=|<|>)/.test(cleanCode) && !/=>/.test(cleanCode)) {
+    return 'boolean';
+  }
+  if (/[\+\-\*\/%]/.test(cleanCode) && !/['"`]/.test(cleanCode)) return 'number';
 
   return 'unknown';
+}
+
+// FIXME: コードからコメント(//, /* */)や改行、不要な空白を除去する関数を追加
+function cleanCodeSnippet(code: string): string {
+  // ブロックコメントの削除 /* ... */
+  let cleaned = code.replace(/\/\*[\s\S]*?\*\//g, '');
+  // ラインコメントの削除 // ...
+  cleaned = cleaned.replace(/\/\/.*$/gm, '');
+  // 改行やタブをスペースに置換
+  cleaned = cleaned.replace(/[\n\r\t]/g, ' ');
+  // 連続するスペースを1つにまとめる & 両端の空白削除
+  return cleaned.replace(/\s+/g, ' ').trim();
 }

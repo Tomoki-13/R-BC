@@ -90,10 +90,8 @@ export const getExportModuleProperty = async (
       },
     });
   } catch (error) {
-    console.log(
-      `getExportModuleProperty: Failed to create AST for file: ${filePath}`,
-    );
-    console.log(error);
+    // console.log(`getExportModuleProperty: Failed to create AST for file: ${filePath}`,);
+    // console.log(error);
   }
 
   return resultArray;
