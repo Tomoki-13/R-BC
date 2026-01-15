@@ -40,13 +40,16 @@ export const createPatternAdvance = async (patternDir: string, libName: string, 
     extract_pattern1 = await useAstAdvance(allFiles, libName, 1);
 
     if (extract_pattern1.length > 0) {
-      // 以前の patternUtils.removeCallOnly などのフィルタリングは
+      // 呼び出しのみのものを除外
       // TODO: 型が合わない可能性があるため、ここでは簡易的な空チェックのみ行い、統合せずに出力対象とする
-
-      // 少なくとも1つのファイルで抽出結果が存在するか確認
+      //removeCallonlyに通せるように調整する
       const hasContent = extract_pattern1.some(fileResult => fileResult.length > 0);
+      let flag = false;
+      for(const pattern of extract_pattern1){
+        if(pattern.length > 1) flag = true;
+      }
 
-      if (hasContent) {
+      if (hasContent && flag) {
         JsonRows.push({
           failureclient: subdir,
           detectPatterns: extract_pattern1

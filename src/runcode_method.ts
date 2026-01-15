@@ -7,9 +7,10 @@ import path from 'path';
 
 // シンプルな実行例
 (async () => {
-  const getPatternDir: string = "../allrepos/repos_failure";
-  const matchDir: string = "../allrepos/repos_success";
-  const libName: string = process.argv[2];
+  const getPatternDir: string = "../allrepos/repos_globby_700_failure";
+  const matchDir: string = "../allrepos/repos_globby_700_success";
+  // const libName: string = process.argv[2];
+  const libName: string = "globby";
   let lastpatterns: string[][][] = [];
 
 

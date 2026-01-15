@@ -11,8 +11,7 @@ export const getImportAndPath = (filePath: string, mode: number = 0): CallModule
   const result: ModuleList[] = [];
   const importRegex = /from\s+['"`](.*?)['"`]/;
   const requireRegex = /require\(['"`](.*?)['"`]\)/;
-  const lines = code.split('\n');
-  lines.filter((line) => line.length < 400);
+  const lines = code.split('\n').filter((line) => line.length < 200);
   const importLines: string[] = lines.filter((line) => /import|require/.test(line) && !/^\s*\/\//.test(line));
 
   //行単位でimport , requireを分類
@@ -38,11 +37,17 @@ export const getImportAndPath = (filePath: string, mode: number = 0): CallModule
 //ModuleList[]を関数単位にインポートしたソフトウェア名と関数名の情報を追加
 const get_perFunc = (moduleList: ModuleList[]): CallModuleAndFuncList[] => {
   const result: CallModuleAndFuncList[] = [];
+
   moduleList.forEach((moduleInfo) => {
-    const funcNames = funcNameIdentifiers(moduleInfo.code, moduleInfo.modulename);
-    funcNames.forEach((funcName) => {
-      result.push({ code: moduleInfo.code, call_modulename: moduleInfo.modulename, funcname: funcName, path: moduleInfo.path });
-    });
+    try {
+      const funcNames = funcNameIdentifiers(moduleInfo.code, moduleInfo.modulename);
+      funcNames.forEach((funcName) => {
+        result.push({ code: moduleInfo.code, call_modulename: moduleInfo.modulename, funcname: funcName, path: moduleInfo.path });
+      });
+    } catch (error) {
+      console.log("moduleInfo.code error:", moduleInfo.code);
+      console.log("get_perFunc error:", moduleInfo.modulename);
+    }
   });
   return result;
 };
