@@ -16,6 +16,7 @@ module.exports = {
   modulePathIgnorePatterns: [
     "<rootDir>/Sample/",
     "<rootDir>/allrepos/",
-    "<rootDir>/allrepos-origin/"
+    "<rootDir>/allrepos-origin/",
+    "<rootDir>/allupdateSuccessClient/"
   ],
 };

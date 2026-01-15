@@ -9,7 +9,7 @@ import output_json from "../utils/output_json";
 export async function clone(dirPath: string) {
   const data_path = path.resolve(process.cwd(), dirPath);
   console.log(`データパス: ${data_path}`);
-  
+
   if (!fs.existsSync(data_path)) {
     console.error(`ディレクトリが存在しません: ${data_path}`);
     return;
@@ -32,7 +32,7 @@ export async function clone(dirPath: string) {
         console.error(`無効なリポジトリ形式です: ${element.client}`);
         continue;
       }
-      
+
       const repoName = parts[parts.length - 1];
       const userName = parts[parts.length - 2];
       const repoIdentifier = `${userName}/${repoName}`;

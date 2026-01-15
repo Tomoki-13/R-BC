@@ -21,8 +21,8 @@ export const createAstFromFile = (filePath: string, fileContent: string): File |
 
     return ast;
   } catch (error) {
-    console.error(`AST creation not possible: ${filePath}`);
-    console.error(error);
+    // console.error(`AST creation not possible: ${filePath}`);
+    // console.error(error);
     return null;
   }
 };

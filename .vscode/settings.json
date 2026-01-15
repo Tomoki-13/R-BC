@@ -14,5 +14,9 @@
   "css.validate": false,
   "scss.validate": false,
   // ESLint v9 が新しい eslint.config.jsを探しに行くのを止める
-  "eslint.useFlatConfig": false
+  "eslint.useFlatConfig": false,
+  "todohighlight.keywords": [
+  "BUG",
+  "ADD",
+]
 }
