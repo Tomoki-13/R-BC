@@ -76,6 +76,8 @@ export const analyzeArgAndMethod = async (
               );
               syncResults.push({
                 FunctionCallCode: code,
+                filePath: filePath,
+                line: declarationNode.node.loc ? declarationNode.node.loc.start.line : 0,
                 argTypes: [[]],
                 argContexts: [[]],
               });
@@ -96,6 +98,8 @@ export const analyzeArgAndMethod = async (
             );
             syncResults.push({
               FunctionCallCode: code,
+              filePath: filePath,
+              line: declarationNode.node.loc ? declarationNode.node.loc.start.line : 0,
               argTypes: [[]],
               argContexts: [[]],
             });
@@ -140,6 +144,8 @@ export const analyzeArgAndMethod = async (
             ]);
             return {
               FunctionCallCode: code,
+              filePath: filePath,
+              line: path.node.loc ? path.node.loc.start.line : 0,
               argTypes: dedupedArgTypes,
               argContexts: dedupedArgContexts,
             };
@@ -180,6 +186,8 @@ export const analyzeArgAndMethod = async (
             ]);
             return {
               FunctionCallCode: code,
+              filePath: filePath,
+              line: path.node.loc ? path.node.loc.start.line : 0,
               argTypes: dedupedArgTypes,
               argContexts: dedupedArgContexts,
             };
@@ -287,9 +295,9 @@ async function analyzeArguments(
                 funcDepend,
               );
               for (const recResult of recursiveResult) {
-                const typesFromRec = recResult.argTypes[outerArgIndex] || [];
+                const typesFromRec = recResult.argTypes?.[outerArgIndex] || [];
                 const contextsFromRec =
-                  recResult.argContexts[outerArgIndex] || [];
+                  recResult.argContexts?.[outerArgIndex] || [];
                 
                 finalArgTypes[index].push(...typesFromRec);
                 finalArgContexts[index].push(
@@ -336,7 +344,7 @@ async function analyzeArguments(
 
 /**
  * コードスニペットから簡易的な型推論を行う
- *  * @param code 評価するコードの文字列
+ * * @param code 評価するコードの文字列
  * @returns 推論された型名
  */
 function inferTypeFromCode(
@@ -367,14 +375,10 @@ function inferTypeFromCode(
   return 'unknown';
 }
 
-// FIXME: コードからコメント(//, /* */)や改行、不要な空白を除去する関数を追加
+// コードからコメント(//, /* */)や改行、不要な空白を除去する関数を追加
 function cleanCodeSnippet(code: string): string {
-  // ブロックコメントの削除 /* ... */
   let cleaned = code.replace(/\/\*[\s\S]*?\*\//g, '');
-  // ラインコメントの削除 // ...
   cleaned = cleaned.replace(/\/\/.*$/gm, '');
-  // 改行やタブをスペースに置換
   cleaned = cleaned.replace(/[\n\r\t]/g, ' ');
-  // 連続するスペースを1つにまとめる & 両端の空白削除
   return cleaned.replace(/\s+/g, ' ').trim();
 }
