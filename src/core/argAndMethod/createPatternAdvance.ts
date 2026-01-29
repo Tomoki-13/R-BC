@@ -41,8 +41,7 @@ export const createPatternAdvance = async (patternDir: string, libName: string, 
 
     if (extract_pattern1.length > 0) {
       // 呼び出しのみのものを除外
-      // TODO: 型が合わない可能性があるため、ここでは簡易的な空チェックのみ行い、統合せずに出力対象とする
-      //removeCallonlyに通せるように調整する
+      // TODO: removeCallonlyに通せるように調整する(呼び出しだけのものを除外するように調整)
       const hasContent = extract_pattern1.some(fileResult => fileResult.length > 0);
       let flag = false;
       for(const pattern of extract_pattern1){

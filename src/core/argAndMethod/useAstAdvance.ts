@@ -33,8 +33,10 @@ export const useAstAdvance = async (allFiles: string[], libName: string, mode: n
         lines.forEach(line => {
           inFileStr.push({
             FunctionCallCode: line,
-            argTypes: [line].map(() => []),
-            argContexts: [line].map(() => [])
+            filePath: filePath, 
+            line: 0,
+            argTypes: [[]],
+            argContexts: [[]]
           });
         });
       }
