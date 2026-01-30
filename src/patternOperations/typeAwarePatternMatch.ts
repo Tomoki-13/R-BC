@@ -3,145 +3,204 @@ import { ExtractFunctionCallsResult } from "../types/ExtractFunctionCallsResult"
 
 /**
  * 型情報を考慮したパターンマッチング関数
- * @param {ExtractFunctionCallsResult[]} user_results 解析済みのユーザーコードデータ
- * @param {ExtractFunctionCallsResult[][][]} respattern 検出対象のパターンリスト
+ * @param {ExtractFunctionCallsResult[][]} detectionTargets 解析済みのソースコードデータ (ファイル単位の配列の配列)
+ * @param {ExtractFunctionCallsResult[][][]} detectionPatterns 検出に用いるパターンのリスト
+ * @param {number} mode マッチングモード (0: コードのみ, 1: +型情報, 2: +値情報)
  * @returns {Promise<[boolean, ExtractFunctionCallsResult[][] | null]>}
  */
 export const typeAwarePatternMatch = async (
-  user_results: ExtractFunctionCallsResult[],
-  respattern: ExtractFunctionCallsResult[][][]
+  detectionTargets: ExtractFunctionCallsResult[][],
+  detectionPatterns: ExtractFunctionCallsResult[][][],
+  mode: number = 1
 ): Promise<[boolean, ExtractFunctionCallsResult[][] | null]> => {
-  let search_patterns: ExtractFunctionCallsResult[][][] = JSON.parse(JSON.stringify(respattern));
-
-  // ユーザーデータの整形
-  const flat_user_data = user_results.map(block => ({
-    code: block.FunctionCallCode,
-    types: block.argTypes, // 引数ごとの型リストを保持
-    context: block.argContexts
-  }));
+  let searchCandidates: ExtractFunctionCallsResult[][][] = JSON.parse(JSON.stringify(detectionPatterns));
 
   try {
-    for (const search_pattern of search_patterns) {
-      // 変数ごとのパターン整理
-      const variableMap: { [key: string]: { code: string, types: string[][] }[] } = {};
+    for (const currentPattern of searchCandidates) {
 
-      for (const search_block_group of search_pattern) {
-        for (const search_block of search_block_group) {
-          const str = search_block.FunctionCallCode;
+      const patternVariables: {
+        [key: string]: {
+          code: string,
+          types: string[][],
+          context: string[][]
+        }[]
+      } = {};
+
+      for (const blockGroup of currentPattern) {
+        for (const block of blockGroup) {
+          const str = block.FunctionCallCode;
           const match = str.match(/variable(\d+)/g);
 
           if (match) {
-            const key = match[0]; // 簡易的に最初の変数をキーとする
-            if (!variableMap[key]) {
-              variableMap[key] = [];
+            const varKey = match[0];
+            if (!patternVariables[varKey]) {
+              patternVariables[varKey] = [];
             }
-            variableMap[key].push({
+            patternVariables[varKey].push({
               code: str,
-              types: search_block.argTypes
+              types: block.argTypes || [],
+              context: block.argContexts || []
             });
           }
         }
       }
 
-      // 判定フラグの初期化
-      const variableMapJudge: { [key: string]: boolean } = {};
-      for (const key in variableMap) {
-        if (Object.prototype.hasOwnProperty.call(variableMap, key)) {
-          variableMapJudge[key] = false;
+      const foundVariablesStatus: { [key: string]: boolean } = {};
+      const variableKeys = Object.keys(patternVariables);
+      variableKeys.forEach(key => foundVariablesStatus[key] = false);
+
+      for (const fileDataBlocks of detectionTargets) {
+
+        if (Object.values(foundVariablesStatus).every(status => status === true)) {
+          return [true, currentPattern];
         }
-      }
 
-      const variableMapCopy = JSON.parse(JSON.stringify(variableMap));
+        const flatFileData = fileDataBlocks.map(block => ({
+          code: block.FunctionCallCode,
+          types: block.argTypes || [],
+          context: block.argContexts || []
+        }));
 
-      // 変数ごとの一致確認
-      for (const key in variableMapCopy) {
-        if (Object.prototype.hasOwnProperty.call(variableMapCopy, key)) {
+        const patternVariablesInFile = JSON.parse(JSON.stringify(patternVariables));
 
-          // 定義部分の特定
-          const regex1: RegExp = new RegExp(patternConversion.escapeFunc(variableMapCopy[key][0].code));
-          let importMatch: RegExpMatchArray | null = null;
-          let num: number = 0;
-
-          for (let i = 0; i < flat_user_data.length; i++) {
-            importMatch = flat_user_data[i].code.match(regex1);
-            num++;
-            if (importMatch) break;
+        for (const key of variableKeys) {
+          if (foundVariablesStatus[key]) {
+            continue;
           }
 
-          if (importMatch && importMatch?.groups) {
-            const importName = importMatch.groups[key];
+          const defCode = patternVariablesInFile[key][0].code;
+          let regexDef: RegExp;
 
-            // 変数名の置換処理
-            for (const key1 in variableMapCopy) {
-              for (let i = 0; i < variableMapCopy[key1].length; i++) {
-                if (!(key1 == key && i == 0)) {
-                  variableMapCopy[key1][i].code = variableMapCopy[key1][i].code.replace(key, importName);
+          if (defCode.includes(`(?<${key}>`)) {
+            regexDef = new RegExp(defCode);
+          } else {
+            const escaped = patternConversion.escapeFunc(defCode);
+            const patternRegexStr = escaped.replace(new RegExp(key, 'g'), `(?<${key}>[\\w$]+)`);
+            regexDef = new RegExp(patternRegexStr);
+          }
+
+          console.log(`[DEBUG] Checking Definition for ${key}. Regex: ${regexDef.source}`);
+
+          let definitionMatch: RegExpMatchArray | null = null;
+          let definitionIndex: number = 0;
+
+          for (let i = 0; i < flatFileData.length; i++) {
+            definitionMatch = flatFileData[i].code.match(regexDef);
+
+            // console.log("flatFileData[i].code",flatFileData[i].code);
+            // console.log(`regexDef`, regexDef);
+            // console.log(`definitionMatch`, definitionMatch);
+
+            definitionIndex = i + 1;
+            if (definitionMatch) break;
+          }
+
+          if (definitionMatch && definitionMatch.groups) {
+            const actualVarName = definitionMatch.groups[key];
+            console.log(`[DEBUG] Definition MATCHED. Captured Variable: ${actualVarName}`);
+
+            for (const otherKey in patternVariablesInFile) {
+              for (let i = 0; i < patternVariablesInFile[otherKey].length; i++) {
+                if (!(otherKey === key && i === 0)) {
+                  patternVariablesInFile[otherKey][i].code =
+                    patternVariablesInFile[otherKey][i].code.replace(key, actualVarName);
                 }
               }
             }
 
-            if (variableMapCopy[key].length === 1) {
-              variableMapJudge[key] = true;
+            if (patternVariablesInFile[key].length === 1) {
+              foundVariablesStatus[key] = true;
+              console.log(`[DEBUG] ${key} is definition-only pattern. Status: TRUE`);
               continue;
             }
-            // 関数使用部分の検証
-            for (let i = 1; i < variableMapCopy[key].length; i++) {
-              let functionCallPatternStr = variableMapCopy[key][i].code;
-              const functionCallPattern = new RegExp(patternConversion.escapeFunc(functionCallPatternStr));
+
+            let allUsagesMatched = false;
+
+            for (let i = 1; i < patternVariablesInFile[key].length; i++) {
+              let usagePatternCode = patternVariablesInFile[key][i].code;
+              const usageRegex = new RegExp(patternConversion.escapeFunc(usagePatternCode));
               let matched = false;
 
-              for (let j = num; j < flat_user_data.length; j++) {
-                const userData = flat_user_data[j];
+              console.log(`[DEBUG] Checking Usage [${i}] for ${key}. Pattern: ${usagePatternCode}`);
 
-                // コードの正規化
-                let replaceuserpattern = userData.code.replace(/[\r\n]/g, '');
-                replaceuserpattern = replaceuserpattern.replace(/\[[^\]]*\]/g, 'argument');
-                replaceuserpattern = replaceuserpattern.replace(/\{[^}]*\}/g, 'argument');
+              for (let j = definitionIndex; j < flatFileData.length; j++) {
+                const userData = flatFileData[j];
 
-                const functionCallMatch = replaceuserpattern.match(functionCallPattern);
-                // console.log("replaceuserpattern", replaceuserpattern);
-                // console.log("functionCallPattern", functionCallPattern);
-                // console.log("functionCallMatch", functionCallMatch);
+                let normalizedCode = userData.code.replace(/[\r\n]/g, '');
+                normalizedCode = normalizedCode.replace(/\[[^\]]*\]/g, 'argument');
+                normalizedCode = normalizedCode.replace(/\{[^}]*\}/g, 'argument');
 
-                if (functionCallMatch) {
-                  const userTypes = userData.types;
-                  const expectedTypes = variableMapCopy[key][i].types;
+                const usageMatch = normalizedCode.match(usageRegex);
 
-                  let typeMatched = true;
+                // console.log(`usageRegex`, usageRegex);
+                // console.log(`normalizedCode`, normalizedCode);
 
-                  // 型の一致判定: 引数の数が一致し、かつ各引数の型情報が完全一致するか検証
-                  // ADD: 完全一致
-                  if (userTypes.length !== expectedTypes.length) {
-                    typeMatched = false;
-                  } else {
-                    for (let k = 0; k < expectedTypes.length; k++) {
-                      // 配列の中身（型候補）の比較。JSON文字列化して比較することで配列の一致を確認
-                      if (JSON.stringify(userTypes[k].sort()) !== JSON.stringify(expectedTypes[k].sort())) {
-                        typeMatched = false;
-                        break;
+                if (usageMatch) {
+                  console.log(`  [DEBUG] String matched at line ${j + 1}: "${userData.code}"`);
+
+                  // mode 0: コードのみ
+                  if (mode === 0) {
+                    matched = true;
+                    break;
+                  }
+
+                  // mode 1: +型情報
+                  let isTypeMatched = true;
+                  if (mode >= 1) {
+                    const userTypes = userData.types;
+                    const expectedTypes = patternVariablesInFile[key][i].types;
+
+                    console.log(`  [DEBUG] Checking Types. User: ${JSON.stringify(userTypes)} vs Expected: ${JSON.stringify(expectedTypes)}`);
+
+                    if (userTypes.length !== expectedTypes.length) {
+                      console.log(`  [DEBUG] Type Mismatch: Length differs`);
+                      isTypeMatched = false;
+                    } else {
+                      for (let k = 0; k < expectedTypes.length; k++) {
+                        if (JSON.stringify(userTypes[k].sort()) !== JSON.stringify(expectedTypes[k].sort())) {
+                          console.log(`  [DEBUG] Type Mismatch at arg ${k}: ${userTypes[k]} != ${expectedTypes[k]}`);
+                          isTypeMatched = false;
+                          break;
+                        }
                       }
                     }
                   }
 
-                  if (typeMatched) {
-                    // ADD: より深いコード構造の一致や、引数の具体的な値（Context）の解析ロジックをここに追加
+                  // mode 2: +値情報
+                  let isValueMatched = true;
+                  if (mode >= 2 && isTypeMatched) {
+                    // ADD: argContextsの比較ロジックを実装
+                  }
+
+                  if (isTypeMatched && isValueMatched) {
+                    console.log(`  [DEBUG] Match Confirmed!`);
                     matched = true;
                     break;
                   }
                 }
               }
 
-              if (i == variableMapCopy[key].length - 1 && matched) {
-                variableMapJudge[key] = true;
-                continue;
+              if (!matched) {
+                console.log(`[DEBUG] Usage [${i}] NOT found.`);
+                allUsagesMatched = false;
+                break;
               }
+
+              if (i === patternVariablesInFile[key].length - 1) {
+                allUsagesMatched = true;
+              }
+            }
+
+            if (allUsagesMatched) {
+              console.log(`[DEBUG] All usages matched for ${key}. Status: TRUE`);
+              foundVariablesStatus[key] = true;
             }
           }
         }
       }
 
-      if (Object.values(variableMapJudge).every(value => value === true)) {
-        return [true, search_pattern];
+      if (Object.values(foundVariablesStatus).every(status => status === true)) {
+        return [true, currentPattern];
       }
     }
   } catch (err) {
@@ -149,3 +208,89 @@ export const typeAwarePatternMatch = async (
   }
   return [false, null];
 };
+
+
+// ==========================================
+// 動作検証用コード (Main)
+// ==========================================
+if (require.main === module) {
+  (async () => {
+    console.log("--- 動作検証開始 ---");
+
+    // 1. 検出パターン (targetPattern をベースに修正)
+    // 正規表現に require\('...' という形で括弧をエスケープして追加
+    const samplePatterns: ExtractFunctionCallsResult[][][] = [[
+      [
+        {
+          FunctionCallCode: "(?<variable1>[\\w-]+) = require\\([\"'`]fs[\"'`]\\)[^.]*",
+          filePath: 'pattern_def', // 必須: ダミー
+          line: 0,                 // 必須: ダミー
+          argTypes: [[]],
+          argContexts: [[]]
+        },
+        {
+          FunctionCallCode: "variable1([^,]*,[^,]*)[^.]*",
+          filePath: 'pattern_usage', // 必須: ダミー
+          line: 0,                   // 必須: ダミー
+          argTypes: [['String'], ['String']],
+          argContexts: [[]]
+        }
+      ]
+    ]];
+
+    // 2. 検出対象データ (成功ケース)
+    const sampleTargetsSuccess: ExtractFunctionCallsResult[][] = [
+      [
+        {
+          FunctionCallCode: "const fs = require('fs')",
+          filePath: 'success_case.js',
+          line: 1,
+          argTypes: [[]],
+          argContexts: [[]]
+        },
+        {
+          FunctionCallCode: "fs('file.txt', 'content')",
+          filePath: 'success_case.js',
+          line: 2,
+          argTypes: [['String'], ['String']],
+          argContexts: [[]]
+        }
+      ]
+    ];
+
+    console.log("検証1: Mode 1 (型チェックあり) - 成功ケース");
+    const [resultSuccess, matchedPatternSuccess] = await typeAwarePatternMatch(sampleTargetsSuccess, samplePatterns, 1);
+    console.log(`結果: ${resultSuccess}`); // true
+    if (resultSuccess) {
+      console.log("検出成功");
+    } else {
+      console.error("予期せぬ失敗");
+    }
+
+    // 3. 検出対象データ (失敗ケース)
+    const sampleTargetsFail: ExtractFunctionCallsResult[][] = [
+      [
+        {
+          FunctionCallCode: "const fs = require('fs')",
+          filePath: 'fail_case.js',
+          line: 1,
+          argTypes: [[]],
+          argContexts: [[]]
+        },
+        {
+          FunctionCallCode: "fs('file.txt', 12345)",
+          filePath: 'fail_case.js',
+          line: 2,
+          argTypes: [['String'], ['Number']],
+          argContexts: [[]]
+        }
+      ]
+    ];
+
+    console.log("\n検証2: Mode 1 (型チェックあり) - 失敗ケース");
+    const [resultFail] = await typeAwarePatternMatch(sampleTargetsFail, samplePatterns, 1);
+    console.log(`結果: ${resultFail}`); // false
+
+    console.log("--- 動作検証終了 ---");
+  })();
+}
