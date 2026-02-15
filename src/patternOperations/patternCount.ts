@@ -1,4 +1,4 @@
-import { PatternCount } from "../types/outputTypes";
+import { PatternCount } from "../types/OutputTypes";
 //重複カウント
 export function countPatterns(pattern: string[][][]): PatternCount[] {
   const patternMap = new Map<string, number>();

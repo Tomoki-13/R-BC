@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from "path";
-import { DetectionOutput, MatchClientPattern, PatternCount } from '../../types/outputTypes';
+import { DetectionOutput, MatchClientPattern, PatternCount } from '../../types/OutputTypes';
 import { getAllFiles } from "../../utils/getAllFiles";
 import { getSubDir } from "../../utils/getSubDir";
 import { jsonconfStr } from "../../utils/jsonconf";

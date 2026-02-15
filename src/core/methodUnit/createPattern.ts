@@ -5,7 +5,7 @@ import { checkAst } from "../../astRelated/base/checkAst";
 import { countPatterns } from '../../patternOperations/patternCount';
 import { getAllFiles } from "../../utils/getAllFiles";
 import { getSubDir } from "../../utils/getSubDir";
-import { JsonRow, PatternCount, DetectionOutput } from '../../types/outputTypes';
+import { JsonRow, PatternCount, DetectionOutput } from '../../types/OutputTypes';
 import output_json from "../../utils/output_json";
 import { processPatterns } from "./processPatterns";
 import patternUtils from '../../patternOperations/patternUtils';

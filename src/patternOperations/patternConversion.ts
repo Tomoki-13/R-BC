@@ -25,6 +25,10 @@ function prep_repl(inputs: string[]): string[] {
 // '`" ,*,/の設定
 const replaceQuoteAndasterisk = (inputs: string[]): string[] => {
   for (let i = 0; i < inputs.length; i++) {
+    if (inputs[i].includes("[\"'`]")){
+      return inputs;
+    }
+
     inputs[i] = inputs[i].replace(/\//g, `\\/`);
     inputs[i] = inputs[i].replace(/['"`]/g, `["'\`]`);
     inputs[i] = inputs[i].replace(/ \* /g, ' \\* ');
@@ -36,10 +40,13 @@ const replaceQuoteAndasterisk = (inputs: string[]): string[] => {
 // 全てのパターンの末尾に.が来ないように
 const checkDot = (inputs: string[]): string[] => {
   for (let i = 0; i < inputs.length; i++) {
-    inputs[i] = inputs[i].concat("[^.]*$");
+    if (!inputs[i].endsWith("[^.]*$")) {
+      inputs[i] = inputs[i].concat("[^.]*$");
+    }
   }
   return inputs;
-}
+};
+
 
 // (?<variable2>[\\w-]+) 以外の()の処理、(?!\\.)も除外
 function escapeFunc(str: string): string {
@@ -141,7 +148,14 @@ function abstStr(respattern: string[][][], mode: number = 0): string[][][] {
         }
         copiedRespattern[i][j][k] = transformArgumrnt(copiedRespattern[i][j][k]);
       }
-      copiedRespattern[i][j] = replaceQuoteAndasterisk(copiedRespattern[i][j]);
+      const needsReplacement = copiedRespattern[i][j].some(str => {
+        if (typeof str !== 'string') return false;
+        // 否定後読み(?<!\\)を使い、直前にバックスラッシュが無い '"* を探索
+        return /(?<!\\)['"*]/.test(str);
+      });
+      if (needsReplacement) {
+        copiedRespattern[i][j] = replaceQuoteAndasterisk(copiedRespattern[i][j]);
+      }
       copiedRespattern[i][j] = checkDot(copiedRespattern[i][j]);
     }
   }
@@ -177,7 +191,7 @@ function typeAwareAbstStr(respattern: ExtractFunctionCallsResult[][][]): Extract
   // string[][][]に変換してabstStrを適用
   let tempStringPattern: string[][][] = copiedRespattern.map(patternGroup =>
     patternGroup.map(block =>
-      block.map(item => item.FunctionCallCode).flat()
+      block.map(item => item.FunctionCallCode)
     ));
   tempStringPattern = abstStr(tempStringPattern, 1);
 
@@ -191,8 +205,37 @@ function typeAwareAbstStr(respattern: ExtractFunctionCallsResult[][][]): Extract
   return copiedRespattern;
 }
 
+const extractFunctionCallCodes = (
+  data: ExtractFunctionCallsResult[][][]
+): string[][][] => {
+  return data.map(level1 =>
+    level1.map(level2 =>
+      level2.map(item => item.FunctionCallCode)
+    )
+  );
+};
+
+const restoreExtractFunctionCallsResult = (
+  data: string[][][]
+): ExtractFunctionCallsResult[][][] => {
+  return data.map(level1 =>
+    level1.map(level2 =>
+      level2.map(code => ({
+        FunctionCallCode: code,
+        filePath: "",
+        line: 0,
+        argTypes: [],
+        argContexts: []
+      }))
+    )
+  );
+};
+
+
 export default {
   escapeFunc,
   abstStr,
   typeAwareAbstStr,
+  extractFunctionCallCodes,
+  restoreExtractFunctionCallsResult,
 };
