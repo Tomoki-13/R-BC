@@ -7,13 +7,17 @@ import { getSubDir } from "../../utils/getSubDir";
 import output_json from "../../utils/output_json";
 import { ExtractFunctionCallsResult } from '../../types/ExtractFunctionCallsResult';
 import patternConversion from '../../patternOperations/patternConversion';
+import { processPatterns } from '../methodUnit/processPatterns';
+import { countPatterns } from '../../patternOperations/patternCount';
+import { DetectionOutput, PatternCount } from '../../types/OutputTypes';
+import patternUtils from '../../patternOperations/patternUtils';
 
 interface RawJsonRow {
   failureclient: string;
   detectPatterns: ExtractFunctionCallsResult[][];
 }
 
-// 作成処理
+// 作成処理 型情報あり
 export const createPatternAdvance = async (patternDir: string, libName: string, outputDir: string): Promise<ExtractFunctionCallsResult[][][]> => {
   let JsonRows: RawJsonRow[] = [];
   let respattern: ExtractFunctionCallsResult[][][] = [];
@@ -44,8 +48,8 @@ export const createPatternAdvance = async (patternDir: string, libName: string, 
       // TODO: removeCallonlyに通せるように調整する(呼び出しだけのものを除外するように調整)
       const hasContent = extract_pattern1.some(fileResult => fileResult.length > 0);
       let flag = false;
-      for(const pattern of extract_pattern1){
-        if(pattern.length > 1) flag = true;
+      for (const pattern of extract_pattern1) {
+        if (pattern.length > 1) flag = true;
       }
 
       if (hasContent && flag) {
@@ -58,7 +62,6 @@ export const createPatternAdvance = async (patternDir: string, libName: string, 
     }
   }
   // TODO: パターンの集約や重複排除,パターンへの変換は未実装
-  //abstStrの再構築
 
   // ファイル出力 (rawpattern)
   const outputPath = output_json.getUniqueOutputPath(outputDir, path.basename(patternDir), 'rawpattern');
@@ -67,6 +70,7 @@ export const createPatternAdvance = async (patternDir: string, libName: string, 
   const lastpatterns = patternConversion.typeAwareAbstStr(respattern);
   const outputPath2 = output_json.getUniqueOutputPath(outputDir, path.basename(patternDir), 'patternList');
   fs.writeFileSync(outputPath2, JSON.stringify(lastpatterns, null, 4), 'utf8');
+
   // 標準出力
   console.log('========== createPattern (Raw Output) ============');
   console.log('failure alldirs:', alldirs.length);
@@ -76,4 +80,24 @@ export const createPatternAdvance = async (patternDir: string, libName: string, 
   console.log('==================================================');
 
   return lastpatterns;
+}
+// 既存の呼び出し文情報のみを用いたパターン
+export const createOnlyCall = async (patternDir: string, libName: string, outputDir: string): Promise<ExtractFunctionCallsResult[][][]> => {
+  let patterns: ExtractFunctionCallsResult[][][] = await createPatternAdvance(patternDir, libName, outputDir);
+  let strArray: string[][][] = patternConversion.extractFunctionCallCodes(patterns);
+  let lastpatterns = await processPatterns(strArray);
+  let mergepattern: PatternCount[] = countPatterns(lastpatterns);
+
+  mergepattern.sort((a, b) => b.count - a.count);
+  const totalCount2 = mergepattern.reduce((acc, item) => acc + item.count, 0);
+  const output2: DetectionOutput = { patterns: mergepattern, totalClients: totalCount2 };
+  lastpatterns = patternUtils.removeDuplicate(lastpatterns);
+
+  if (mergepattern) {
+    fs.writeFileSync(output_json.getUniqueOutputPath(outputDir, path.basename(patternDir), 'detectpatternlist'), JSON.stringify(output2, null, 4), 'utf8');
+  }
+  let returnPatterns: ExtractFunctionCallsResult[][][] = patternConversion.restoreExtractFunctionCallsResult(lastpatterns);
+  console.log('lastpatterns len:', lastpatterns.length);
+  console.log('==================================================');
+  return returnPatterns;
 }

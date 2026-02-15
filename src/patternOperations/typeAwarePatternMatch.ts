@@ -69,35 +69,26 @@ export const typeAwarePatternMatch = async (
           }
 
           const defCode = patternVariablesInFile[key][0].code;
-          let regexDef: RegExp;
 
-          if (defCode.includes(`(?<${key}>`)) {
-            regexDef = new RegExp(defCode);
-          } else {
-            const escaped = patternConversion.escapeFunc(defCode);
-            const patternRegexStr = escaped.replace(new RegExp(key, 'g'), `(?<${key}>[\\w$]+)`);
-            regexDef = new RegExp(patternRegexStr);
+          let patternRegexStr = patternConversion.escapeFunc(defCode);
+
+          if (!patternRegexStr.includes(`(?<${key}>`)) {
+            patternRegexStr = patternRegexStr.replace(new RegExp(key, 'g'), `(?<${key}>[\\w$]+)`);
           }
 
-          console.log(`[DEBUG] Checking Definition for ${key}. Regex: ${regexDef.source}`);
+          const regexDef = new RegExp(patternRegexStr);
 
           let definitionMatch: RegExpMatchArray | null = null;
           let definitionIndex: number = 0;
 
           for (let i = 0; i < flatFileData.length; i++) {
             definitionMatch = flatFileData[i].code.match(regexDef);
-
-            // console.log("flatFileData[i].code",flatFileData[i].code);
-            // console.log(`regexDef`, regexDef);
-            // console.log(`definitionMatch`, definitionMatch);
-
             definitionIndex = i + 1;
             if (definitionMatch) break;
           }
 
           if (definitionMatch && definitionMatch.groups) {
             const actualVarName = definitionMatch.groups[key];
-            console.log(`[DEBUG] Definition MATCHED. Captured Variable: ${actualVarName}`);
 
             for (const otherKey in patternVariablesInFile) {
               for (let i = 0; i < patternVariablesInFile[otherKey].length; i++) {
@@ -110,7 +101,6 @@ export const typeAwarePatternMatch = async (
 
             if (patternVariablesInFile[key].length === 1) {
               foundVariablesStatus[key] = true;
-              console.log(`[DEBUG] ${key} is definition-only pattern. Status: TRUE`);
               continue;
             }
 
@@ -120,9 +110,7 @@ export const typeAwarePatternMatch = async (
               let usagePatternCode = patternVariablesInFile[key][i].code;
               const usageRegex = new RegExp(patternConversion.escapeFunc(usagePatternCode));
               let matched = false;
-
-              console.log(`[DEBUG] Checking Usage [${i}] for ${key}. Pattern: ${usagePatternCode}`);
-
+              
               for (let j = definitionIndex; j < flatFileData.length; j++) {
                 const userData = flatFileData[j];
 
@@ -132,48 +120,31 @@ export const typeAwarePatternMatch = async (
 
                 const usageMatch = normalizedCode.match(usageRegex);
 
-                // console.log(`usageRegex`, usageRegex);
-                // console.log(`normalizedCode`, normalizedCode);
-
                 if (usageMatch) {
-                  console.log(`  [DEBUG] String matched at line ${j + 1}: "${userData.code}"`);
+                  let isMatchValid = true;
 
-                  // mode 0: コードのみ
-                  if (mode === 0) {
-                    matched = true;
-                    break;
-                  }
-
-                  // mode 1: +型情報
-                  let isTypeMatched = true;
                   if (mode >= 1) {
                     const userTypes = userData.types;
                     const expectedTypes = patternVariablesInFile[key][i].types;
 
-                    console.log(`  [DEBUG] Checking Types. User: ${JSON.stringify(userTypes)} vs Expected: ${JSON.stringify(expectedTypes)}`);
-
                     if (userTypes.length !== expectedTypes.length) {
-                      console.log(`  [DEBUG] Type Mismatch: Length differs`);
-                      isTypeMatched = false;
+                      isMatchValid = false;
                     } else {
                       for (let k = 0; k < expectedTypes.length; k++) {
                         if (JSON.stringify(userTypes[k].sort()) !== JSON.stringify(expectedTypes[k].sort())) {
                           console.log(`  [DEBUG] Type Mismatch at arg ${k}: ${userTypes[k]} != ${expectedTypes[k]}`);
-                          isTypeMatched = false;
+                          isMatchValid = false;
                           break;
                         }
                       }
                     }
+
+                    if (isMatchValid && mode >= 2) {
+                      // ADD: 今後追加検討 (argContextsの比較ロジック)
+                    }
                   }
 
-                  // mode 2: +値情報
-                  let isValueMatched = true;
-                  if (mode >= 2 && isTypeMatched) {
-                    // ADD: argContextsの比較ロジックを実装
-                  }
-
-                  if (isTypeMatched && isValueMatched) {
-                    console.log(`  [DEBUG] Match Confirmed!`);
+                  if (isMatchValid) {
                     matched = true;
                     break;
                   }
@@ -181,7 +152,6 @@ export const typeAwarePatternMatch = async (
               }
 
               if (!matched) {
-                console.log(`[DEBUG] Usage [${i}] NOT found.`);
                 allUsagesMatched = false;
                 break;
               }
@@ -192,7 +162,6 @@ export const typeAwarePatternMatch = async (
             }
 
             if (allUsagesMatched) {
-              console.log(`[DEBUG] All usages matched for ${key}. Status: TRUE`);
               foundVariablesStatus[key] = true;
             }
           }
@@ -208,89 +177,3 @@ export const typeAwarePatternMatch = async (
   }
   return [false, null];
 };
-
-
-// ==========================================
-// 動作検証用コード (Main)
-// ==========================================
-if (require.main === module) {
-  (async () => {
-    console.log("--- 動作検証開始 ---");
-
-    // 1. 検出パターン (targetPattern をベースに修正)
-    // 正規表現に require\('...' という形で括弧をエスケープして追加
-    const samplePatterns: ExtractFunctionCallsResult[][][] = [[
-      [
-        {
-          FunctionCallCode: "(?<variable1>[\\w-]+) = require\\([\"'`]fs[\"'`]\\)[^.]*",
-          filePath: 'pattern_def', // 必須: ダミー
-          line: 0,                 // 必須: ダミー
-          argTypes: [[]],
-          argContexts: [[]]
-        },
-        {
-          FunctionCallCode: "variable1([^,]*,[^,]*)[^.]*",
-          filePath: 'pattern_usage', // 必須: ダミー
-          line: 0,                   // 必須: ダミー
-          argTypes: [['String'], ['String']],
-          argContexts: [[]]
-        }
-      ]
-    ]];
-
-    // 2. 検出対象データ (成功ケース)
-    const sampleTargetsSuccess: ExtractFunctionCallsResult[][] = [
-      [
-        {
-          FunctionCallCode: "const fs = require('fs')",
-          filePath: 'success_case.js',
-          line: 1,
-          argTypes: [[]],
-          argContexts: [[]]
-        },
-        {
-          FunctionCallCode: "fs('file.txt', 'content')",
-          filePath: 'success_case.js',
-          line: 2,
-          argTypes: [['String'], ['String']],
-          argContexts: [[]]
-        }
-      ]
-    ];
-
-    console.log("検証1: Mode 1 (型チェックあり) - 成功ケース");
-    const [resultSuccess, matchedPatternSuccess] = await typeAwarePatternMatch(sampleTargetsSuccess, samplePatterns, 1);
-    console.log(`結果: ${resultSuccess}`); // true
-    if (resultSuccess) {
-      console.log("検出成功");
-    } else {
-      console.error("予期せぬ失敗");
-    }
-
-    // 3. 検出対象データ (失敗ケース)
-    const sampleTargetsFail: ExtractFunctionCallsResult[][] = [
-      [
-        {
-          FunctionCallCode: "const fs = require('fs')",
-          filePath: 'fail_case.js',
-          line: 1,
-          argTypes: [[]],
-          argContexts: [[]]
-        },
-        {
-          FunctionCallCode: "fs('file.txt', 12345)",
-          filePath: 'fail_case.js',
-          line: 2,
-          argTypes: [['String'], ['Number']],
-          argContexts: [[]]
-        }
-      ]
-    ];
-
-    console.log("\n検証2: Mode 1 (型チェックあり) - 失敗ケース");
-    const [resultFail] = await typeAwarePatternMatch(sampleTargetsFail, samplePatterns, 1);
-    console.log(`結果: ${resultFail}`); // false
-
-    console.log("--- 動作検証終了 ---");
-  })();
-}

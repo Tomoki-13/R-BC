@@ -9,7 +9,7 @@ import { useAstAdvance } from "./useAstAdvance";
 import { typeAwarePatternMatch } from "../../patternOperations/typeAwarePatternMatch";
 import { MatchClientPatternAdvance, PatternCountAdvance, DetectionOutputAdvance } from '../../types/Advance';
 
-// パターンの出現回数をカウント (Objectの比較用にJSON文字列化を使用)
+// パターンの出現回数をカウント
 const countPatternsAdvance = (patterns: ExtractFunctionCallsResult[][][]): PatternCountAdvance[] => {
   const counts: { [key: string]: { pattern: ExtractFunctionCallsResult[][], count: number } } = {};
 
@@ -47,13 +47,14 @@ const combinePatternsAdvance = (arr1: PatternCountAdvance[], arr2: PatternCountA
     return Object.values(combinedMap).sort((a, b) => b.count - a.count);
 };
 
-// 単一検出 mode = 0 , 重複検出 mode = 1
+// 単一検出 dup = falese , 重複検出 dup = true
 export const detectByPatternAdvance = async (
   matchDir: string, 
   libName: string, 
   detectPattern: ExtractFunctionCallsResult[][][], 
   outputDir: string, 
-  mode: number = 0
+  dup: boolean = false,
+  mode : number = 1,
 ): Promise<DetectionOutputAdvance> => {
   let notest: number = 0;
   let standard: number = 0;
@@ -69,22 +70,22 @@ export const detectByPatternAdvance = async (
   for (const subdir of matchAlldirs) {
     let test: string = jsonconfStr(subdir);
     
-    // useAstAdvance を mode=0 (生データ) で呼び出し
     const allFiles: string[] = await getAllFiles(subdir);
+    // ASTベースの解析
     const raw_extract_pattern: ExtractFunctionCallsResult[][] = await useAstAdvance(allFiles, libName, 0);
-    
-    // typeAwarePatternMatch は1次元配列を受け取るため flat 化して渡す
-    const flat_user_code: ExtractFunctionCallsResult[] = raw_extract_pattern.flat();
-
-    if (flat_user_code.length > 0) {
-      if (mode === 0) {
+    console.log(`解析完了: raw_extract_pattern`, JSON.stringify(raw_extract_pattern, null, 2));
+    if (raw_extract_pattern.length > 0) {
+      if (dup === false) {
+        console.log("単一検出モードでの解析中:");
         // 単一検出: 最初にマッチしたパターンのみ採用
-        const [isMatch, matchedPattern] = await typeAwarePatternMatch(flat_user_code, detectPattern);
+        // TODO: 重複検出を考慮して同じ関数内で完結させたい
+        
+        const [isMatch, matchedPattern] = await typeAwarePatternMatch(raw_extract_pattern, detectPattern, mode);
         
         if (isMatch && matchedPattern) {
           matchClientPatternJson.push({
             client: subdir,
-            pattern: flat_user_code,
+            pattern: raw_extract_pattern.flat(),
             detectPattern: matchedPattern
           });
           countmatchedpatterns.push(matchedPattern);
@@ -97,12 +98,13 @@ export const detectByPatternAdvance = async (
           sumDetectClient++;
         }
 
-      } else if (mode === 1) {
-        // 重複検出: 全ての検出パターン候補を個別に確認
+      } else if (dup === true) {
+        console.log("重複検出モードでの解析中:");
+        // 重複検出
         const matchedPatternsInClient: ExtractFunctionCallsResult[][][] = [];
 
         for (const singlePattern of detectPattern) {
-            const [isMatch, matched] = await typeAwarePatternMatch(flat_user_code, [singlePattern]);
+            const [isMatch, matched] = await typeAwarePatternMatch(raw_extract_pattern, [singlePattern], mode);
             if (isMatch && matched) {
                 matchedPatternsInClient.push(matched);
             }
@@ -112,7 +114,7 @@ export const detectByPatternAdvance = async (
           for (const matched of matchedPatternsInClient) {
               matchClientPatternJson.push({
                 client: subdir,
-                pattern: flat_user_code,
+                pattern: raw_extract_pattern.flat(),
                 detectPattern: matched
               });
               countmatchedpatterns.push(matched);
@@ -151,18 +153,21 @@ export const detectByPatternAdvance = async (
   return output;
 }
 
+//　mode 0: 型情報を考慮しないマッチング，mode 1: 型情報を考慮したマッチング
 export const support_detectByPatternAdvance = async (
   failureDir: string,
   successDir: string,
   libName: string,
   detectPattern: ExtractFunctionCallsResult[][][],
-  outputDir: string
+  outputDir: string,
+  dup: boolean = true,
+  mode : number = 1,
 ): Promise<PatternCountAdvance[]> => {
-  // テスト失敗/成功それぞれからパターン検出 (mode=1: 重複検出)
-  const failureResult = await detectByPatternAdvance(failureDir, libName, detectPattern, outputDir, 1);
-  const successResult = await detectByPatternAdvance(successDir, libName, detectPattern, outputDir, 1);
-  
+  const failureResult = await detectByPatternAdvance(failureDir, libName, detectPattern, outputDir, dup, mode);
+  const successResult = await detectByPatternAdvance(successDir, libName, detectPattern, outputDir, dup, mode);
+
   const combineClient = combinePatternsAdvance(failureResult.patterns, successResult.patterns);
+  console.log("---1 success")
   
   fs.writeFileSync(output_json.getUniqueOutputPath(outputDir, path.basename(failureDir), 'detect'), JSON.stringify(failureResult, null, 2), 'utf8');
   fs.writeFileSync(output_json.getUniqueOutputPath(outputDir, path.basename(successDir), 'detect'), JSON.stringify(successResult, null, 2), 'utf8');
