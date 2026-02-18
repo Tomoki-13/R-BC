@@ -4,7 +4,7 @@ import { ExtractFunctionCallsResult } from "../types/ExtractFunctionCallsResult"
 describe('typeAwarePatternMatch test', () => {
 
   describe('Mode 0: コードのみのマッチング (patternMatchからの移行)', () => {
-    
+
     /**
      * string[][] (ファイルごとの行) を ExtractFunctionCallsResult[][] (ファイル単位の解析結果) に変換
      * 実装関数が2次元配列(ファイル>行)を期待しているため、構造を維持します。
@@ -100,6 +100,24 @@ describe('typeAwarePatternMatch test', () => {
 
       const [isMatch] = await typeAwarePatternMatch(userResults, interopPattern, 0);
       expect(isMatch).toEqual(true);
+    });
+    test('メソッドチェーン等で不一致になるケース', async () => {
+      // パターン: 末尾にドットを含まないことを要求 ($アンカーを使用)
+      const strictPattern: ExtractFunctionCallsResult[][][] = [[
+        [
+          { FunctionCallCode: "import variable1 from 'module1'", filePath: 'p', line: 0, argTypes: [], argContexts: [] },
+          { FunctionCallCode: "variable1\\([^)]*\\)[^.]*$", filePath: 'p', line: 0, argTypes: [], argContexts: [] }
+        ]
+      ]];
+
+      const userResults: ExtractFunctionCallsResult[][] = [[
+        { FunctionCallCode: "import fs from 'module1'", filePath: 'test.ts', line: 1, argTypes: [], argContexts: [] },
+        // .v4 があるため不一致になるはず
+        { FunctionCallCode: "fs('file.txt', 12345).v4", filePath: 'test.ts', line: 2, argTypes: [], argContexts: [] }
+      ]];
+
+      const [isMatch] = await typeAwarePatternMatch(userResults, strictPattern, 0);
+      expect(isMatch).toEqual(false);
     });
   });
 
