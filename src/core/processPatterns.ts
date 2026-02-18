@@ -1,5 +1,5 @@
-import patternUtils from '../../patternOperations/patternUtils';
-import patternIntegration from '../../patternOperations/patternIntegration';
+import patternUtils from '../patternOperations/patternUtils';
+import patternIntegration from '../patternOperations/patternIntegration';
 //pattrnの処理をまとめたもの respattern:---数字まとめられている
 export async function processPatterns(respattern: string[][][]): Promise<string[][][]> {
   let lastpatterns: string[][][] = [];

@@ -1,14 +1,14 @@
 import fsPromises from 'fs/promises';
-import { funcNameIdentifiers, secfuncNameIdentifiers } from "../../utils/funcNameIdentifiers";
-import { extractImportLines } from "../../utils/extractImportLines";
-import { getExportModuleProperty } from '../../astRelated/analyzer/getExportModuleProperty';
-import patternUtils from '../../patternOperations/patternUtils';
-import { ExtractFunctionCallsResult } from '../../types/ExtractFunctionCallsResult';
-import { analyzeArgAndMethod } from '../../astRelated/analyzer/analyzeArgandMethod';
-import { getFileRelated } from '../../astRelated/trace/getFileRelated';
-import { OutboundFileDependencies } from '../../types/FileDependencies';
-import { InboundFunctionDependencies } from '../../types/FileDependencies';
-import { reverseDependencies } from '../../astRelated/trace/reverseDependencies';
+import { funcNameIdentifiers, secfuncNameIdentifiers } from "../utils/funcNameIdentifiers";
+import { extractImportLines } from "../utils/extractImportLines";
+import { getExportModuleProperty } from '../astRelated/analyzer/getExportModuleProperty';
+import patternUtils from '../patternOperations/patternUtils';
+import { ExtractFunctionCallsResult } from '../types/ExtractFunctionCallsResult';
+import { analyzeArgAndMethod } from '../astRelated/analyzer/analyzeArgandMethod';
+import { getFileRelated } from '../astRelated/trace/getFileRelated';
+import { OutboundFileDependencies } from '../types/FileDependencies';
+import { InboundFunctionDependencies } from '../types/FileDependencies';
+import { reverseDependencies } from '../astRelated/trace/reverseDependencies';
 
 // mode 0:使用方法をそのまま, 1:使用方法の一部抽象化でパターンに使いやすく
 export const useAstAdvance = async (allFiles: string[], libName: string, mode: number = 0): Promise<ExtractFunctionCallsResult[][]> => {
@@ -33,7 +33,7 @@ export const useAstAdvance = async (allFiles: string[], libName: string, mode: n
         lines.forEach(line => {
           inFileStr.push({
             FunctionCallCode: line,
-            filePath: filePath, 
+            filePath: filePath,
             line: 0,
             argTypes: [[]],
             argContexts: [[]]
