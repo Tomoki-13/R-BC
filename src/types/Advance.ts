@@ -10,8 +10,3 @@ export type PatternCountAdvance = {
   pattern: ExtractFunctionCallsResult[][];
   count: number;
 }
-
-export type DetectionOutputAdvance = {
-  patterns: PatternCountAdvance[];
-  totalClients: number;
-}
