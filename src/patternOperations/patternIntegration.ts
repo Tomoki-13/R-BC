@@ -2,8 +2,8 @@ import patternTransform from "./patternUtils";
 import { patternMatch } from './patternMatch';
 import patternUtils from './patternUtils';
 import patternConversion from "./patternConversion";
-// 入力の中で収束させる　IntegrationPattern：abststr していないもの対象
-// ここでは，収束のためpatternMatchで1つだけをマッチング
+// 入力の中で収束させる　IntegrationPattern は abststr していないもの対象
+// 収束のためpatternMatchで1つだけをマッチング
 // newpatterns：生データ（IntegrationPatternの重複削除前）
 // IntegrationPattern：軽く重複を消しただけのデータ
 
@@ -62,6 +62,11 @@ async function processIntegration(newpatterns: string[][][], IntegrationPattern:
       }
     }
   }
+  // // 検証用ペア確認
+  // let tmppattern: string[][][] = JSON.parse(JSON.stringify(newpatterns));
+  // console.log('newpatterns', JSON.stringify(tmppattern, null, 2));
+  // console.log('lastpatterns', JSON.stringify(lastpatterns, null, 2));
+
   return lastpatterns;
 }
 

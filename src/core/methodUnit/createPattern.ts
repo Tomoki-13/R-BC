@@ -5,7 +5,7 @@ import { checkAst } from "../../astRelated/base/checkAst";
 import { countPatterns } from '../../patternOperations/patternCount';
 import { getAllFiles } from "../../utils/getAllFiles";
 import { getSubDir } from "../../utils/getSubDir";
-import { JsonRow, PatternCount, DetectionOutput } from '../../types/OutputTypes';
+import { JsonRow, PatternCount, integrate_type } from '../../types/OutputTypes';
 import output_json from "../../utils/output_json";
 import { processPatterns } from "./processPatterns";
 import patternUtils from '../../patternOperations/patternUtils';
@@ -45,24 +45,29 @@ export const createPattern = async (patternDir: string, libName: string, outputD
     }
   }
   //集約 重複あり
+  console.log('----------');
+  console.log('input len:', respattern.length);
+  
   let lastpatterns = await processPatterns(respattern);
-
+  console.log('lastpatterns len:', lastpatterns.length);
   //ファイル出力
   //fs.writeFileSync(output_json.getUniqueOutputPath(outputDir,path.basename(patternDir),'rawpattern'), JSON.stringify(JsonRows, null, 4), 'utf8');
   let mergepattern: PatternCount[] = countPatterns(lastpatterns);
 
   mergepattern.sort((a, b) => b.count - a.count);
   const totalCount2 = mergepattern.reduce((acc, item) => acc + item.count, 0);
-  const output2: DetectionOutput = { patterns: mergepattern, totalClients: totalCount2 };
+  const output2: integrate_type = { patterns: mergepattern, totalClients: totalCount2 };
   if (mergepattern) {
     fs.writeFileSync(output_json.getUniqueOutputPath(outputDir, path.basename(patternDir), 'detectpatternlist'), JSON.stringify(output2, null, 4), 'utf8');
   }
-  // //パターンペア出力
-  // fs.writeFileSync(output_json.getUniqueOutputPath(outputDir,path.basename(patternDir),'integrate_pair'), JSON.stringify(lastpatterns, null, 4), 'utf8');
 
   //lastpatternsを一意にする
   lastpatterns = patternUtils.removeDuplicate(lastpatterns);
-
+  console.log("lastpatterns2 len:", lastpatterns.length);
+  console.log('----------');
+  // //パターンペア出力
+  fs.writeFileSync(output_json.getUniqueOutputPath(outputDir, path.basename(patternDir), 'integrate_pair'), JSON.stringify(lastpatterns, null, 4), 'utf8');
+  // console.log('output_json.getUniqueOutputPath(outputDir, path.basename(patternDir)', output_json.getUniqueOutputPath(outputDir, path.basename(patternDir), 'integrate_pair'));
   //標準出力
   console.log('========== createPattern ============');
   console.log('failure alldirs', alldirs.length);

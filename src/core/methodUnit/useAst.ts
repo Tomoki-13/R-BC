@@ -5,7 +5,7 @@ import { analyzeMethod } from "../../astRelated/analyzer/analyzeMethod";
 import { getExportModuleProperty } from '../../astRelated/analyzer/getExportModuleProperty';
 import patternConversion from '../../patternOperations/patternConversion';
 import patternUtils from '../../patternOperations/patternUtils';
-//createPattern用(抽象化あり) mode = 1,detectByPattern用 mode = 0
+//createPattern用(抽象化あり) mode = 1, detectByPattern用 mode = 0
 export const useAst = async (allFiles: string[], libName: string, mode: number = 0): Promise<string[][]> => {
   let pattern: string[][] = [];
   const visitedFiles: Set<string> = new Set<string>();
