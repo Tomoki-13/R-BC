@@ -6,6 +6,7 @@ import patternConversion from "./patternConversion";
  * @param resPattern 検出したいパターン群
  * @returns [マッチしたか, マッチしたパターン]
  */
+// TODO: processPatterns.tsで使用されなくなれば消せる．
 export const patternMatch = async (userpatterns: string[][], respattern: string[][][]): Promise<[boolean, string[][] | null]> => {
   //配列の要素を変えることを想定して
   let search_patterns: string[][][] = JSON.parse(JSON.stringify(respattern));

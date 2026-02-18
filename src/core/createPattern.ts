@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from "path";
-import { useAstAdvance } from "./useAstAdvance";
+import { useAst } from "./useAst";
 import { checkAst } from "../astRelated/base/checkAst";
 import { getAllFiles } from "../utils/getAllFiles";
 import { getSubDir } from "../utils/getSubDir";
@@ -9,7 +9,7 @@ import { ExtractFunctionCallsResult } from '../types/ExtractFunctionCallsResult'
 import patternConversion from '../patternOperations/patternConversion';
 import { processPatterns } from './processPatterns';
 import { countPatterns } from '../patternOperations/patternCount';
-import { DetectionOutputAdvance, PatternCount, integrate_type } from '../types/OutputTypes';
+import { DetectionOutput, PatternCount, PatternCount_old, integrate_type } from '../types/OutputTypes';
 import patternUtils from '../patternOperations/patternUtils';
 
 interface RawJsonRow {
@@ -24,7 +24,7 @@ interface RawJsonRow {
  * @param outputDir 出力先ディレクトリ
  * @returns 変換前のパターン(rawPattern)と変換後のパターン(convertedPattern)を含むオブジェクト
  */
-export const createPatternAdvance = async (
+export const createPattern = async (
   patternDir: string,
   libName: string,
   outputDir: string
@@ -49,7 +49,7 @@ export const createPatternAdvance = async (
       continue;
     }
 
-    extract_pattern1 = await useAstAdvance(allFiles, libName, 1);
+    extract_pattern1 = await useAst(allFiles, libName, 1);
 
     if (extract_pattern1.length > 0) {
       const hasContent = extract_pattern1.some(fileResult => fileResult.length > 0);
@@ -88,7 +88,7 @@ export const createPatternAdvance = async (
 
 // 既存の呼び出し文情報のみを用いたパターン
 export const createOnlyCall = async (patternDir: string, libName: string, outputDir: string): Promise<ExtractFunctionCallsResult[][][]> => {
-  let patterns: ExtractFunctionCallsResult[][][] = (await createPatternAdvance(patternDir, libName, outputDir)).rawPattern;
+  let patterns: ExtractFunctionCallsResult[][][] = (await createPattern(patternDir, libName, outputDir)).rawPattern;
   let strArray: string[][][] = patternConversion.extractFunctionCallCodes(patterns);
   let formattedPattern: string[][][] = []; //統合前に整形をしたパターンが入る
 
@@ -103,7 +103,7 @@ export const createOnlyCall = async (patternDir: string, libName: string, output
   fs.writeFileSync(output_json.getUniqueOutputPath(outputDir, path.basename(patternDir), ' strArray'), JSON.stringify(formattedPattern, null, 4), 'utf8');
   //パターンの集約や重複排除
   let lastpatterns = await processPatterns(formattedPattern);
-  let mergepattern: PatternCount[] = countPatterns(lastpatterns);
+  let mergepattern: PatternCount_old[] = countPatterns(lastpatterns);
 
   mergepattern.sort((a, b) => b.count - a.count);
   const totalCount2 = mergepattern.reduce((acc, item) => acc + item.count, 0);

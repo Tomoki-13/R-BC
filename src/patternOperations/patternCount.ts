@@ -1,6 +1,6 @@
-import { PatternCount } from "../types/OutputTypes";
+import { PatternCount, PatternCount_old } from "../types/OutputTypes";
 //重複カウント
-export function countPatterns(pattern: string[][][]): PatternCount[] {
+export function countPatterns(pattern: string[][][]): PatternCount_old[] {
   const patternMap = new Map<string, number>();
   pattern.forEach(subrespattern => {
     const patternString = JSON.stringify(subrespattern);
@@ -17,7 +17,7 @@ export function countPatterns(pattern: string[][][]): PatternCount[] {
   });
 };
 //パターンとカウントを結合 pattern1にpattern2を追加
-export function combinePatterns(pattern1: PatternCount[], pattern2: PatternCount[]): PatternCount[] {
+export function combinePatterns(pattern1: PatternCount[], pattern2: PatternCount[]): PatternCount_old[] {
   const pattern1_Map = new Map<string, number>();
   //pattern1のMap作成
   for (const pattern1_i of pattern1) {
@@ -36,7 +36,7 @@ export function combinePatterns(pattern1: PatternCount[], pattern2: PatternCount
       pattern1_Map.set(patternString, pattern2_i.count);
     }
   }
-  let pattern: PatternCount[] = Array.from(pattern1_Map.entries()).map(([patternString, count]) => {
+  let pattern: PatternCount_old[] = Array.from(pattern1_Map.entries()).map(([patternString, count]) => {
     const pattern: string[][] = JSON.parse(patternString);
     return { pattern, count };
   });

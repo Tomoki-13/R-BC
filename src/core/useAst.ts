@@ -11,7 +11,7 @@ import { InboundFunctionDependencies } from '../types/FileDependencies';
 import { reverseDependencies } from '../astRelated/trace/reverseDependencies';
 
 // mode 0:使用方法をそのまま, 1:使用方法の一部抽象化でパターンに使いやすく
-export const useAstAdvance = async (allFiles: string[], libName: string, mode: number = 0): Promise<ExtractFunctionCallsResult[][]> => {
+export const useAst = async (allFiles: string[], libName: string, mode: number = 0): Promise<ExtractFunctionCallsResult[][]> => {
   let pattern: ExtractFunctionCallsResult[][] = [];
   const visitedFiles: Set<string> = new Set<string>();
 

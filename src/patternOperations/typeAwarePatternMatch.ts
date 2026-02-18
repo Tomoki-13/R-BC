@@ -132,7 +132,6 @@ export const typeAwarePatternMatch = async (
                     } else {
                       for (let k = 0; k < expectedTypes.length; k++) {
                         if (JSON.stringify(userTypes[k].sort()) !== JSON.stringify(expectedTypes[k].sort())) {
-                          console.log(`  [DEBUG] Type Mismatch at arg ${k}: ${userTypes[k]} != ${expectedTypes[k]}`);
                           isMatchValid = false;
                           break;
                         }

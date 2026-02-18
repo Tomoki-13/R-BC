@@ -1,4 +1,4 @@
-import { useAstAdvance } from "../core/useAstAdvance";
+import { useAst } from "../core/useAst";
 import { ExtractFunctionCallsResult } from "../types/ExtractFunctionCallsResult";
 import path from 'path';
 
@@ -8,11 +8,11 @@ const filepath2: string[] = [path.join(__dirname, 'inputFiles/import_require_Sam
 const filepath_long_code: string[] = [path.join(__dirname, 'inputFiles/import_require_Sample/long_code.ts')];
 const filepath_empty_code: string[] = [path.join(__dirname, 'inputFiles/import_require_Sample/empty_code.ts')];
 
-describe('useAstAdvance (mode 0: 抽象化なし)', () => {
+describe('useAst (mode 0: 抽象化なし)', () => {
   test('import文の抽出が正しく行われること', async () => {
-    const output = await useAstAdvance(filepath1, "module", 0);
+    const output = await useAst(filepath1, "module", 0);
 
-    // useAstAdvance は ExtractFunctionCallsResult のオブジェクトを返す
+    // useAst は ExtractFunctionCallsResult のオブジェクトを返す
     const expectedOutput: ExtractFunctionCallsResult[][] = [[
       { FunctionCallCode: "import abc from 'module'", filePath: filepath1[0], line: 0, argTypes: [[]], argContexts: [[]] },
       { FunctionCallCode: "import {v4} from 'module'", filePath: filepath1[0], line: 0, argTypes: [[]], argContexts: [[]] },
@@ -26,7 +26,7 @@ describe('useAstAdvance (mode 0: 抽象化なし)', () => {
   });
 
   test('require文の抽出が正しく行われること', async () => {
-    const output = await useAstAdvance(filepath2, "module", 0);
+    const output = await useAst(filepath2, "module", 0);
 
     const expectedOutput: ExtractFunctionCallsResult[][] = [[
       { FunctionCallCode: "const abc = require('module')", filePath: filepath2[0], line: 0, argTypes: [[]], argContexts: [[]] },
@@ -40,9 +40,9 @@ describe('useAstAdvance (mode 0: 抽象化なし)', () => {
   });
 });
 
-describe('useAstAdvance (mode 1: 抽象化あり)', () => {
+describe('useAst (mode 1: 抽象化あり)', () => {
   test('import文の抽象化が正しく行われること', async () => {
-    const output = await useAstAdvance(filepath1, "module", 1);
+    const output = await useAst(filepath1, "module", 1);
 
     const expectedOutput: ExtractFunctionCallsResult[][] = [[
       { FunctionCallCode: "import ---1 from 'module'", filePath: filepath1[0], line: 0, argTypes: [[]], argContexts: [[]] },
@@ -56,7 +56,7 @@ describe('useAstAdvance (mode 1: 抽象化あり)', () => {
   });
 
   test('require文の抽象化が正しく行われること', async () => {
-    const output = await useAstAdvance(filepath2, "module", 1);
+    const output = await useAst(filepath2, "module", 1);
 
     // const や let は除去され、変数が ---番号 に置換される
     const expectedOutput: ExtractFunctionCallsResult[][] = [[
@@ -71,15 +71,15 @@ describe('useAstAdvance (mode 1: 抽象化あり)', () => {
   });
 });
 
-describe('useAstAdvance エッジケースの検証', () => {
+describe('useAst エッジケースの検証', () => {
 
   test('400文字を超えるコード行が除外されること', async () => {
-    const output = await useAstAdvance(filepath_long_code, "module", 0);
+    const output = await useAst(filepath_long_code, "module", 0);
     expect(output.every(subArray => subArray.every(item => item.FunctionCallCode.length <= 400))).toBeTruthy();
   });
 
   test('空のコード行が除外されること', async () => {
-    const output = await useAstAdvance(filepath_empty_code, "module", 0);
+    const output = await useAst(filepath_empty_code, "module", 0);
     // FunctionCallCode が空文字 ('') のものが残っていないことを確認
     expect(output.every(subArray => subArray.every(item => item.FunctionCallCode.length > 0))).toBeTruthy();
   });

@@ -5,12 +5,12 @@ import { getSubDir } from "../utils/getSubDir";
 import { jsonconfStr } from "../utils/jsonconf";
 import output_json from "../utils/output_json";
 import { ExtractFunctionCallsResult } from '../types/ExtractFunctionCallsResult';
-import { useAstAdvance } from "./useAstAdvance";
+import { useAst } from "./useAst";
 import { typeAwarePatternMatch } from "../patternOperations/typeAwarePatternMatch";
-import { MatchClientPatternAdvance, PatternCountAdvance } from '../types/Advance';
-import { DetectionOutputAdvance, integrate_type } from '../types/OutputTypes';
+import { MatchClientPattern, PatternCount } from '../types/OutputTypes';
+import { DetectionOutput, integrate_type } from '../types/OutputTypes';
 // パターンの出現回数をカウント
-const countPatternsAdvance = (patterns: ExtractFunctionCallsResult[][][]): PatternCountAdvance[] => {
+const countPatterns = (patterns: ExtractFunctionCallsResult[][][]): PatternCount[] => {
   const counts: { [key: string]: { pattern: ExtractFunctionCallsResult[][], count: number } } = {};
 
   for (const pattern of patterns) {
@@ -27,10 +27,10 @@ const countPatternsAdvance = (patterns: ExtractFunctionCallsResult[][][]): Patte
   return Object.values(counts).sort((a, b) => b.count - a.count);
 };
 
-const combinePatternsAdvance = (arr1: PatternCountAdvance[], arr2: PatternCountAdvance[]): PatternCountAdvance[] => {
-  const combinedMap: { [key: string]: PatternCountAdvance } = {};
+const combinePatterns = (arr1: PatternCount[], arr2: PatternCount[]): PatternCount[] => {
+  const combinedMap: { [key: string]: PatternCount } = {};
 
-  const addToMap = (arr: PatternCountAdvance[]) => {
+  const addToMap = (arr: PatternCount[]) => {
     for (const item of arr) {
       const key = JSON.stringify(item.pattern);
       if (combinedMap[key]) {
@@ -49,20 +49,20 @@ const combinePatternsAdvance = (arr1: PatternCountAdvance[], arr2: PatternCountA
 
 // 単一検出 dup = falese , 重複検出 dup = true
 // mode 0: 型情報を考慮しないマッチング，mode 1: 型情報を考慮したマッチング
-export const detectByPatternAdvance = async (
+export const detectByPattern = async (
   matchDir: string,
   libName: string,
   detectPattern: ExtractFunctionCallsResult[][][],
   outputDir: string,
   dup: boolean = false,
   mode: number = 1,
-): Promise<DetectionOutputAdvance> => {
+): Promise<DetectionOutput> => {
   let notest: number = 0;
   let standard: number = 0;
   let noscript: number = 0;
   let noPackagejson: number = 0;
 
-  let matchClientPatternJson: MatchClientPatternAdvance[] = [];
+  let matchClientPatternJson: MatchClientPattern[] = [];
   let countmatchedpatterns: ExtractFunctionCallsResult[][][] = [];
   let sumDetectClient: number = 0;
   let detectedClientNames: string[] = [];
@@ -74,7 +74,7 @@ export const detectByPatternAdvance = async (
 
     const allFiles: string[] = await getAllFiles(subdir);
     // ASTベースの解析
-    const raw_extract_pattern: ExtractFunctionCallsResult[][] = await useAstAdvance(allFiles, libName, 0);
+    const raw_extract_pattern: ExtractFunctionCallsResult[][] = await useAst(allFiles, libName, 0);
     if (raw_extract_pattern.length > 0) {
       if (dup === false) {
         // 単一検出: 最初にマッチしたパターンのみ採用
@@ -132,8 +132,8 @@ export const detectByPatternAdvance = async (
     }
   }
 
-  const detectedUserPattern = countPatternsAdvance(countmatchedpatterns);
-  const output: DetectionOutputAdvance = { patterns: detectedUserPattern, totalClients: sumDetectClient, detectedClients: detectedClientNames };
+  const detectedUserPattern = countPatterns(countmatchedpatterns);
+  const output: DetectionOutput = { patterns: detectedUserPattern, totalClients: sumDetectClient, detectedClients: detectedClientNames };
 
   fs.writeFileSync(output_json.getUniqueOutputPath(outputDir, path.basename(matchDir), 'matchResults'), JSON.stringify(matchClientPatternJson, null, 2), 'utf8');
 
@@ -156,7 +156,7 @@ export const detectByPatternAdvance = async (
 }
 
 //　mode 0: 型情報を考慮しないマッチング，mode 1: 型情報を考慮したマッチング
-export const support_detectByPatternAdvance = async (
+export const support_detectByPattern = async (
   failureDir: string,
   successDir: string,
   libName: string,
@@ -164,11 +164,11 @@ export const support_detectByPatternAdvance = async (
   outputDir: string,
   dup: boolean = true,
   mode: number = 1,
-): Promise<PatternCountAdvance[]> => {
-  const failureResult = await detectByPatternAdvance(failureDir, libName, detectPattern, outputDir, dup, mode);
-  const successResult = await detectByPatternAdvance(successDir, libName, detectPattern, outputDir, dup, mode);
+): Promise<PatternCount[]> => {
+  const failureResult = await detectByPattern(failureDir, libName, detectPattern, outputDir, dup, mode);
+  const successResult = await detectByPattern(successDir, libName, detectPattern, outputDir, dup, mode);
 
-  const combineClient = combinePatternsAdvance(failureResult.patterns, successResult.patterns);
+  const combineClient = combinePatterns(failureResult.patterns, successResult.patterns);
 
   fs.writeFileSync(output_json.getUniqueOutputPath(outputDir, path.basename(failureDir), 'detect'), JSON.stringify(failureResult, null, 2), 'utf8');
   fs.writeFileSync(output_json.getUniqueOutputPath(outputDir, path.basename(successDir), 'detect'), JSON.stringify(successResult, null, 2), 'utf8');

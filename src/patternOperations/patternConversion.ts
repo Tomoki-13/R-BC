@@ -1,4 +1,6 @@
 import { ExtractFunctionCallsResult } from '../types/ExtractFunctionCallsResult';
+import patternUtils from './patternUtils';
+
 // 置換処理
 function prep_repl(inputs: string[]): string[] {
   const replLoc: RegExp = /---(\d+)/g;
@@ -231,6 +233,88 @@ const restoreExtractFunctionCallsResult = (
   );
 };
 
+/**
+ * パターンの空白文字を正規化し、重複するパターンを統合・整理する関数
+ * @param pattern 処理対象のパターン配列 (string[][])
+ * @param mode 重複統合を行うかどうか (1: 行う, それ以外: 行わない)
+ * @returns 整形後のパターン配列 (string[][])
+ */
+const formatAndIntegratePattern = (
+  pattern: string[][],
+): string[][] => {
+  // 1. 空白・タブ・改行の削除と正規化（全体の配列をmapで一気に処理）
+  let formattedPattern = pattern.map(subPattern =>
+    subPattern.map(item => item.trim().replace(/\s+/g, ' '))
+  );
+  let tmp_pattern = JSON.parse(JSON.stringify(formattedPattern));
+  // クライアント内でのパターンの重複統合
+  let indicesToRemove: number[] = [];
+  // 一致するインデックスのペアを調査
+  for (let j = 0; j < tmp_pattern.length; j++) {
+    for (let k = j + 1; k < tmp_pattern.length; k++) {
+      if (isCompareElement(tmp_pattern[j], tmp_pattern[k])) {
+        if (tmp_pattern[j].length > tmp_pattern[k].length) {
+          indicesToRemove.push(k);
+        } else {
+          indicesToRemove.push(j);
+        }
+      }
+    }
+  }
+
+  // 後ろから削除しないとインデックスがずれるため，削除するインデックスを降順にソートし、重複を排除
+  indicesToRemove.sort((a, b) => b - a);
+  indicesToRemove = [...new Set(indicesToRemove)];
+
+  // 要素の削除
+  if (indicesToRemove.length > 0) {
+    for (const index of indicesToRemove) {
+      formattedPattern.splice(index, 1);
+    }
+  }
+  // ---dの順番を整形
+  formattedPattern = patternUtils.alignNumbersInPattern(formattedPattern).after;
+  return formattedPattern;
+};
+
+function isCompareElement(arr1: string[], arr2: string[]): boolean {
+  if (arr1.length !== arr2.length) {
+    let long: string[] = [];
+    let short: string[] = [];
+    if (arr1.length < arr2.length) {
+      long = arr2;
+      short = arr1;
+    } else {
+      long = arr1;
+      short = arr2;
+    }
+    if (isEqualCheck(short, long)) {
+      return true;
+    }
+  } else {
+    for (let i = 0; i < arr1.length; i++) {
+      if (arr1[i] !== arr2[i]) return false;
+    }
+    return true;
+  }
+  return false;
+}
+
+function isEqualCheck(short: string[], long: string[]): boolean {
+  let judge: boolean[] = [];
+  for (let i = 0; i < short.length; i++) {
+    judge.push(false);
+  }
+  for (let i = 0; i < short.length; i++) {
+    for (let j = 0; j < long.length; j++) {
+      if (short[i] === long[j]) {
+        judge[i] = true;
+        break;
+      }
+    }
+  }
+  return judge.every(val => val);
+}
 
 export default {
   escapeFunc,
@@ -238,4 +322,5 @@ export default {
   typeAwareAbstStr,
   extractFunctionCallCodes,
   restoreExtractFunctionCallsResult,
+  formatAndIntegratePattern
 };
