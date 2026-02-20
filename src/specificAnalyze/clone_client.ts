@@ -1,6 +1,6 @@
 import fs from "fs";
 import path from "path";
-import { specificCommit } from "../types/specificCommit";
+import { specificCommit } from "../types/SpecificCommit";
 import { getAllFilesRecursively } from "../utils/getAllFiles";
 import { cloneRepoWithCommit } from "../utils/cloneRepoWithCommit";
 import { execSync } from 'child_process';
