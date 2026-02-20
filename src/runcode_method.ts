@@ -1,9 +1,9 @@
-import { createPattern } from "./core/methodUnit/createPattern";
-import { DetectionOutput } from './types/outputTypes';
-import { detectByPattern } from "./core/methodUnit/detectByPattern";
+import { createOnlyCall } from "./core/createPattern";
+import { DetectionOutput } from './types/OutputTypes';
+import { detectByPattern, support_detectByPattern } from "./core/detectByPattern";
 import output_json from "./utils/output_json";
-import fs from 'fs';
 import path from 'path';
+import { ExtractFunctionCallsResult } from "./types/ExtractFunctionCallsResult";
 
 // シンプルな実行例
 (async () => {
@@ -11,7 +11,7 @@ import path from 'path';
   const matchDir: string = "../allrepos/repos_globby_700_success";
   // const libName: string = process.argv[2];
   const libName: string = "globby";
-  let lastpatterns: string[][][] = [];
+  let lastpatterns: ExtractFunctionCallsResult[][][] = [];
 
 
   //出力先準備
@@ -23,8 +23,10 @@ import path from 'path';
   output_json.createOutputDirectory(create_outputDir);
   output_json.createOutputDirectory(detect_outputDir);
   //パターン作成
-  lastpatterns = await createPattern(getPatternDir, libName, create_outputDir);
+  lastpatterns = await createOnlyCall(getPatternDir, libName, create_outputDir);
 
   //検出
-  let matchCliantPatternJson: DetectionOutput = await detectByPattern(matchDir, libName, lastpatterns, detect_outputDir, 1);
+  let matchCliantPatternJson: DetectionOutput = await detectByPattern(matchDir, libName, lastpatterns, detect_outputDir, true, 0);
+
+  // let matchCliantPatternJson = await support_detectByPattern(getPatternDir, matchDir, libName, lastpatterns, detect_outputDir, true, 0);
 })();

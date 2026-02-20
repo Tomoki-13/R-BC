@@ -1,18 +1,17 @@
+import { createOnlyCall, createPattern } from "./core/createPattern";
+import { support_detectByPattern } from "./core/detectByPattern";
+import { PatternCount } from './types/OutputTypes';
+import { ExtractFunctionCallsResult } from './types/ExtractFunctionCallsResult';
+
 import output_json from "./utils/output_json";
 import fs from 'fs';
 import path from 'path';
-
-import { createPattern } from "./core/createPattern";
-import { detectByPattern, support_detectByPattern } from './core/detectByPattern';
-import { ExtractFunctionCallsResult } from './types/ExtractFunctionCallsResult';
-import { DetectionOutput, PatternCount } from './types/OutputTypes';
 /**
  * 関数の説明：パターンの生成とそれによる検出を行うコード
  * failurePath パターン生成に使いたいクライアントのディレクトリパズの集合
  * successPath 検出に使いたいクライアントのディレクトリパズの集合
  * libNamePath ライブラリ名の集合
  */
-
 (async () => {
   // __dirname は現在のスクリプトのディレクトリ
   const failurePath = path.resolve(__dirname, '../datasets/input/clientRepo_failure.json');
@@ -32,10 +31,10 @@ import { DetectionOutput, PatternCount } from './types/OutputTypes';
   const now = new Date();
   const date = output_json.formatDateTime(now);
 
-  console.log('libNameArray', libNameArray.length);
   for (let i = 0; i < failureArray.length; i++) {
     const getPatternDir: string = failureArray[i];
-    const detectPatternDir: string = successArray[i];
+    const matchDir: string = successArray[i];
+    // console.log("getPatternDir", getPatternDir);
     const libName: string = libNameArray[i];
 
     //出力先準備
@@ -48,12 +47,8 @@ import { DetectionOutput, PatternCount } from './types/OutputTypes';
     console.log('-----------' + failureArray[i] + '-----------');
     let lastpatterns: ExtractFunctionCallsResult[][][] = [];
     //パターン作成
-    lastpatterns = (await createPattern(getPatternDir, libName, create_outputDir)).convertedPattern;
-
+    lastpatterns = await createOnlyCall(getPatternDir, libName, create_outputDir);
     //検出
-    let matchCliantPatternJson: DetectionOutput = await detectByPattern(detectPatternDir, libName, lastpatterns, detect_outputDir, false, 1);
-    // let matchCliantPatternJson: PatternCount[] = await support_detectByPattern(getPatternDir, matchDir, libName, lastpatterns, detect_outputDir, true, 1);
-
-    console.log('--------------------------------------------');
+    let result: PatternCount[] = await support_detectByPattern(getPatternDir, matchDir, libName, lastpatterns, detect_outputDir, true, 0);
   }
 })();

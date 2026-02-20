@@ -1,10 +1,10 @@
 import path from 'path';
 
-import { createPatternAdvance } from "./core/argAndMethod/createPatternAdvance";
+import { createPattern, createOnlyCall } from "./core/createPattern";
 import output_json from "./utils/output_json";
 import { ExtractFunctionCallsResult } from './types/ExtractFunctionCallsResult';
-import { MatchClientPatternAdvance, PatternCountAdvance, DetectionOutputAdvance } from './types/Advance';
-import { detectByPatternAdvance, support_detectByPatternAdvance} from './core/argAndMethod/detectByPatternAdvance';
+import { MatchClientPattern, PatternCount } from './types/OutputTypes';
+import { detectByPattern, support_detectByPattern } from './core/detectByPattern';
 
 // シンプルな実行例
 (async () => {
@@ -22,8 +22,9 @@ import { detectByPatternAdvance, support_detectByPatternAdvance} from './core/ar
   output_json.createOutputDirectory(detect_outputDir);
 
   //パターン作成
-  const lastpatterns: ExtractFunctionCallsResult[][][] = await createPatternAdvance(getPatternDir, libName, create_outputDir);
-  let matchCliantPatternJson: DetectionOutputAdvance = await detectByPatternAdvance(detectPatternDir, libName, lastpatterns, detect_outputDir);
-  // let matchCliantPatternJson: PatternCountAdvance[] = await support_detectByPatternAdvance(create_outputDir, detectPatternDir, libName, lastpatterns, detect_outputDir);
+  const lastpatterns: ExtractFunctionCallsResult[][][] = (await createPattern(getPatternDir, libName, create_outputDir)).convertedPattern;
+
+  let matchCliantPatternJson = await detectByPattern(detectPatternDir, libName, lastpatterns, detect_outputDir);
+  // let matchCliantPatternJson: PatternCount[] = await support_detectByPattern(create_outputDir, detectPatternDir, libName, lastpatterns, detect_outputDir);
 
 })();
