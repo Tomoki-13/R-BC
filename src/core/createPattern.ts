@@ -110,11 +110,13 @@ export const createOnlyCall = async (patternDir: string, libName: string, output
   const output2: integrate_type = { patterns: mergepattern, totalClients: totalCount2 };
   lastpatterns = patternUtils.removeDuplicate(lastpatterns);
 
-  if (mergepattern) {
-    fs.writeFileSync(output_json.getUniqueOutputPath(outputDir, path.basename(patternDir), 'detectpatternlist'), JSON.stringify(output2, null, 4), 'utf8');
-  }
   let returnPatterns: ExtractFunctionCallsResult[][][] = patternConversion.restoreExtractFunctionCallsResult(lastpatterns);
   returnPatterns = patternConversion.typeAwareAbstStr(returnPatterns);
+
+  if (mergepattern) {
+    fs.writeFileSync(output_json.getUniqueOutputPath(outputDir, path.basename(patternDir), 'detectpatternlist'), JSON.stringify(returnPatterns, null, 4), 'utf8');
+    fs.writeFileSync(output_json.getUniqueOutputPath(outputDir, path.basename(patternDir), 'integrated_pattern'), JSON.stringify(output2, null, 4), 'utf8');
+  }
   console.log('lastpatterns len:', lastpatterns.length);
   console.log('==================================================');
   return returnPatterns;
