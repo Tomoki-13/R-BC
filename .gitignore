@@ -1,7 +1,8 @@
 datasets
 node_modules
 .DS_Store
-scripts
+scripts/clone_repo.sh
+scripts/clone_dataset.sh
 package-lock.json
 output
 allrepos
@@ -11,3 +12,4 @@ compare
 src/preDev
 .env
 src/core/argAndMethod/sample
+allrepos2
