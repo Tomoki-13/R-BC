@@ -25,7 +25,7 @@ interface CloneStats {
 
 // 実行環境の設定
 const WORK_DIR = process.cwd();
-const ALL_REPOS_DIR = path.join(WORK_DIR, '../allrepos2');
+const ALL_REPOS_DIR = path.join(WORK_DIR, '../alldataset_clients');
 const JSON_FILE = path.join(WORK_DIR, '../datasets', 'test_result.json');
 
 // トークン設定（.envから取得、なければ空文字にして非公開リポジトリ以外をクローン）
@@ -90,8 +90,8 @@ async function cloneRepos(repos: any[], targetDir: string) {
   for (const repo of repos) {
     const nameWithOwner = repo.S__nameWithOwner;
     const commitId = repo.S__commit_id;
-    const repoName = nameWithOwner.split('/')[1];
-    const cloneTargetDir = path.join(targetDir, repoName);
+    const cloneTargetDir = path.join(targetDir, nameWithOwner);
+    const ownerDir = path.join(targetDir, nameWithOwner.split('/')[0]);
 
     // クローン先にディレクトリが存在し、かつ空でない場合はスキップ
     if (fs.existsSync(cloneTargetDir) && fs.readdirSync(cloneTargetDir).length > 0) {
@@ -107,9 +107,13 @@ async function cloneRepos(repos: any[], targetDir: string) {
       : `https://github.com/${nameWithOwner}.git`;
 
     try {
-      execSync(`git clone ${cloneUrl} ${repoName}`, { stdio: 'ignore', cwd: targetDir });
+      if (!fs.existsSync(ownerDir)) {
+        fs.mkdirSync(ownerDir, { recursive: true });
+      }
 
-      const repoPath = path.join(targetDir, repoName);
+      execSync(`git clone ${cloneUrl} "${cloneTargetDir}"`, { stdio: 'ignore' });
+
+      const repoPath = path.join(targetDir, nameWithOwner);
       if (fs.existsSync(path.join(repoPath, 'package-lock.json'))) {
         fs.rmSync(path.join(repoPath, 'package-lock.json'), { force: true });
       }
@@ -170,7 +174,7 @@ async function cloneRepos(repos: any[], targetDir: string) {
     const libName = libRecords[0].L__npm_pkg;
     const cleanVersion = update.newVersion.replace(/[^a-zA-Z0-9]/g, '');
 
-    // 出力ディレクトリ構成 (allrepos2/ライブラリ名/整形済バージョン/状態)
+    // 出力ディレクトリ構成 (alldataset_clients/ライブラリ名/整形済バージョン/状態)
     const updateBaseDir = path.join(ALL_REPOS_DIR, libName, cleanVersion);
     const successDir = path.join(updateBaseDir, 'success');
     const failureDir = path.join(updateBaseDir, 'failure');
@@ -221,8 +225,8 @@ async function cloneRepos(repos: any[], targetDir: string) {
     await cloneRepos(targetSuccessRepos, successDir);
 
     // 隠しファイル（.DS_Store等）を除外して実際のクローン成功数をカウント
-    const failureCount = fs.existsSync(failureDir) ? fs.readdirSync(failureDir).filter(f => !f.startsWith('.')).length : 0;
-    const successCount = fs.existsSync(successDir) ? fs.readdirSync(successDir).filter(f => !f.startsWith('.')).length : 0;
+    const failureCount = fs.existsSync(failureDir) ? fs.readdirSync(failureDir).filter(f => !f.startsWith('.')).reduce((acc, owner) => acc + fs.readdirSync(path.join(failureDir, owner)).filter(f => !f.startsWith('.')).length, 0) : 0;
+    const successCount = fs.existsSync(successDir) ? fs.readdirSync(successDir).filter(f => !f.startsWith('.')).reduce((acc, owner) => acc + fs.readdirSync(path.join(successDir, owner)).filter(f => !f.startsWith('.')).length, 0) : 0;
 
     // クローン失敗に伴う空ディレクトリの削除
     if (failureCount === 0 && fs.existsSync(failureDir)) {
@@ -274,17 +278,18 @@ async function cloneRepos(repos: any[], targetDir: string) {
 
   // 統計情報のCSV出力
   if (cloneStatsList.length > 0 || excludedStatsList.length > 0) {
-    const csvDir = path.join(WORK_DIR, '../output/clonedata');
+    const baseCsvDir = path.join(WORK_DIR, '../output/clonedata');
+    const now = new Date();
+    const dateStr = now.toISOString().replace(/T/, '_').replace(/:/g, '').split('.')[0];
+    const csvDir = path.join(baseCsvDir, dateStr);
+
     if (!fs.existsSync(csvDir)) {
       fs.mkdirSync(csvDir, { recursive: true });
     }
 
-    const now = new Date();
-    const dateStr = now.toISOString().replace(/T/, '_').replace(/:/g, '').split('.')[0];
-
     // ペア成立分のCSV出力
     if (cloneStatsList.length > 0) {
-      const csvPath = path.join(csvDir, `clone_summary_${dateStr}.csv`);
+      const csvPath = path.join(csvDir, 'clone_summary.csv');
       const csvHeader = 'Library,Repository,OldVersion,NewVersion,FailureClientCount,SuccessClientCount\n';
       const csvRows = cloneStatsList.map(stats =>
         `${stats.library},${stats.repository},${stats.oldVersion},${stats.newVersion},${stats.failureCount},${stats.successCount}`
@@ -296,7 +301,7 @@ async function cloneRepos(repos: any[], targetDir: string) {
 
     // クライアント不足により除外された分のCSV出力
     if (excludedStatsList.length > 0) {
-      const excludedCsvPath = path.join(csvDir, `excluded_summary_${dateStr}.csv`);
+      const excludedCsvPath = path.join(csvDir, 'excluded_summary.csv');
       const excludedCsvHeader = 'ID,Library,Repository,OldVersion,NewVersion,FailureClientCount,SuccessClientCount\n';
       const excludedCsvRows = excludedStatsList.map(stats =>
         `${stats.id},${stats.library},${stats.repository},${stats.oldVersion},${stats.newVersion},${stats.failureCount},${stats.successCount}`
