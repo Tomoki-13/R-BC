@@ -176,3 +176,27 @@ export const support_detectByPattern = async (
 
   return combineClient;
 }
+
+// 全回し用
+export const support_detectByPatternWithStats = async (
+  failureDir: string,
+  successDir: string,
+  libName: string,
+  detectPattern: ExtractFunctionCallsResult[][][],
+  outputDir: string,
+  dup: boolean = true,
+  mode: number = 1,
+): Promise<{ combineClient: PatternCount[], failureResult: DetectionOutput, successResult: DetectionOutput }> => {
+  // それぞれの検出を実行し、戻り値(DetectionOutput)を保持
+  const failureResult = await detectByPattern(failureDir, libName, detectPattern, outputDir, dup, mode);
+  const successResult = await detectByPattern(successDir, libName, detectPattern, outputDir, dup, mode);
+
+  const combineClient = combinePatterns(failureResult.patterns, successResult.patterns);
+
+  fs.writeFileSync(output_json.getUniqueOutputPath(outputDir, path.basename(failureDir), 'detect'), JSON.stringify(failureResult, null, 2), 'utf8');
+  fs.writeFileSync(output_json.getUniqueOutputPath(outputDir, path.basename(successDir), 'detect'), JSON.stringify(successResult, null, 2), 'utf8');
+  fs.writeFileSync(output_json.getUniqueOutputPath(outputDir, path.basename(successDir + 'combine'), 'preCount'), JSON.stringify(combineClient, null, 2), 'utf8');
+
+  // CSVに必要な検出結果情報をまとめて返す
+  return { combineClient, failureResult, successResult };
+}
