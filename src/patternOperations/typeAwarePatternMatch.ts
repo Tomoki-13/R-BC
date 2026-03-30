@@ -131,7 +131,12 @@ export const typeAwarePatternMatch = async (
                       isMatchValid = false;
                     } else {
                       for (let k = 0; k < expectedTypes.length; k++) {
-                        if (JSON.stringify(userTypes[k].sort()) !== JSON.stringify(expectedTypes[k].sort())) {
+                        // userTypes[k].sort() は元の配列を破壊（ミューテート）してしまう副作用があるため、
+                        // スプレッド構文 [...arr] で浅いコピーを作ってからソートする。
+                        // さらに重い JSON.stringify を排除し、join(',') を使ってメモリ効率よく文字列比較を行う。
+                        const uT = [...userTypes[k]].sort().join(',');
+                        const eT = [...expectedTypes[k]].sort().join(',');
+                        if (uT !== eT) {
                           isMatchValid = false;
                           break;
                         }

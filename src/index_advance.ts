@@ -39,7 +39,7 @@ import { DetectionOutput, PatternCount } from './types/OutputTypes';
     const libName: string = libNameArray[i];
 
     //出力先準備
-    let outputDir: string = path.resolve(process.cwd(), '../output/' + date + '/' + output_json.extractMiddleFlexible(path.basename(getPatternDir), 'repos_'));
+    let outputDir: string = path.resolve(process.cwd(), '../output/type-method/' + date + '/' + output_json.extractMiddleFlexible(path.basename(getPatternDir), 'repos_'));
     let create_outputDir = outputDir + '/createPattern';
     let detect_outputDir = outputDir + '/detectByPattern';
     output_json.createOutputDirectory(create_outputDir);
@@ -51,8 +51,8 @@ import { DetectionOutput, PatternCount } from './types/OutputTypes';
     lastpatterns = (await createPattern(getPatternDir, libName, create_outputDir)).convertedPattern;
 
     //検出
-    let matchCliantPatternJson: DetectionOutput = await detectByPattern(detectPatternDir, libName, lastpatterns, detect_outputDir, false, 1);
-    // let matchCliantPatternJson: PatternCount[] = await support_detectByPattern(getPatternDir, matchDir, libName, lastpatterns, detect_outputDir, true, 1);
+    // let matchCliantPatternJson: DetectionOutput = await detectByPattern(detectPatternDir, libName, lastpatterns, detect_outputDir, false, 1);
+    let matchCliantPatternJson: PatternCount[] = await support_detectByPattern(getPatternDir, detectPatternDir, libName, lastpatterns, detect_outputDir, true, 1);
 
     console.log('--------------------------------------------');
   }

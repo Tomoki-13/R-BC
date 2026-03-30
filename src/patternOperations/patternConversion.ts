@@ -140,7 +140,7 @@ function transformArgumrnt(str: string): string {
 
 //パターンへの変換
 function abstStr(respattern: string[][][], mode: number = 0): string[][][] {
-  let copiedRespattern: string[][][] = JSON.parse(JSON.stringify(respattern));
+  let copiedRespattern: string[][][] = respattern.map(arr2d => arr2d.map(arr1d => [...arr1d]));
   for (let i = 0; copiedRespattern.length > i; i++) {
     for (let j = 0; copiedRespattern[i].length > j; j++) {
       copiedRespattern[i][j] = prep_repl(copiedRespattern[i][j]);
@@ -189,7 +189,17 @@ function abstStr(respattern: string[][][], mode: number = 0): string[][][] {
 }
 
 function typeAwareAbstStr(respattern: ExtractFunctionCallsResult[][][]): ExtractFunctionCallsResult[][][] {
-  let copiedRespattern: ExtractFunctionCallsResult[][][] = JSON.parse(JSON.stringify(respattern));
+  let copiedRespattern: ExtractFunctionCallsResult[][][] = respattern.map(arr2d =>
+    arr2d.map(arr1d =>
+      arr1d.map(item => ({
+        FunctionCallCode: item.FunctionCallCode,
+        filePath: item.filePath,
+        line: item.line,
+        argTypes: item.argTypes ? item.argTypes.map(types => [...types]) : [],
+        argContexts: item.argContexts ? item.argContexts.map(ctx => [...ctx]) : []
+      }))
+    )
+  );
   // string[][][]に変換してabstStrを適用
   let tempStringPattern: string[][][] = copiedRespattern.map(patternGroup =>
     patternGroup.map(block =>
@@ -246,7 +256,7 @@ const formatAndIntegratePattern = (
   let formattedPattern = pattern.map(subPattern =>
     subPattern.map(item => item.trim().replace(/\s+/g, ' '))
   );
-  let tmp_pattern = JSON.parse(JSON.stringify(formattedPattern));
+  let tmp_pattern = formattedPattern.map(arr1d => [...arr1d]);
   // クライアント内でのパターンの重複統合
   let indicesToRemove: number[] = [];
   // 一致するインデックスのペアを調査

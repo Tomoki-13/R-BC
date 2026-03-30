@@ -38,7 +38,7 @@ import path from 'path';
     const libName: string = libNameArray[i];
 
     //出力先準備
-    let outputDir: string = path.resolve(process.cwd(), '../output/' + date + '/' + output_json.extractMiddleFlexible(path.basename(getPatternDir), 'repos_'));
+    let outputDir: string = path.resolve(process.cwd(), '../output/method/' + date + '/' + output_json.extractMiddleFlexible(path.basename(getPatternDir), 'repos_'));
     let create_outputDir = outputDir + '/createPattern';
     let detect_outputDir = outputDir + '/detectByPattern';
     output_json.createOutputDirectory(create_outputDir);

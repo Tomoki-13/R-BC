@@ -14,7 +14,7 @@ async function processIntegration(newpatterns: string[][][], IntegrationPattern:
   }
   for (const subrespattern of newpatterns) {
     if (Array.isArray(subrespattern) && subrespattern.every(Array.isArray)) {
-      let tmppattern: string[][][] = JSON.parse(JSON.stringify(IntegrationPattern));
+      let tmppattern: string[][][] = IntegrationPattern.map(arr2d => arr2d.map(arr1d => [...arr1d]));
       tmppattern = patternUtils.removeSubpattern(tmppattern, subrespattern);
       //IntegrationPatternの正規表現へ変換 これを用いて集約
       tmppattern = patternConversion.abstStr(tmppattern);
@@ -63,7 +63,7 @@ async function processIntegration(newpatterns: string[][][], IntegrationPattern:
     }
   }
   // // 検証用ペア確認
-  // let tmppattern: string[][][] = JSON.parse(JSON.stringify(newpatterns));
+  // let tmppattern: string[][][] = newpatterns.map(arr2d => arr2d.map(arr1d => [...arr1d]));
   // console.log('newpatterns', JSON.stringify(tmppattern, null, 2));
   // console.log('lastpatterns', JSON.stringify(lastpatterns, null, 2));
 

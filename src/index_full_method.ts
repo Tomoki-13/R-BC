@@ -1,3 +1,5 @@
+import v8 from 'v8';
+v8.setFlagsFromString('--expose_gc');
 import output_json from "./utils/output_json";
 import fs from 'fs';
 import path from 'path';
@@ -12,6 +14,8 @@ interface InputData {
   successDir: string;
   libName: string;
   cleanVersion: string;
+  preVersion: string;
+  postVersion: string;
 }
 
 // アップデートペア用の型定義
@@ -26,10 +30,13 @@ interface TargetUpdate {
 interface ExecutionStat {
   id: number;
   library: string;
-  version: string;
-  createdPatternCount: number;
-  failureDetectClients: number;
-  successDetectClients: number;
+  preVersion: string;
+  postVersion: string;
+  totalFailureDirs: number;            // クローンしたテスト失敗数
+  failureDetectedClientsCount: number; // そのうち検出したクライアント数(失敗)
+  createdPatternCount: number;         // 生成したパターン数
+  totalSuccessDirs: number;            // クローンしたテスト成功数
+  successDetectedClientsCount: number; // そのうち検出したクライアント数(成功)
   outputPath: string;
 }
 
@@ -55,9 +62,35 @@ function extractUpdatesFromResults(testResults: any[]): TargetUpdate[] {
 
   for (const [lib, clientMap] of libClientMap.entries()) {
     for (const [client, records] of clientMap.entries()) {
-      const versions = [...new Set(records.map(r => r.L__version))].sort((a, b) =>
-        a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' })
-      );
+      // localeCompareのみではプレリリース版(betaなど)の順序が狂うため、
+      // SemVerの仕様に基づいたカスタムソートを適用
+      const versions = [...new Set(records.map(r => r.L__version))].sort((a, b) => {
+        const parseVer = (v: string) => {
+          const dashIdx = v.indexOf('-');
+          const main = dashIdx > -1 ? v.slice(0, dashIdx) : v;
+          const pre = dashIdx > -1 ? v.slice(dashIdx + 1) : '';
+          return { parts: main.split('.').map(Number), pre };
+        };
+
+        const vA = parseVer(a);
+        const vB = parseVer(b);
+
+        // 1. メジャー・マイナー・パッチバージョンの数字を比較
+        for (let i = 0; i < Math.max(vA.parts.length, vB.parts.length); i++) {
+          const numA = vA.parts[i] || 0;
+          const numB = vB.parts[i] || 0;
+          if (numA !== numB) return numA - numB;
+        }
+
+        // 2. 正規版とプレリリース版の比較 (プレリリース版の方が「古い」扱い)
+        if (vA.pre && !vB.pre) return -1;
+        if (!vA.pre && vB.pre) return 1;
+        
+        // 3. 両方プレリリース版の場合はアルファベット順(numeric考慮)で比較
+        if (vA.pre && vB.pre) return vA.pre.localeCompare(vB.pre, undefined, { numeric: true, sensitivity: 'base' });
+
+        return 0;
+      });
 
       if (versions.length >= 2) {
         for (let i = 0; i < versions.length - 1; i++) {
@@ -117,13 +150,16 @@ function generateInputData(testResultPath: string): InputData[] {
 
     const libName = update.libName;
     const cleanVersion = update.newVersion.replace(/[^a-zA-Z0-9]/g, '');
-    const baseRepoDir = `../sample_clients/${libName}/${cleanVersion}`;
+    // LOOK:---探索ディレクトリ入力---
+    const baseRepoDir = `../alldataset_clients/${libName}/${cleanVersion}`;
 
     inputDataList.push({
       failureDir: `${baseRepoDir}/failure`,
       successDir: `${baseRepoDir}/success`,
       libName: libName,
-      cleanVersion: cleanVersion
+      cleanVersion: cleanVersion,
+      preVersion: update.oldVersion,
+      postVersion: update.newVersion
     });
   }
 
@@ -168,7 +204,7 @@ function generateInputData(testResultPath: string): InputData[] {
 
     // 出力先の準備
     const outputDirName = `${libName}_${inputData.cleanVersion}`;
-    let outputDir: string = path.resolve(process.cwd(), '../output/type-method/' + date + '/' + outputDirName);
+    let outputDir: string = path.resolve(process.cwd(), '../output/method/' + date + '/' + outputDirName);
     let create_outputDir = outputDir + '/createPattern';
     let detect_outputDir = outputDir + '/detectByPattern';
 
@@ -183,16 +219,25 @@ function generateInputData(testResultPath: string): InputData[] {
       lastpatterns = await createOnlyCall(getPatternDir, libName, create_outputDir);
 
       // 追加したヘルパー関数を用いて検出を実行し、検出数等を含む統計結果を受け取る
+      console.log('detectPatternDir'+detectPatternDir);
       const statsResult = await support_detectByPatternWithStats(getPatternDir, detectPatternDir, libName, lastpatterns, detect_outputDir, true, 0);
+      
+      // 各ディレクトリの総数を取得するためのパス
+      // fs.readdirSyncによるトップレベルのカウントではなく、実際に探索した母数を使用する
+      const totalFailureCount = statsResult.failureResult.scannedDirCount;
+      const totalSuccessCount = statsResult.successResult.scannedDirCount;
 
       // CSV用の統計情報を格納
       executionStats.push({
         id: idCounter++,
         library: libName,
-        version: inputData.cleanVersion,
+        preVersion: inputData.preVersion,
+        postVersion: inputData.postVersion,
+        totalFailureDirs: totalFailureCount,
+        failureDetectedClientsCount: statsResult.failureResult.totalClients,
         createdPatternCount: lastpatterns.length,
-        failureDetectClients: statsResult.failureResult.totalClients,
-        successDetectClients: statsResult.successResult.totalClients,
+        totalSuccessDirs: totalSuccessCount,
+        successDetectedClientsCount: statsResult.successResult.totalClients,
         outputPath: outputDir
       });
 
@@ -218,7 +263,7 @@ function generateInputData(testResultPath: string): InputData[] {
   // CSVファイルの出力処理
   // ----------------------------------------
   if (executionStats.length > 0) {
-    const csvDir = path.resolve(process.cwd(), '../output/clonedata');
+    const csvDir = path.resolve(process.cwd(), '../output/method'+ '/' + date);
     if (!fs.existsSync(csvDir)) {
       fs.mkdirSync(csvDir, { recursive: true });
     }
@@ -227,10 +272,12 @@ function generateInputData(testResultPath: string): InputData[] {
     const safeDateForFileName = date.replace(/[: ]/g, '_');
     const csvPath = path.join(csvDir, `execution_summary_${safeDateForFileName}.csv`);
 
-    const csvHeader = 'ID,Library,Version,CreatedPatternsCount,FailureDetectClients,SuccessDetectClients,OutputPath\n';
+    // CreatedPatternsCount と FailureDetectedCount を入れ替え
+    const csvHeader = 'ID,Library,PreVersion,PostVersion,ClonedFailureCount,CreatedPatternsCount,FailureDetectedCount,ClonedSuccessCount,SuccessDetectedCount,OutputPath\n';
 
     const csvRows = executionStats.map(stat =>
-      `${stat.id},${stat.library},${stat.version},${stat.createdPatternCount},${stat.failureDetectClients},${stat.successDetectClients},${stat.outputPath}`
+      // データの出力順もヘッダーに合わせて入れ替え
+      `${stat.id},${stat.library},${stat.preVersion},${stat.postVersion},${stat.totalFailureDirs},${stat.createdPatternCount},${stat.failureDetectedClientsCount},${stat.totalSuccessDirs},${stat.successDetectedClientsCount},${stat.outputPath}`
     ).join('\n');
 
     fs.writeFileSync(csvPath, csvHeader + csvRows, 'utf8');

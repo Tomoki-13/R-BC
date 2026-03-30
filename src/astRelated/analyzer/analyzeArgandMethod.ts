@@ -11,12 +11,21 @@ import { ExtractFunctionCallsResult } from '../../types/ExtractFunctionCallsResu
 import { createAstFromFile } from '../base/createAstFromFile';
 
 // 引数まで考慮した関数呼び出しの解析
-// TODO: 関数定義箇所も検出対象(一旦テストはfailさせておく)
 export const analyzeArgAndMethod = async (
   filePath: string,
   funcName: string,
   funcDepend: InboundFunctionDependencies[],
+  visited: Map<string, number> = new Map() // 循環依存による無限再帰を防ぎつつ、数回（ここでは3回）の循環を許容するためのマップ
 ): Promise<ExtractFunctionCallsResult[]> => {
+  const visitKey = `${filePath}::${funcName}`;
+  const visitCount = visited.get(visitKey) || 0;
+  // TODO:良案検討中
+  // 訪問回数が一定数（ここでは3回）を超えた場合、循環依存の可能性が高いため、これ以上の解析を行わずに空の結果を返す(消したほうが厳格？)
+  if (visitCount >= 3) {
+    return [];
+  }
+  visited.set(visitKey, visitCount + 1);
+
   try {
     const syncResults: ExtractFunctionCallsResult[] = [];
     const promises: Promise<ExtractFunctionCallsResult | null>[] = [];
@@ -70,10 +79,10 @@ export const analyzeArgAndMethod = async (
               declarationNode.node.start != null &&
               declarationNode.node.end != null
             ) {
-              const code: string = fileContent.substring(
+              const code: string = String(fileContent.substring(
                 declarationNode.node.start,
                 declarationNode.node.end,
-              );
+              ) + '');
               syncResults.push({
                 FunctionCallCode: code,
                 filePath: filePath,
@@ -92,10 +101,10 @@ export const analyzeArgAndMethod = async (
             declarationNode.node.start != null &&
             declarationNode.node.end != null
           ) {
-            const code = fileContent.substring(
+            const code: string = String(fileContent.substring(
               declarationNode.node.start,
               declarationNode.node.end,
-            );
+            ) + '');
             syncResults.push({
               FunctionCallCode: code,
               filePath: filePath,
@@ -128,12 +137,13 @@ export const analyzeArgAndMethod = async (
           }
 
           if (isTargetFound) {
-            const code: string = fileContent.substring(path.node.start, path.node.end);
+            const code: string = String(fileContent.substring(path.node.start, path.node.end) + '');
             const { finalArgTypes, finalArgContexts } = await analyzeArguments(
               path.node.arguments,
               fileContent,
               allFunctions,
               funcDepend,
+              visited // 無限ループ対策
             );
 
             const dedupedArgTypes = finalArgTypes.map((types) => [
@@ -166,16 +176,17 @@ export const analyzeArgAndMethod = async (
             t.isIdentifier(callee) &&
             new RegExp(`^${funcName}(?![a-zA-Z])`).test(callee.name)
           ) {
-            const code: string = fileContent.substring(
+            const code: string = String(fileContent.substring(
               path.node.start,
               path.node.end,
-            );
+            ) + '');
             const { finalArgTypes, finalArgContexts } =
               await analyzeArguments(
                 path.node.arguments,
                 fileContent,
                 allFunctions,
                 funcDepend,
+                visited // 無限ループ対策
               );
 
             const dedupedArgTypes = finalArgTypes.map((types) => [
@@ -203,7 +214,8 @@ export const analyzeArgAndMethod = async (
       (result): result is ExtractFunctionCallsResult => result !== null,
     );
 
-    return syncResults.concat(validAsyncResults);
+    syncResults.push(...validAsyncResults);
+    return syncResults;
   } catch (error: unknown) {
     if (error instanceof Error) {
       console.error(error.message);
@@ -227,6 +239,7 @@ async function analyzeArguments(
   fileContent: string,
   allFunctions: FunctionInfo_funcRange[],
   funcDepend: InboundFunctionDependencies[],
+  visited: Map<string, number> // 無限ループ対策
 ): Promise<{ finalArgTypes: string[][]; finalArgContexts: string[][] }> {
   const finalArgTypes: string[][] = Array.from(
     { length: args.length },
@@ -293,15 +306,16 @@ async function analyzeArguments(
                 outFileDep.dep_filepath,
                 one,
                 funcDepend,
+                visited
               );
               for (const recResult of recursiveResult) {
                 const typesFromRec = recResult.argTypes?.[outerArgIndex] || [];
                 const contextsFromRec =
                   recResult.argContexts?.[outerArgIndex] || [];
-                
+
                 finalArgTypes[index].push(...typesFromRec);
                 finalArgContexts[index].push(
-                   ...contextsFromRec.map(cleanCodeSnippet)
+                  ...contextsFromRec.map(cleanCodeSnippet)
                 );
               }
             }
@@ -322,7 +336,7 @@ async function analyzeArguments(
 
       if (finalArgTypes[index].length === 0) {
         if (arg.start !== undefined && arg.end !== undefined) {
-          const snippet = fileContent.substring(arg.start, arg.end);
+          const snippet = String(fileContent.substring(arg.start, arg.end) + '');
           finalArgTypes[index].push('unknown');
           finalArgContexts[index].push(cleanCodeSnippet(snippet));
         }
@@ -331,7 +345,7 @@ async function analyzeArguments(
     } else {
       // 識別子以外（リテラルや式など）の処理
       if (arg.start !== undefined && arg.end !== undefined) {
-        const snippet = fileContent.substring(arg.start, arg.end);
+        const snippet = String(fileContent.substring(arg.start, arg.end) + '');
         finalArgTypes[index].push(inferTypeFromCode(snippet));
         finalArgContexts[index].push(cleanCodeSnippet(snippet));
       } else {
@@ -358,12 +372,12 @@ function inferTypeFromCode(
   if (cleanCode === 'true' || cleanCode === 'false') return 'boolean';
   if (cleanCode === 'null') return 'null';
   if (cleanCode === 'undefined') return 'undefined';
-  
+
   if (/^(\(.*\)|[^=\s]+)\s*=>/.test(cleanCode)) return 'function';
   if (/^function\s*\(/.test(cleanCode)) return 'function';
 
-  if (/^\[.*\]$/s.test(cleanCode)) return 'array';
-  if (/^\{.*\}$/s.test(cleanCode)) return 'object';
+  if (/^\\[.*\\]$/s.test(cleanCode)) return 'array';
+  if (/^\\{.*\\}$/s.test(cleanCode)) return 'object';
   if (/^new\s+/.test(cleanCode)) return 'object';
   if (/^[\w$]+\.(assign|create|fromEntries|merge|keys|values)\b/.test(cleanCode)) return 'object';
 

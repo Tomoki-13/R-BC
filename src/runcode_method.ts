@@ -17,7 +17,7 @@ import { ExtractFunctionCallsResult } from "./types/ExtractFunctionCallsResult";
   //出力先準備
   const now = new Date();
   const date = output_json.formatDateTime(now);
-  let outputDir: string = path.resolve(process.cwd(), '../output/versionData/' + date + '/' + libName);
+  let outputDir: string = path.resolve(process.cwd(), '../output/method/' + date + '/' + libName);
   let create_outputDir = outputDir + '/createPattern';
   let detect_outputDir = outputDir + '/detectByPattern';
   output_json.createOutputDirectory(create_outputDir);

@@ -45,11 +45,11 @@ export const useAst = async (allFiles: string[], libName: string, mode: number =
       for (const line of lines) {
         let name: string[] = funcNameIdentifiers(line, libName);
         if (name.length > 0) {
-          funcName = funcName.concat(name);
+          funcName.push(...name);
           for (const one of funcName) {
             const secUseFuncnames = secfuncNameIdentifiers(one, fileContent);
             if (secUseFuncnames.length > 0) {
-              funcName = funcName.concat(secUseFuncnames);
+              funcName.push(...secUseFuncnames);
             }
           }
         }
@@ -78,7 +78,7 @@ export const useAst = async (allFiles: string[], libName: string, mode: number =
                 return [];
               }
             }
-            inFileStr = inFileStr.concat(result);
+            inFileStr.push(...result);
           }
         }
 

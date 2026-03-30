@@ -4,7 +4,7 @@ import patternIntegration from '../patternOperations/patternIntegration';
 export async function processPatterns(respattern: string[][][]): Promise<string[][][]> {
   let lastpatterns: string[][][] = [];
   respattern = patternUtils.sortRespattern(respattern);
-  let subnewpatterns: string[][][] = JSON.parse(JSON.stringify(respattern));
+  let subnewpatterns: string[][][] = respattern.map(arr2d => arr2d.map(arr1d => [...arr1d]));
   subnewpatterns = patternUtils.removeDuplicate(subnewpatterns);
   lastpatterns = await patternIntegration.processIntegration(respattern, subnewpatterns);
   return lastpatterns;

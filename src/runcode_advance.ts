@@ -15,7 +15,7 @@ import { detectByPattern, support_detectByPattern } from './core/detectByPattern
   //出力先準備
   const now = new Date();
   const date = output_json.formatDateTime(now);
-  let outputDir: string = path.resolve(process.cwd(), '../output/testSample/' + date + '/' + libName);
+  let outputDir: string = path.resolve(process.cwd(), '../output/type-method/' + date + '/' + libName);
   let create_outputDir = outputDir + '/createPattern';
   let detect_outputDir = outputDir + '/detectByPattern';
   output_json.createOutputDirectory(create_outputDir);
