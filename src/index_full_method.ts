@@ -33,10 +33,21 @@ interface ExecutionStat {
   preVersion: string;
   postVersion: string;
   totalFailureDirs: number;            // クローンしたテスト失敗数
+  patternAnalyzedClientsCount: number; // 条件を通過した(分析で使う)クライアント数
   failureDetectedClientsCount: number; // そのうち検出したクライアント数(失敗)
+  failureValid: number;
+  failureNoTest: number;
+  failureStandard: number;
+  failureNoScript: number;
+  failureNoPkg: number;
   createdPatternCount: number;         // 生成したパターン数
   totalSuccessDirs: number;            // クローンしたテスト成功数
   successDetectedClientsCount: number; // そのうち検出したクライアント数(成功)
+  successValid: number;
+  successNoTest: number;
+  successStandard: number;
+  successNoScript: number;
+  successNoPkg: number;
   outputPath: string;
 }
 
@@ -150,7 +161,6 @@ function generateInputData(testResultPath: string): InputData[] {
 
     const libName = update.libName;
     const cleanVersion = update.newVersion.replace(/[^a-zA-Z0-9]/g, '');
-    // LOOK:---探索ディレクトリ入力---
     const baseRepoDir = `../alldataset_clients/${libName}/${cleanVersion}`;
 
     inputDataList.push({
@@ -213,17 +223,19 @@ function generateInputData(testResultPath: string): InputData[] {
 
     console.log(`\n----------- Processing ${libName} (${inputData.cleanVersion}) -----------`);
     let lastpatterns: ExtractFunctionCallsResult[][][] = [];
+    let patternAnalyzedCount = 0;
 
     try {
       // パターン作成
-      lastpatterns = await createOnlyCall(getPatternDir, libName, create_outputDir);
+      const createRes = await createOnlyCall(getPatternDir, libName, create_outputDir);
+      lastpatterns = createRes.patterns;
+      patternAnalyzedCount = createRes.summary.analyzedClients;
 
       // 追加したヘルパー関数を用いて検出を実行し、検出数等を含む統計結果を受け取る
       console.log('detectPatternDir'+detectPatternDir);
       const statsResult = await support_detectByPatternWithStats(getPatternDir, detectPatternDir, libName, lastpatterns, detect_outputDir, true, 0);
       
       // 各ディレクトリの総数を取得するためのパス
-      // fs.readdirSyncによるトップレベルのカウントではなく、実際に探索した母数を使用する
       const totalFailureCount = statsResult.failureResult.scannedDirCount;
       const totalSuccessCount = statsResult.successResult.scannedDirCount;
 
@@ -234,10 +246,21 @@ function generateInputData(testResultPath: string): InputData[] {
         preVersion: inputData.preVersion,
         postVersion: inputData.postVersion,
         totalFailureDirs: totalFailureCount,
+        patternAnalyzedClientsCount: patternAnalyzedCount,
         failureDetectedClientsCount: statsResult.failureResult.totalClients,
+        failureValid: statsResult.failureResult.validDetectedCount,
+        failureNoTest: statsResult.failureResult.notestCount,
+        failureStandard: statsResult.failureResult.standardCount,
+        failureNoScript: statsResult.failureResult.noscriptCount,
+        failureNoPkg: statsResult.failureResult.noPackagejsonCount,
         createdPatternCount: lastpatterns.length,
         totalSuccessDirs: totalSuccessCount,
         successDetectedClientsCount: statsResult.successResult.totalClients,
+        successValid: statsResult.successResult.validDetectedCount,
+        successNoTest: statsResult.successResult.notestCount,
+        successStandard: statsResult.successResult.standardCount,
+        successNoScript: statsResult.successResult.noscriptCount,
+        successNoPkg: statsResult.successResult.noPackagejsonCount,
         outputPath: outputDir
       });
 
@@ -251,7 +274,7 @@ function generateInputData(testResultPath: string): InputData[] {
 
     console.log('--------------------------------------------\n');
 
-    // メモリを解放させるための強制ガベージコレクション（--expose-gcオプションが必要）
+    // メモリを解放させるための強制ガベージコレクション
     if (global.gc) {
       global.gc();
     }
@@ -272,12 +295,10 @@ function generateInputData(testResultPath: string): InputData[] {
     const safeDateForFileName = date.replace(/[: ]/g, '_');
     const csvPath = path.join(csvDir, `execution_summary_${safeDateForFileName}.csv`);
 
-    // CreatedPatternsCount と FailureDetectedCount を入れ替え
-    const csvHeader = 'ID,Library,PreVersion,PostVersion,ClonedFailureCount,CreatedPatternsCount,FailureDetectedCount,ClonedSuccessCount,SuccessDetectedCount,OutputPath\n';
+    const csvHeader = 'ID,Library,PreVersion,PostVersion,ClonedFailureCount,PatternAnalyzedClients,CreatedPatternsCount,FailureDetectedCount,FailureValid,FailureNoTest,FailureStandard,FailureNoScript,FailureNoPkg,ClonedSuccessCount,SuccessDetectedCount,SuccessValid,SuccessNoTest,SuccessStandard,SuccessNoScript,SuccessNoPkg,OutputPath\n';
 
     const csvRows = executionStats.map(stat =>
-      // データの出力順もヘッダーに合わせて入れ替え
-      `${stat.id},${stat.library},${stat.preVersion},${stat.postVersion},${stat.totalFailureDirs},${stat.createdPatternCount},${stat.failureDetectedClientsCount},${stat.totalSuccessDirs},${stat.successDetectedClientsCount},${stat.outputPath}`
+      `${stat.id},${stat.library},${stat.preVersion},${stat.postVersion},${stat.totalFailureDirs},${stat.patternAnalyzedClientsCount},${stat.createdPatternCount},${stat.failureDetectedClientsCount},${stat.failureValid},${stat.failureNoTest},${stat.failureStandard},${stat.failureNoScript},${stat.failureNoPkg},${stat.totalSuccessDirs},${stat.successDetectedClientsCount},${stat.successValid},${stat.successNoTest},${stat.successStandard},${stat.successNoScript},${stat.successNoPkg},${stat.outputPath}`
     ).join('\n');
 
     fs.writeFileSync(csvPath, csvHeader + csvRows, 'utf8');

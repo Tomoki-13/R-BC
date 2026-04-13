@@ -325,6 +325,43 @@ function isEqualCheck(short: string[], long: string[]): boolean {
   }
   return judge.every(val => val);
 }
+// パターンの---数字の部分を正規化して同一視するための関数
+const getNormalizedSignature = (pattern: string[]): string => {
+  let str = pattern.join('\n');
+  const matches = str.match(/---\d+/g);
+  if (matches) {
+    const uniqueVars = Array.from(new Set(matches));
+    uniqueVars.forEach((v, index) => {
+      const regex = new RegExp(v + '(?!\\d)', 'g');
+      str = str.replace(regex, `__VAR_${index + 1}__`);
+    });
+  }
+  return str;
+};
+// クライアント内で同一のパターンを削除する
+const deduplicatePatterns = (clientPatterns: string[][]): string[][] => {
+  const uniqueMap = new Map<string, string[]>();
+
+  for (const pattern of clientPatterns) {
+    const sig = getNormalizedSignature(pattern);
+    
+    if (!uniqueMap.has(sig)) {
+      uniqueMap.set(sig, pattern);
+    } else {
+      const existingPattern = uniqueMap.get(sig)!;
+      const existingNums = (existingPattern.join('\n').match(/---\d+/g) || []).map(s => parseInt(s.replace('---', ''), 10));
+      const currentNums = (pattern.join('\n').match(/---\d+/g) || []).map(s => parseInt(s.replace('---', ''), 10));
+
+      const minExisting = existingNums.length > 0 ? Math.min(...existingNums) : Infinity;
+      const minCurrent = currentNums.length > 0 ? Math.min(...currentNums) : Infinity;
+
+      if (minCurrent < minExisting) {
+        uniqueMap.set(sig, pattern);
+      }
+    }
+  }
+  return Array.from(uniqueMap.values());
+};
 
 export default {
   escapeFunc,
@@ -332,5 +369,6 @@ export default {
   typeAwareAbstStr,
   extractFunctionCallCodes,
   restoreExtractFunctionCallsResult,
-  formatAndIntegratePattern
+  formatAndIntegratePattern,
+  deduplicatePatterns
 };
