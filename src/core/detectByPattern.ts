@@ -55,6 +55,15 @@ const combinePatterns = (arr1: PatternCount[], arr2: PatternCount[]): PatternCou
   return Object.values(combinedMap).sort((a, b) => b.count - a.count);
 };
 
+export type ExtendedDetectionOutput = DetectionOutput & {
+  scannedDirCount: number;
+  notestCount: number;
+  standardCount: number;
+  noscriptCount: number;
+  noPackagejsonCount: number;
+  validDetectedCount: number;
+};
+
 // 単一検出 dup = falese , 重複検出 dup = true
 // mode 0: 型情報を考慮しないマッチング，mode 1: 型情報を考慮したマッチング
 export const detectByPattern = async (
@@ -64,7 +73,7 @@ export const detectByPattern = async (
   outputDir: string,
   dup: boolean = false,
   mode: number = 1,
-): Promise<DetectionOutput & { scannedDirCount: number }> => {
+): Promise<ExtendedDetectionOutput> => {
   let notest: number = 0;
   let standard: number = 0;
   let noscript: number = 0;
@@ -151,13 +160,19 @@ export const detectByPattern = async (
 
   process.stdout.write('\n');
   const detectedUserPattern = countPatterns(countmatchedpatterns);
+  const validDetectedCount = sumDetectClient - (notest + standard + noscript + noPackagejson);
 
-  const output = {
+  const output: ExtendedDetectionOutput = {
     patterns: detectedUserPattern,
     totalClients: sumDetectClient,
     detectedClients: detectedClientNames,
-    scannedDirCount: totalDirs
-  } as DetectionOutput & { scannedDirCount: number };
+    scannedDirCount: totalDirs,
+    notestCount: notest,
+    standardCount: standard,
+    noscriptCount: noscript,
+    noPackagejsonCount: noPackagejson,
+    validDetectedCount: validDetectedCount
+  };
 
   fs.writeFileSync(output_json.getUniqueOutputPath(outputDir, path.basename(matchDir), 'matchResults'), JSON.stringify(matchClientPatternJson, null, 2), 'utf8');
 
@@ -171,7 +186,7 @@ export const detectByPattern = async (
   }
   console.log('matchDir:', matchDir);
   console.log('detectedUsedPatternTypes:', detectedUserPattern.length);
-  console.log(`nopackage.json: ${noPackagejson} noscript: ${noscript} notest: ${notest} standard or eslint: ${standard}`);
+  console.log(`nopackage.json: ${noPackagejson} noscript: ${noscript} notest: ${notest} standard or eslint: ${standard} valid: ${output.validDetectedCount}`);
   console.log('alldirs:', matchAlldirs.length);
   console.log('sumDetectClient:', sumDetectClient);
   console.log('=================================');
@@ -210,7 +225,7 @@ export const support_detectByPatternWithStats = async (
   outputDir: string,
   dup: boolean = true,
   mode: number = 1,
-): Promise<{ combineClient: PatternCount[], failureResult: DetectionOutput & { scannedDirCount: number }, successResult: DetectionOutput & { scannedDirCount: number } }> => {
+): Promise<{ combineClient: PatternCount[], failureResult: ExtendedDetectionOutput, successResult: ExtendedDetectionOutput }> => {
   // それぞれの検出を実行し、戻り値(DetectionOutput)を保持
   const failureResult = await detectByPattern(failureDir, libName, detectPattern, outputDir, dup, mode);
   const successResult = await detectByPattern(successDir, libName, detectPattern, outputDir, dup, mode);

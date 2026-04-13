@@ -1,4 +1,4 @@
-import { createOnlyCall, createPattern } from "./core/createPattern";
+import { createOnlyCall } from "./core/createPattern";
 import { support_detectByPattern } from "./core/detectByPattern";
 import { PatternCount } from './types/OutputTypes';
 import { ExtractFunctionCallsResult } from './types/ExtractFunctionCallsResult';
@@ -6,6 +6,7 @@ import { ExtractFunctionCallsResult } from './types/ExtractFunctionCallsResult';
 import output_json from "./utils/output_json";
 import fs from 'fs';
 import path from 'path';
+
 /**
  * 関数の説明：パターンの生成とそれによる検出を行うコード
  * failurePath パターン生成に使いたいクライアントのディレクトリパズの集合
@@ -34,7 +35,6 @@ import path from 'path';
   for (let i = 0; i < failureArray.length; i++) {
     const getPatternDir: string = failureArray[i];
     const matchDir: string = successArray[i];
-    // console.log("getPatternDir", getPatternDir);
     const libName: string = libNameArray[i];
 
     //出力先準備
@@ -46,8 +46,11 @@ import path from 'path';
 
     console.log('-----------' + failureArray[i] + '-----------');
     let lastpatterns: ExtractFunctionCallsResult[][][] = [];
+    
     //パターン作成
-    lastpatterns = await createOnlyCall(getPatternDir, libName, create_outputDir);
+    const createRes = await createOnlyCall(getPatternDir, libName, create_outputDir);
+    lastpatterns = createRes.patterns;
+    
     //検出
     let result: PatternCount[] = await support_detectByPattern(getPatternDir, matchDir, libName, lastpatterns, detect_outputDir, true, 0);
   }
