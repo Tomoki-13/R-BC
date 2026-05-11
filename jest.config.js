@@ -17,6 +17,9 @@ module.exports = {
     "<rootDir>/Sample/",
     "<rootDir>/allrepos/",
     "<rootDir>/allrepos-origin/",
-    "<rootDir>/allupdateSuccessClient/"
+    "<rootDir>/allupdateSuccessClient/",
+    "<rootDir>/alldataset_clients_sub",
+    "<rootDir>/alldataset_clients",
+    "<rootDir>/sample_clients"
   ],
 };
