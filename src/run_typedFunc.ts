@@ -4,7 +4,7 @@ v8.setFlagsFromString('--expose_gc');
 import path from 'path';
 import fs from 'fs';
 
-import { createOnlyCall } from './core/createPattern';
+import { createPattern } from './core/createPattern';
 import { support_detectByPatternWithStats } from './core/detectByPattern';
 import { TargetInput } from './types/TargetInput';
 import { ExecutionStat, CSV_HEADER, statToCsvRow } from './types/ExecutionStat';
@@ -13,24 +13,17 @@ import output_json from './utils/output_json';
 import { ExtractFunctionCallsResult } from './types/ExtractFunctionCallsResult';
 
 // =============================================================
-// Input Configuration — ここを変更して実行対象を指定する
-// =============================================================
-// [1] 単一または複数ライブラリ（インライン指定）
-//     INLINE_TARGETS に配列を設定すると最優先で使用される
-// const INLINE_TARGETS: TargetInput[] | null = [
-//   { libName: 'uuid', preVersion: '7.0.3', postVersion: '8.0.0-beta.0' },
-// ];
-//
-// [2] ファイル指定: targets.json のパスを設定すると [1] がない場合に使用される
-// const TARGETS_PATH: string | null = path.resolve(__dirname, '../datasets/targets.json');
-//
-// [3] 全データ（自動取得）: 両方 null にすると test_result.json から自動抽出
-//
-// 型マッチングモード: 0=コードのみ / 1=型完全一致 / 2=objectキー部分一致
-// =============================================================
+// INPUT — 実行前にここだけ確認・変更する
+// [1] インライン: INLINE_TARGETS に配列を設定（最優先）
+// [2] ファイル: TARGETS_PATH にパスを設定（[1] が null のとき使用）
+// [3] 全データ: 両方 null にすると TEST_RESULT_PATH から自動抽出
+// モード: 0=関数のみ / 1=型完全一致 / 2=objectキー部分一致
 const INLINE_TARGETS: TargetInput[] | null = null;
+// const INLINE_TARGETS: TargetInput[] | null = [{ libName: 'uuid', preVersion: '7.0.3', postVersion: '8.0.0-beta.0' }];
 const TARGETS_PATH: string | null = path.resolve(__dirname, '../datasets/targets.json');
-const DETECTION_MODE: number = 0;
+const TEST_RESULT_PATH: string = path.resolve(__dirname, '../datasets/test_result.json'); // [3] で使用
+const OUTPUT_BASE: string = path.resolve(process.cwd(), '../output/type-method'); // 出力先ルート
+const DETECTION_MODE: number = 1;
 // =============================================================
 
 (async () => {
@@ -46,9 +39,8 @@ const DETECTION_MODE: number = 0;
       return;
     }
   } else {
-    const testResultPath = path.resolve(__dirname, '../datasets/test_result.json');
     try {
-      targets = loadTargetsFromTestResult(testResultPath);
+      targets = loadTargetsFromTestResult(TEST_RESULT_PATH);
     } catch (error) {
       console.error('Error reading test_result.json:', error);
       return;
@@ -79,7 +71,7 @@ const DETECTION_MODE: number = 0;
       continue;
     }
 
-    const outputDir = path.resolve(process.cwd(), `../output/method/${date}/${libName}_${cleanVersion}`);
+    const outputDir = path.join(OUTPUT_BASE, date, `${libName}_${cleanVersion}`);
     const create_outputDir = outputDir + '/createPattern';
     const detect_outputDir = outputDir + '/detectByPattern';
     output_json.createOutputDirectory(create_outputDir);
@@ -89,9 +81,9 @@ const DETECTION_MODE: number = 0;
     let lastpatterns: ExtractFunctionCallsResult[][][] = [];
 
     try {
-      const createRes = await createOnlyCall(getPatternDir, libName, create_outputDir);
-      lastpatterns = createRes.patterns;
-      const patternAnalyzedCount = createRes.summary.analyzedClients;
+      const createRes = await createPattern(getPatternDir, libName, create_outputDir);
+      lastpatterns = createRes.convertedPattern;
+      const patternAnalyzedCount = createRes.stats.validClients;
 
       const statsResult = await support_detectByPatternWithStats(
         getPatternDir, matchDir, libName, lastpatterns, detect_outputDir, true, DETECTION_MODE
@@ -134,7 +126,7 @@ const DETECTION_MODE: number = 0;
   }
 
   if (executionStats.length > 0) {
-    const csvDir = path.resolve(process.cwd(), `../output/method/${date}`);
+    const csvDir = path.join(OUTPUT_BASE, date);
     if (!fs.existsSync(csvDir)) fs.mkdirSync(csvDir, { recursive: true });
     const csvPath = path.join(csvDir, `execution_summary_${date}.csv`);
     fs.writeFileSync(csvPath, CSV_HEADER + executionStats.map(statToCsvRow).join('\n'), 'utf8');
