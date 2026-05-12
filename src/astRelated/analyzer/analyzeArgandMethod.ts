@@ -10,7 +10,16 @@ import { VariableUsage } from '../../types/VariableUsage';
 import { ExtractFunctionCallsResult } from '../../types/ExtractFunctionCallsResult';
 import { createAstFromFile } from '../base/createAstFromFile';
 
-// 引数まで考慮した関数呼び出しの解析
+/**
+ * 指定ファイル内で funcName を使用している呼び出し箇所をASTで解析し、
+ * 引数の型（argTypes）とコードスニペット（argContexts）を再帰的に追跡して返す。
+ * 引数が別ファイルの関数を経由している場合も funcDepend を辿って解決する。
+ * @param filePath 解析対象ファイルのパス
+ * @param funcName 追跡対象の関数・ライブラリ名
+ * @param funcDepend 逆引き依存関係マップ（呼び出し元ファイルを特定するために使用）
+ * @param visited 循環依存ガード（同一キーへの訪問回数を記録、最大3回まで許容）
+ * @returns 検出された関数呼び出しごとの型・スニペット情報の配列
+ */
 export const analyzeArgAndMethod = async (
   filePath: string,
   funcName: string,
@@ -143,7 +152,8 @@ export const analyzeArgAndMethod = async (
               fileContent,
               allFunctions,
               funcDepend,
-              visited // 無限ループ対策
+              visited, // 無限ループ対策
+              parsed
             );
 
             const dedupedArgTypes = finalArgTypes.map((types) => [
@@ -186,7 +196,8 @@ export const analyzeArgAndMethod = async (
                 fileContent,
                 allFunctions,
                 funcDepend,
-                visited // 無限ループ対策
+                visited, // 無限ループ対策
+                parsed
               );
 
             const dedupedArgTypes = finalArgTypes.map((types) => [
@@ -232,6 +243,7 @@ export const analyzeArgAndMethod = async (
  * @param fileContent ファイルの全コンテンツ
  * @param allFunctions ファイル内の全関数情報
  * @param funcDepend 逆引きされた依存関係情報
+ * @param parsed ファイルのAST（this.property追跡に使用）
  * @returns 引数の型とコンテキストの解析結果
  */
 async function analyzeArguments(
@@ -239,7 +251,8 @@ async function analyzeArguments(
   fileContent: string,
   allFunctions: FunctionInfo_funcRange[],
   funcDepend: InboundFunctionDependencies[],
-  visited: Map<string, number> // 無限ループ対策
+  visited: Map<string, number>, // 無限ループ対策
+  parsed: t.File
 ): Promise<{ finalArgTypes: string[][]; finalArgContexts: string[][] }> {
   const finalArgTypes: string[][] = Array.from(
     { length: args.length },
@@ -259,9 +272,10 @@ async function analyzeArguments(
     )
       continue;
 
-    // 引数が「変数名（識別子）」の場合
+    // ケース1: 識別子（変数名）— 同ファイル内の代入を遡り、関数引数であれば呼び出し元ファイルへ再帰追跡
     if (t.isIdentifier(arg)) {
-      const usages: VariableUsage[] = rangeArg(fileContent, arg.name);
+      // arg.start を渡すことで、呼び出し地点を含む最も内側のスコープのみを参照する（シャドーイング対応）
+      const usages: VariableUsage[] = rangeArg(fileContent, arg.name, arg.start!);
       let isUserFuncArg = false;
       const relatedFuncs = new Set<string>();
 
@@ -327,7 +341,7 @@ async function analyzeArguments(
       const argContexts_tmp: string[] = [];
       for (const usageItem of usages) {
         for (const codeSnippet of usageItem.code) {
-          argType_tmp.push(inferTypeFromCode(codeSnippet));
+          argType_tmp.push(inferTypeFromCodeWithKeys(codeSnippet));
           argContexts_tmp.push(cleanCodeSnippet(codeSnippet));
         }
       }
@@ -342,8 +356,36 @@ async function analyzeArguments(
         }
       }
 
+    } else if (
+      t.isMemberExpression(arg) &&
+      t.isThisExpression(arg.object) &&
+      !arg.computed &&
+      t.isIdentifier(arg.property)
+    ) {
+      // ケース2: this.property — 呼び出し地点を含むクラス内のコンストラクタ代入・クラスプロパティを走査して代入値を収集
+      const propName = arg.property.name;
+      // arg.start! を渡すことで、複数クラスが存在する場合も呼び出し地点のクラスに限定する
+      const thisValues = collectThisPropertyValues(parsed, propName, fileContent, arg.start!);
+      for (const valueCode of thisValues) {
+        finalArgTypes[index].push(inferTypeFromCodeWithKeys(valueCode));
+        finalArgContexts[index].push(cleanCodeSnippet(valueCode));
+      }
+      if (finalArgTypes[index].length === 0) {
+        const snippet = String(fileContent.substring(arg.start!, arg.end!) + '');
+        finalArgTypes[index].push('unknown');
+        finalArgContexts[index].push(cleanCodeSnippet(snippet));
+      }
+
+    } else if (t.isObjectExpression(arg)) {
+      // ケース3: オブジェクトリテラルが直接引数 — 文字列パースより確実なASTノードからキーを抽出
+      const keys = extractObjectPropertyKeys(arg);
+      const keyType = keys.length > 0 ? `object:{${keys.join(',')}}` : 'object';
+      finalArgTypes[index].push(keyType);
+      const snippet = String(fileContent.substring(arg.start!, arg.end!) + '');
+      finalArgContexts[index].push(cleanCodeSnippet(snippet));
+
     } else {
-      // 識別子以外（リテラルや式など）の処理
+      // ケース4: 数値・文字列リテラルや演算式など — コード文字列から型を推論
       if (arg.start !== undefined && arg.end !== undefined) {
         const snippet = String(fileContent.substring(arg.start, arg.end) + '');
         finalArgTypes[index].push(inferTypeFromCode(snippet));
@@ -357,9 +399,154 @@ async function analyzeArguments(
 }
 
 /**
- * コードスニペットから簡易的な型推論を行う
- * * @param code 評価するコードの文字列
- * @returns 推論された型名
+ * ObjectExpression ASTノードからトップレベルのプロパティキー一覧を抽出する
+ */
+function extractObjectPropertyKeys(node: t.ObjectExpression): string[] {
+  const keys: string[] = [];
+  for (const prop of node.properties) {
+    if (t.isObjectProperty(prop) && !prop.computed) {
+      if (t.isIdentifier(prop.key)) {
+        keys.push(prop.key.name);
+      } else if (t.isStringLiteral(prop.key)) {
+        keys.push(prop.key.value);
+      }
+    } else if (t.isObjectMethod(prop) && !prop.computed && t.isIdentifier(prop.key)) {
+      keys.push(prop.key.name);
+    }
+  }
+  return keys;
+}
+
+/**
+ * コード文字列がオブジェクトリテラルの場合、トップレベルキーを正規表現で抽出し
+ * "object:{key1,key2,...}" 形式で返す。それ以外は inferTypeFromCode に委譲する。
+ */
+function inferTypeFromCodeWithKeys(code: string): string {
+  const baseType = inferTypeFromCode(code);
+  if (baseType !== 'object') return baseType;
+  const keys = extractKeysFromObjectCode(code);
+  return keys.length > 0 ? `object:{${keys.join(',')}}` : 'object';
+}
+
+/**
+ * オブジェクトリテラル文字列からトップレベルのキー名をヒューリスティックに抽出する
+ * ネスト・文字列リテラル内のコロンを無視してトップレベルのキーのみを対象とする
+ */
+function extractKeysFromObjectCode(code: string): string[] {
+  const cleaned = cleanCodeSnippet(code).trim();
+  if (!cleaned.startsWith('{') || !cleaned.endsWith('}')) return [];
+
+  const inner = cleaned.slice(1, -1);
+  const keys: string[] = [];
+  let depth = 0;
+  let inStr = false;
+  let strChar = '';
+  let tokenStart = 0;
+
+  // depth と inStr でネスト・文字列リテラル内のカンマを無視し、トップレベルのキーのみを抽出する
+  for (let i = 0; i <= inner.length; i++) {
+    const ch = i < inner.length ? inner[i] : ','; // 末尾を , とみなして最後のトークンを flush
+    if (inStr) {
+      if (ch === strChar && inner[i - 1] !== '\\') inStr = false;
+      continue;
+    }
+    if (ch === '"' || ch === "'" || ch === '`') { inStr = true; strChar = ch; continue; }
+    if (ch === '{' || ch === '[' || ch === '(') { depth++; continue; }
+    if (ch === '}' || ch === ']' || ch === ')') { depth--; continue; }
+    if (ch === ',' && depth === 0) {
+      const token = inner.slice(tokenStart, i).trim();
+      tokenStart = i + 1;
+      const colonIdx = token.indexOf(':');
+      if (colonIdx > 0) {
+        const keyPart = token.slice(0, colonIdx).trim().replace(/^['"`]|['"`]$/g, '');
+        if (/^[\w$]+$/.test(keyPart)) keys.push(keyPart);
+      } else if (token && /^[\w$]+$/.test(token)) {
+        // shorthand property: { foo }
+        keys.push(token);
+      }
+    }
+  }
+  return keys;
+}
+
+/**
+ * ASTを走査し、this.propName に代入している箇所の右辺コードを収集する。
+ * callSitePos を基に呼び出し地点を含む最も内側のクラスに絞って検索するため、
+ * 複数クラスに同名プロパティが存在しても誤収集しない。
+ * @param parsed ファイルのAST
+ * @param propName 追跡対象のプロパティ名
+ * @param fileContent ファイルの全コンテンツ
+ * @param callSitePos this.property が使われている呼び出し地点の文字オフセット
+ */
+function collectThisPropertyValues(
+  parsed: t.File,
+  propName: string,
+  fileContent: string,
+  callSitePos: number,
+): string[] {
+  const values: string[] = [];
+
+  // 呼び出し地点を含む最も内側のクラス範囲を特定する
+  // ネストクラスが存在する場合は start が最大（= 最小スコープ）のクラスを優先する
+  let classRange: { start: number; end: number } | null = null;
+
+  const updateClassRange = (node: t.ClassDeclaration | t.ClassExpression) => {
+    const { start, end } = node;
+    if (start != null && end != null && start <= callSitePos && end >= callSitePos) {
+      if (classRange === null || start > classRange.start) {
+        classRange = { start, end };
+      }
+    }
+  };
+
+  traverse(parsed, {
+    ClassDeclaration(path) { updateClassRange(path.node); },
+    ClassExpression(path) { updateClassRange(path.node); },
+  });
+
+  traverse(parsed, {
+    // this.propName = expr（コンストラクタ内の代入など）
+    AssignmentExpression(path) {
+      // クラス範囲が特定できた場合はその範囲外をスキップ
+      if (classRange !== null) {
+        if (path.node.start! < classRange.start || path.node.end! > classRange.end) return;
+      }
+      const { left, right } = path.node;
+      if (
+        t.isMemberExpression(left) &&
+        t.isThisExpression(left.object) &&
+        !left.computed &&
+        t.isIdentifier(left.property, { name: propName }) &&
+        right.start != null &&
+        right.end != null
+      ) {
+        values.push(fileContent.substring(right.start, right.end));
+      }
+    },
+    // class Foo { propName = expr }（クラスフィールド宣言）
+    ClassProperty(path) {
+      if (classRange !== null) {
+        if (path.node.start! < classRange.start || path.node.end! > classRange.end) return;
+      }
+      if (
+        !path.node.computed &&
+        t.isIdentifier(path.node.key, { name: propName }) &&
+        path.node.value &&
+        path.node.value.start != null &&
+        path.node.value.end != null
+      ) {
+        values.push(fileContent.substring(path.node.value.start, path.node.value.end));
+      }
+    },
+  });
+
+  return values;
+}
+
+/**
+ * コードスニペットから簡易的な型推論を行う。
+ * @param code 評価するコードの文字列
+ * @returns 推論された型名（'number' | 'string' | 'boolean' | 'null' | 'undefined' | 'array' | 'object' | 'function' | 'unknown'）
  */
 function inferTypeFromCode(
   code: string,
@@ -376,8 +563,9 @@ function inferTypeFromCode(
   if (/^(\(.*\)|[^=\s]+)\s*=>/.test(cleanCode)) return 'function';
   if (/^function\s*\(/.test(cleanCode)) return 'function';
 
-  if (/^\\[.*\\]$/s.test(cleanCode)) return 'array';
-  if (/^\\{.*\\}$/s.test(cleanCode)) return 'object';
+  // \[ と \{ を使用（\\[ や \\{ は「バックスラッシュ+括弧」にマッチするため誤り）
+  if (/^\[.*\]$/s.test(cleanCode)) return 'array';
+  if (/^\{.*\}$/s.test(cleanCode)) return 'object';
   if (/^new\s+/.test(cleanCode)) return 'object';
   if (/^[\w$]+\.(assign|create|fromEntries|merge|keys|values)\b/.test(cleanCode)) return 'object';
 
@@ -389,7 +577,11 @@ function inferTypeFromCode(
   return 'unknown';
 }
 
-// コードからコメント(//, /* */)や改行、不要な空白を除去する関数を追加
+/**
+ * コードスニペットからブロックコメント・行コメント・改行・余分な空白を除去して正規化する。
+ * @param code 正規化対象のコード文字列
+ * @returns 正規化済みのコード文字列（1行・余分スペースなし）
+ */
 function cleanCodeSnippet(code: string): string {
   let cleaned = code.replace(/\/\*[\s\S]*?\*\//g, '');
   cleaned = cleaned.replace(/\/\/.*$/gm, '');

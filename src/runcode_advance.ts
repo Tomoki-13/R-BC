@@ -7,6 +7,7 @@ import { MatchClientPattern, PatternCount } from './types/OutputTypes';
 import { detectByPattern, support_detectByPattern } from './core/detectByPattern';
 
 // シンプルな実行例
+//単体ライブラリ
 (async () => {
   const getPatternDir: string = "../allrepos/repos_globby_800_failure";
   const detectPatternDir: string = "../allrepos/repos_globby_800_success";
