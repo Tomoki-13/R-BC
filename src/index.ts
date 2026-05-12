@@ -4,7 +4,7 @@ v8.setFlagsFromString('--expose_gc');
 import path from 'path';
 import fs from 'fs';
 
-import { createOnlyCall } from './core/createPattern';
+import { createOnlyCall, createPattern } from './core/createPattern';
 import { support_detectByPatternWithStats } from './core/detectByPattern';
 import { TargetInput } from './types/TargetInput';
 import { ExecutionStat, CSV_HEADER, statToCsvRow } from './types/ExecutionStat';
@@ -17,13 +17,19 @@ import { ExtractFunctionCallsResult } from './types/ExtractFunctionCallsResult';
 // [1] インライン: INLINE_TARGETS に配列を設定（最優先）
 // [2] ファイル: TARGETS_PATH にパスを設定（[1] が null のとき使用）
 // [3] 全データ: 両方 null にすると TEST_RESULT_PATH から自動抽出
-// モード: 0=関数のみ / 1=型完全一致 / 2=objectキー部分一致:
+// モード: 0=関数のみ / 1=型完全一致 / 2=型＋objectキー部分一致まで検出
 const INLINE_TARGETS: TargetInput[] | null = null;
 // const INLINE_TARGETS: TargetInput[] | null = [{ libName: 'uuid', preVersion: '7.0.3', postVersion: '8.0.0-beta.0' }];
-const TARGETS_PATH: string | null = path.resolve(__dirname, '../datasets/targets.json');
-const TEST_RESULT_PATH: string = path.resolve(__dirname, '../datasets/test_result.json'); // [3] で使用
-const OUTPUT_BASE: string = path.resolve(process.cwd(), '../output/method'); // 出力先ルート
+// const TARGETS_PATH: string | null = path.resolve(__dirname, '../datasets/targets.json');
+const TARGETS_PATH: string | null = null;
+const TEST_RESULT_PATH: string = path.resolve(__dirname, '../datasets/test_result.json');
 const DETECTION_MODE: number = 0;
+// モードに応じて出力先を自動切替: 0 → method / 1 → type-method / 2 → type-method-object
+const OUTPUT_BASE: string = path.resolve(process.cwd(),
+  DETECTION_MODE === 0 ? '../output/test/method' :
+  DETECTION_MODE === 1 ? '../output/test/type-method' :
+                         '../output/test/type-method-object'
+);
 // =============================================================
 
 (async () => {
@@ -79,11 +85,20 @@ const DETECTION_MODE: number = 0;
 
     console.log(`\n----------- Processing ${libName} (${cleanVersion}) -----------`);
     let lastpatterns: ExtractFunctionCallsResult[][][] = [];
+    let patternAnalyzedCount = 0;
 
     try {
-      const createRes = await createOnlyCall(getPatternDir, libName, create_outputDir);
-      lastpatterns = createRes.patterns;
-      const patternAnalyzedCount = createRes.summary.analyzedClients;
+      if (DETECTION_MODE === 0) {
+        // 関数のみ: 呼び出しパターンだけで解析
+        const createRes = await createOnlyCall(getPatternDir, libName, create_outputDir);
+        lastpatterns = createRes.patterns;
+        patternAnalyzedCount = createRes.summary.analyzedClients;
+      } else {
+        // 型あり: 引数の型情報も含めて解析
+        const createRes = await createPattern(getPatternDir, libName, create_outputDir);
+        lastpatterns = createRes.convertedPattern;
+        patternAnalyzedCount = createRes.stats.validClients;
+      }
 
       const statsResult = await support_detectByPatternWithStats(
         getPatternDir, matchDir, libName, lastpatterns, detect_outputDir, true, DETECTION_MODE
