@@ -64,8 +64,12 @@ export type ExtendedDetectionOutput = DetectionOutput & {
   validDetectedCount: number;
 };
 
-// 単一検出 dup = falese , 重複検出 dup = true
-// mode 0: 型情報を考慮しないマッチング，mode 1: 型情報を考慮したマッチング
+// 単一検出 dup = false , 重複検出 dup = true
+// mode 0: コードのみ（型情報なし）
+// mode 1: コード + 型の完全一致（"object" は "object" とのみ一致）
+// mode 2: コード + 型一致 + object キー部分一致（"object:{key}" は上位キーを持つターゲットにもマッチ）
+// mode 3: TODO:object キー名 + 値の型まで確認
+// mode 4: TODO:実際の値まで確認
 export const detectByPattern = async (
   matchDir: string,
   libName: string,
@@ -194,7 +198,7 @@ export const detectByPattern = async (
   return output;
 }
 
-//　mode 0: 型情報を考慮しないマッチング，mode 1: 型情報を考慮したマッチング
+// mode 0: コードのみ / mode 1: 型の完全一致 / mode 2: object キー部分一致 / mode 3,4: 将来実装
 export const support_detectByPattern = async (
   failureDir: string,
   successDir: string,

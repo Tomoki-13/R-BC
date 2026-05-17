@@ -24,14 +24,15 @@ export const analyzeArgAndMethod = async (
   filePath: string,
   funcName: string,
   funcDepend: InboundFunctionDependencies[],
-  visited: Map<string, number> = new Map() // 循環依存による無限再帰を防ぎつつ、数回（ここでは3回）の循環を許容するためのマップ
+  visited: Map<string, number> = new Map(), // 循環依存による無限再帰を防ぎつつ、数回（ここでは3回）の循環を許容するためのマップ
+  resultCache: Map<string, ExtractFunctionCallsResult[]> = new Map() // LOOK: 訪問上限到達時に前回結果を返すためのキャッシュ（[]返しによる情報ロスを防ぐ）
 ): Promise<ExtractFunctionCallsResult[]> => {
   const visitKey = `${filePath}::${funcName}`;
   const visitCount = visited.get(visitKey) || 0;
-  // TODO:良案検討中
-  // 訪問回数が一定数（ここでは3回）を超えた場合、循環依存の可能性が高いため、これ以上の解析を行わずに空の結果を返す(消したほうが厳格？)
-  if (visitCount >= 3) {
-    return [];
+  // LOOK: 訪問回数が上限（10回）を超えた場合、前回キャッシュを返して情報ロスを抑制する
+  //       キャッシュがない場合のみ [] を返す（循環依存の初回到達時）
+  if (visitCount >= 10) {
+    return resultCache.get(visitKey) ?? [];
   }
   visited.set(visitKey, visitCount + 1);
 
@@ -153,7 +154,8 @@ export const analyzeArgAndMethod = async (
               allFunctions,
               funcDepend,
               visited, // 無限ループ対策
-              parsed
+              parsed,
+              resultCache
             );
 
             const dedupedArgTypes = finalArgTypes.map((types) => [
@@ -197,7 +199,8 @@ export const analyzeArgAndMethod = async (
                 allFunctions,
                 funcDepend,
                 visited, // 無限ループ対策
-                parsed
+                parsed,
+                resultCache
               );
 
             const dedupedArgTypes = finalArgTypes.map((types) => [
@@ -226,6 +229,7 @@ export const analyzeArgAndMethod = async (
     );
 
     syncResults.push(...validAsyncResults);
+    resultCache.set(visitKey, syncResults); // 次回の上限超過時に返すためキャッシュ
     return syncResults;
   } catch (error: unknown) {
     if (error instanceof Error) {
@@ -252,7 +256,8 @@ async function analyzeArguments(
   allFunctions: FunctionInfo_funcRange[],
   funcDepend: InboundFunctionDependencies[],
   visited: Map<string, number>, // 無限ループ対策
-  parsed: t.File
+  parsed: t.File,
+  resultCache: Map<string, ExtractFunctionCallsResult[]> // 訪問上限時のキャッシュ
 ): Promise<{ finalArgTypes: string[][]; finalArgContexts: string[][] }> {
   const finalArgTypes: string[][] = Array.from(
     { length: args.length },
@@ -320,7 +325,8 @@ async function analyzeArguments(
                 outFileDep.dep_filepath,
                 one,
                 funcDepend,
-                visited
+                visited,
+                resultCache
               );
               for (const recResult of recursiveResult) {
                 const typesFromRec = recResult.argTypes?.[outerArgIndex] || [];
@@ -341,8 +347,11 @@ async function analyzeArguments(
       const argContexts_tmp: string[] = [];
       for (const usageItem of usages) {
         for (const codeSnippet of usageItem.code) {
-          argType_tmp.push(inferTypeFromCodeWithKeys(codeSnippet));
-          argContexts_tmp.push(cleanCodeSnippet(codeSnippet));
+          // 三項演算子があれば then/else 両ブランチを展開して追加
+          // for (const { type, context } of resolveToTypeContextPairs(codeSnippet)) {
+          //   argType_tmp.push(type);
+          //   argContexts_tmp.push(context);
+          // }
         }
       }
       finalArgTypes[index].push(...argType_tmp);
@@ -354,6 +363,32 @@ async function analyzeArguments(
           finalArgTypes[index].push('unknown');
           finalArgContexts[index].push(cleanCodeSnippet(snippet));
         }
+      }
+
+    } else if (
+      t.isMemberExpression(arg) &&
+      t.isIdentifier(arg.object) &&
+      !arg.computed &&
+      t.isIdentifier(arg.property)
+    ) {
+      // ケース1.5: obj.prop — obj を変数追跡して該当プロパティの値の型を取得
+      // e.g. options.rate → options = { rate: 0.5, ... } → 'number'
+      const objName  = (arg.object as t.Identifier).name;
+      const propName = (arg.property as t.Identifier).name;
+      const usages = rangeArg(fileContent, objName, arg.start!);
+      for (const usageItem of usages) {
+        for (const codeSnippet of usageItem.code) {
+          const propValue = extractPropertyValueFromObjectCode(codeSnippet, propName);
+          if (propValue !== null) {
+            finalArgTypes[index].push(inferTypeFromCodeWithKeys(propValue));
+            finalArgContexts[index].push(cleanCodeSnippet(propValue));
+          }
+        }
+      }
+      if (finalArgTypes[index].length === 0) {
+        const snippet = String(fileContent.substring(arg.start!, arg.end!) + '');
+        finalArgTypes[index].push('unknown');
+        finalArgContexts[index].push(cleanCodeSnippet(snippet));
       }
 
     } else if (
@@ -418,12 +453,33 @@ function extractObjectPropertyKeys(node: t.ObjectExpression): string[] {
 }
 
 /**
- * コード文字列がオブジェクトリテラルの場合、トップレベルキーを正規表現で抽出し
+ * コード文字列がオブジェクト型の場合、可能な限りトップレベルキーを抽出して
  * "object:{key1,key2,...}" 形式で返す。それ以外は inferTypeFromCode に委譲する。
+ *
+ * 対応パターン:
+ *   { key: val }                       → object:{key}           （直接リテラル）
+ *   Object.assign({ key: val }, ...)   → object:{key}           （assignの第1引数から）
+ *   Object.create({ key: val })        → object:{key}
+ *   { ...spread, key: val }            → object:{key}           （スプレッド外のキーのみ）
+ *   new SomeClass(...) / unknown expr  → object                 （キー不明）
  */
 function inferTypeFromCodeWithKeys(code: string): string {
   const baseType = inferTypeFromCode(code);
   if (baseType !== 'object') return baseType;
+
+  const cleaned = cleanCodeSnippet(code).trim();
+
+  // LOOK: Object.assign / Object.create など — 第1引数のオブジェクトリテラルからキーを抽出
+  if (/^[\w$]+\.(assign|create|fromEntries|merge)\s*\(/.test(cleaned)) {
+    const firstObj = extractFirstObjectArgFromCall(cleaned);
+    if (firstObj) {
+      const keys = extractKeysFromObjectCode(firstObj);
+      if (keys.length > 0) return `object:{${keys.join(',')}}`;
+    }
+    return 'object';
+  }
+
+  // 直接オブジェクトリテラル（{ ...spread, key: val } も含む）
   const keys = extractKeysFromObjectCode(code);
   return keys.length > 0 ? `object:{${keys.join(',')}}` : 'object';
 }
@@ -467,6 +523,81 @@ function extractKeysFromObjectCode(code: string): string[] {
     }
   }
   return keys;
+}
+
+/**
+ * オブジェクトリテラル文字列から指定キーの値コードを抽出する。
+ * キーが存在しない、またはオブジェクトリテラルでない場合は null を返す。
+ *
+ * e.g. extractPropertyValueFromObjectCode('{ rate: 0.5, timeout: 100 }', 'rate') → '0.5'
+ *      extractPropertyValueFromObjectCode('{ fn: () => 1 }', 'fn')               → '() => 1'
+ */
+function extractPropertyValueFromObjectCode(code: string, propName: string): string | null {
+  const cleaned = cleanCodeSnippet(code).trim();
+  if (!cleaned.startsWith('{') || !cleaned.endsWith('}')) return null;
+
+  const inner = cleaned.slice(1, -1);
+  let depth = 0;
+  let inStr = false;
+  let strChar = '';
+  let tokenStart = 0;
+
+  for (let i = 0; i <= inner.length; i++) {
+    const ch = i < inner.length ? inner[i] : ',';
+    if (inStr) {
+      if (ch === strChar && inner[i - 1] !== '\\') inStr = false;
+      continue;
+    }
+    if (ch === '"' || ch === "'" || ch === '`') { inStr = true; strChar = ch; continue; }
+    if (ch === '{' || ch === '[' || ch === '(') { depth++; continue; }
+    if (ch === '}' || ch === ']' || ch === ')') { depth--; continue; }
+
+    if (ch === ',' && depth === 0) {
+      const token = inner.slice(tokenStart, i).trim();
+      tokenStart = i + 1;
+
+      const colonIdx = token.indexOf(':');
+      if (colonIdx > 0) {
+        const keyPart = token.slice(0, colonIdx).trim().replace(/^['"`]|['"`]$/g, '');
+        if (keyPart === propName) {
+          return token.slice(colonIdx + 1).trim();
+        }
+      }
+    }
+  }
+  return null;
+}
+
+/**
+ * 関数呼び出し式（Object.assign(...)など）から最初のオブジェクトリテラル引数を抽出する。
+ *
+ * e.g. 'Object.assign({ cwd: dir }, opts)' → '{ cwd: dir }'
+ */
+function extractFirstObjectArgFromCall(code: string): string | null {
+  const parenIdx = code.indexOf('(');
+  if (parenIdx === -1) return null;
+
+  const braceStart = code.indexOf('{', parenIdx);
+  if (braceStart === -1) return null;
+
+  let depth = 0;
+  let inStr = false;
+  let strChar = '';
+
+  for (let i = braceStart; i < code.length; i++) {
+    const ch = code[i];
+    if (inStr) {
+      if (ch === strChar && code[i - 1] !== '\\') inStr = false;
+      continue;
+    }
+    if (ch === '"' || ch === "'" || ch === '`') { inStr = true; strChar = ch; continue; }
+    if (ch === '{') { depth++; continue; }
+    if (ch === '}') {
+      depth--;
+      if (depth === 0) return code.slice(braceStart, i + 1);
+    }
+  }
+  return null;
 }
 
 /**

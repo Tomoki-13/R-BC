@@ -11,6 +11,8 @@ import { processPatterns } from './processPatterns';
 import { countPatterns } from '../patternOperations/patternCount';
 import { DetectionOutput, PatternCount, PatternCount_old, integrate_type } from '../types/OutputTypes';
 import patternUtils from '../patternOperations/patternUtils';
+import { extractLibFunctionCoverage } from '../patternOperations/extractLibFunctionCoverage';
+import { aggregateTypedPatterns } from '../patternOperations/aggregateTypedPatterns';
 
 interface RawJsonRow {
   failureclient: string;
@@ -27,7 +29,8 @@ interface RawJsonRow {
 export const createPattern = async (
   patternDir: string,
   libName: string,
-  outputDir: string
+  outputDir: string,
+  mode: number = 1
 ): Promise<{ rawPattern: ExtractFunctionCallsResult[][][]; convertedPattern: ExtractFunctionCallsResult[][][]; stats: { totalClients: number, validClients: number } }> => {
   let JsonRows: RawJsonRow[] = [];
   let respattern: ExtractFunctionCallsResult[][][] = [];
@@ -74,16 +77,32 @@ export const createPattern = async (
   const outputPath = output_json.getUniqueOutputPath(outputDir, path.basename(patternDir), 'rawpattern');
   fs.writeFileSync(outputPath, JSON.stringify(JsonRows, null, 4), 'utf8');
 
-  // 変換後パターンの作成
-  const lastpatterns: ExtractFunctionCallsResult[][][] = patternConversion.typeAwareAbstStr(respattern);
+  await extractLibFunctionCoverage(respattern, libName, outputDir, path.basename(patternDir));
+
+  // 変換後パターンの作成（集約前）
+  const convertedPatterns: ExtractFunctionCallsResult[][][] = patternConversion.typeAwareAbstStr(respattern);
+
+  // 集約前パターンを保存（修正依頼クライアントから抽出したままのパターン）
+  const failurePath = output_json.getUniqueOutputPath(outputDir, path.basename(patternDir), 'failureClient_preAgg_patternList');
+  fs.writeFileSync(failurePath, JSON.stringify(convertedPatterns, null, 4), 'utf8');
+
+  // LOOK: mode=0 は createOnlyCall 側で独自の集約パイプラインを持つためスキップ
+  // mode 1/2 のみ typeAwarePatternMatch ベースの集約を適用する
+  const lastpatterns = mode >= 1
+    ? await aggregateTypedPatterns(convertedPatterns, mode)
+    : convertedPatterns;
+
   const outputPath2 = output_json.getUniqueOutputPath(outputDir, path.basename(patternDir), 'patternList');
   fs.writeFileSync(outputPath2, JSON.stringify(lastpatterns, null, 4), 'utf8');
 
   console.log('========== createPattern (Raw Output) ============');
   console.log('failure alldirs:', alldirs.length);
   console.log('make failure pattern (clients):', respattern.length);
+  console.log('failureClient patterns (pre-aggregation):', convertedPatterns.length);
+  console.log('aggregated patterns:', lastpatterns.length);
   console.log('Raw Output saved to:', outputPath);
-  console.log('pattern:', outputPath2);
+  console.log('failureClient_preAgg_patternList:', failurePath);
+  console.log('patternList (aggregated):', outputPath2);
   console.log('==================================================');
 
   return { rawPattern: respattern, convertedPattern: lastpatterns, stats: { totalClients: alldirs.length, validClients: validClientsCount } };
@@ -91,10 +110,10 @@ export const createPattern = async (
 
 // 既存の呼び出し文情報のみを用いたパターン
 export const createOnlyCall = async (patternDir: string, libName: string, outputDir: string): Promise<{ patterns: ExtractFunctionCallsResult[][][], summary: { totalClients: number, analyzedClients: number, finalPatternCount: number } }> => {
-  const createResult = await createPattern(patternDir, libName, outputDir);
+  const createResult = await createPattern(patternDir, libName, outputDir, 0);
   let patterns: ExtractFunctionCallsResult[][][] = createResult.rawPattern;
   const stats = createResult.stats;
-  
+
   let strArray: string[][][] = patternConversion.extractFunctionCallCodes(patterns);
   let formattedPattern: string[][][] = []; //統合前に整形をしたパターンが入る
 
@@ -107,7 +126,8 @@ export const createOnlyCall = async (patternDir: string, libName: string, output
   console.log('input len:', strArray.length);
   console.log('after compareElement:', formattedPattern.length);
   fs.writeFileSync(output_json.getUniqueOutputPath(outputDir, path.basename(patternDir), ' strArray'), JSON.stringify(formattedPattern, null, 4), 'utf8');
-  //パターンの集約や重複排除
+  //パターンの集約や重複排除 この段階では---数字
+
   let lastpatterns = await processPatterns(formattedPattern);
   let mergepattern: PatternCount_old[] = countPatterns(lastpatterns);
 
@@ -132,6 +152,6 @@ export const createOnlyCall = async (patternDir: string, libName: string, output
   }
   console.log('lastpatterns len:', lastpatterns.length);
   console.log('==================================================');
-  
+
   return { patterns: returnPatterns, summary };
 }

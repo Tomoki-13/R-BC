@@ -50,5 +50,74 @@
         ]
       }
     ]
-  }
+  },
+  "tracks direct object literal argument": [
+    {
+      "FunctionCallCode": "sortLib({ caseFirst: true, sensitivity: 'base' })",
+      "argTypes": [
+        ["object:{caseFirst,sensitivity}"]
+      ],
+      "argContexts": [
+        ["{ caseFirst: true, sensitivity: 'base' }"]
+      ]
+    }
+  ],
+  "tracks object variable argument": [
+    {
+      "FunctionCallCode": "sortLib(opts)",
+      "argTypes": [
+        ["object:{locale,numeric}"]
+      ],
+      "argContexts": [
+        ["{ locale: 'ja', numeric: true }"]
+      ]
+    }
+  ],
+  "tracks this.property argument": [
+    {
+      "FunctionCallCode": "sortLib(this.options)",
+      "argTypes": [
+        ["object:{caseFirst,collation}"]
+      ],
+      "argContexts": [
+        ["{ caseFirst: false, collation: 'base' }"]
+      ]
+    }
+  ],
+  "tracks object argument passed from external file": [
+    {
+      "FunctionCallCode": "sortLib(config)",
+      "argTypes": [
+        ["object:{locale,caseFirst}"]
+      ],
+      "argContexts": [
+        ["{ locale: 'en', caseFirst: true }"]
+      ]
+    }
+  ],
+  "tracks shadowed variable argument": [
+    {
+      "FunctionCallCode": "sortLib(opts)",
+      "argTypes": [
+        ["object:{inner,locale}"]
+      ],
+      "argContexts": [
+        ["{ inner: false, locale: 'ja' }"]
+      ]
+    }
+  ],
+  "tracks obj.prop argument": [
+    {
+      "FunctionCallCode": "myLib(config.rate)",
+      "argTypes": [["number"]],
+      "argContexts": [["0.5"]]
+    }
+  ],
+  "tracks Object.assign argument": [
+    {
+      "FunctionCallCode": "sortLib(opts)",
+      "argTypes": [["object:{locale,numeric}"]],
+      "argContexts": [["Object.assign({ locale: 'ja', numeric: true }, { extra: 'ok' })"]]
+    }
+  ]
 }

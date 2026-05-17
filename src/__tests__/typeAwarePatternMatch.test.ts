@@ -172,4 +172,86 @@ describe('typeAwarePatternMatch test', () => {
       expect(matchedPattern).toBeNull();
     });
   });
+
+  describe('Mode 2: object型のキー一致マッチング', () => {
+
+    // パターン側のオブジェクト型を指定してパターンを生成するヘルパー
+    const makeObjectPattern = (objType: string): ExtractFunctionCallsResult[][][] => [[
+      [
+        {
+          FunctionCallCode: "(?<variable1>[\\w-]+) = require([\"'`]sortlib[\"'`])[^.]*",
+          filePath: 'p', line: 0, argTypes: [[]], argContexts: [[]]
+        },
+        {
+          FunctionCallCode: "variable1([^,]*)[^.]*",
+          filePath: 'p', line: 0, argTypes: [[objType]], argContexts: [[]]
+        }
+      ]
+    ]];
+
+    // ターゲット側のオブジェクト型を指定してターゲットを生成するヘルパー
+    const makeObjectTarget = (objType: string): ExtractFunctionCallsResult[][] => [[
+      { FunctionCallCode: "const s = require('sortlib')", filePath: 'test.ts', line: 1, argTypes: [[]], argContexts: [[]] },
+      { FunctionCallCode: "s(argument)", filePath: 'test.ts', line: 2, argTypes: [[objType]], argContexts: [[]] }
+    ]];
+
+    test('パターンのキーがターゲットに全て含まれる場合にマッチすること（キー部分一致）', async () => {
+      // pattern: object:{caseFirst} ← target: object:{caseFirst,sensitivity}
+      const [isMatch] = await typeAwarePatternMatch(
+        makeObjectTarget('object:{caseFirst,sensitivity}'),
+        makeObjectPattern('object:{caseFirst}'),
+        2
+      );
+      expect(isMatch).toEqual(true);
+    });
+
+    test('パターンのキーがターゲットに含まれない場合はマッチしないこと', async () => {
+      // pattern: object:{caseFirst,sensitivity} ← target: object:{caseFirst} (sensitivityが無い)
+      const [isMatch] = await typeAwarePatternMatch(
+        makeObjectTarget('object:{caseFirst}'),
+        makeObjectPattern('object:{caseFirst,sensitivity}'),
+        2
+      );
+      expect(isMatch).toEqual(false);
+    });
+
+    test('全く異なるキーを持つ object 同士はマッチしないこと', async () => {
+      // pattern: object:{caseFirst} ← target: object:{locale}
+      const [isMatch] = await typeAwarePatternMatch(
+        makeObjectTarget('object:{locale}'),
+        makeObjectPattern('object:{caseFirst}'),
+        2
+      );
+      expect(isMatch).toEqual(false);
+    });
+
+    test('旧形式 "object" パターンが object:{...} ターゲットにマッチすること（後方互換）', async () => {
+      // 旧解析結果のパターン(キー情報なし)でも新形式ターゲットに当たること
+      const [isMatch] = await typeAwarePatternMatch(
+        makeObjectTarget('object:{caseFirst}'),
+        makeObjectPattern('object'),
+        2
+      );
+      expect(isMatch).toEqual(true);
+    });
+
+    test('object:{...} パターンが旧形式 "object" ターゲットにマッチすること（後方互換）', async () => {
+      // 新形式パターンでも旧解析結果のターゲット(キー情報なし)に当たること
+      const [isMatch] = await typeAwarePatternMatch(
+        makeObjectTarget('object'),
+        makeObjectPattern('object:{caseFirst}'),
+        2
+      );
+      expect(isMatch).toEqual(true);
+    });
+
+    test('完全一致のキーセットはマッチすること', async () => {
+      const [isMatch] = await typeAwarePatternMatch(
+        makeObjectTarget('object:{caseFirst,sensitivity}'),
+        makeObjectPattern('object:{caseFirst,sensitivity}'),
+        2
+      );
+      expect(isMatch).toEqual(true);
+    });
+  });
 });
