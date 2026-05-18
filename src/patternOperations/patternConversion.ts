@@ -1,7 +1,10 @@
 import { ExtractFunctionCallsResult } from '../types/ExtractFunctionCallsResult';
 import patternUtils from './patternUtils';
 
-// 置換処理
+/**
+ * ---数字（例: ---1, ---2）を正規表現の名前付きキャプチャグループ（例: (?<variable1>[\w-]+)）に置換する処理
+ * 初回出現時はキャプチャグループを生成し、2回目以降は変数名のみを参照する
+ */
 function prep_repl(inputs: string[]): string[] {
   const replLoc: RegExp = /---(\d+)/g;
   let replacedIndexes: { [key: string]: string } = {};
@@ -24,11 +27,14 @@ function prep_repl(inputs: string[]): string[] {
   });
 }
 
-// '`" ,*,/の設定
+/**
+ * 正規表現で扱うために、クォート('"`), アスタリスク(*), スラッシュ(/)をエスケープ・抽象化する処理
+ * すでに抽象化済みの形跡があれば処理をスキップする
+ */
 const replaceQuoteAndasterisk = (inputs: string[]): string[] => {
   for (let i = 0; i < inputs.length; i++) {
-    if (inputs[i].includes("[\"'`]")){
-      return inputs;
+    if (inputs[i].includes("[\"'`]") || inputs[i].includes('["\'`]')) {
+      continue;
     }
 
     inputs[i] = inputs[i].replace(/\//g, `\\/`);
@@ -39,7 +45,9 @@ const replaceQuoteAndasterisk = (inputs: string[]): string[] => {
 }
 
 
-// 全てのパターンの末尾に.が来ないように
+/**
+ * メソッドチェーンなど後続の呼び出しを許容しないよう、パターンの末尾に [^.]*$ を付与する処理
+ */
 const checkDot = (inputs: string[]): string[] => {
   for (let i = 0; i < inputs.length; i++) {
     if (!inputs[i].endsWith("[^.]*$")) {
@@ -50,7 +58,10 @@ const checkDot = (inputs: string[]): string[] => {
 };
 
 
-// (?<variable2>[\\w-]+) 以外の()の処理、(?!\\.)も除外
+/**
+ * 文字列中の括弧 () を正規表現のエスケープ文字 \( \) に変換する処理
+ * ただし、名前付きグループ (?<name>) や 否定先読み (?!...) など特殊な正規表現構文内の括弧はエスケープ対象から除外する
+ */
 function escapeFunc(str: string): string {
   let escapedStr = '';
   let i = 0;
@@ -92,7 +103,10 @@ function escapeFunc(str: string): string {
   return escapedStr;
 }
 
-//引数の抽象化
+/**
+ * 関数呼び出しの引数部分を抽象化し、引数の数に応じた正規表現（[^,]*）に置き換える処理
+ * ネストされた括弧や文字列リテラル内のカンマは無視してトップレベルの引数のみをカウントする
+ */
 function transformArgumrnt(str: string): string {
   str = str.replace(/[\r\n]/g, '');
   const match = str.match(/^(.*?)\((.*?)\)$/);
@@ -138,7 +152,11 @@ function transformArgumrnt(str: string): string {
   return `${functionName}\(${transformedArgs}\)`;
 }
 
-//パターンへの変換
+/**
+ * 文字列配列(string[][][])に対して、変数の置換(prep_repl)、引数の抽象化(transformArgumrnt)、エスケープ(replaceQuoteAndasterisk)などを一括適用し、正規表現パターンへと変換する処理
+ * @param respattern 処理対象の文字列パターン
+ * @param mode 1の場合は重複削除処理をスキップする
+ */
 function abstStr(respattern: string[][][], mode: number = 0): string[][][] {
   let copiedRespattern: string[][][] = respattern.map(arr2d => arr2d.map(arr1d => [...arr1d]));
   for (let i = 0; copiedRespattern.length > i; i++) {
@@ -188,6 +206,9 @@ function abstStr(respattern: string[][][], mode: number = 0): string[][][] {
   return copiedRespattern;
 }
 
+/**
+ * 型情報(ExtractFunctionCallsResult)を保持したまま、内部のFunctionCallCodeに対して abstStr(抽象化処理) を適用するラッパー関数
+ */
 function typeAwareAbstStr(respattern: ExtractFunctionCallsResult[][][]): ExtractFunctionCallsResult[][][] {
   let copiedRespattern: ExtractFunctionCallsResult[][][] = respattern.map(arr2d =>
     arr2d.map(arr1d =>
@@ -217,6 +238,9 @@ function typeAwareAbstStr(respattern: ExtractFunctionCallsResult[][][]): Extract
   return copiedRespattern;
 }
 
+/**
+ * 型情報オブジェクト配列(ExtractFunctionCallsResult[][][])から、コード文字列部分(FunctionCallCode)のみを抽出して string[][][] に変換する処理
+ */
 const extractFunctionCallCodes = (
   data: ExtractFunctionCallsResult[][][]
 ): string[][][] => {
@@ -227,6 +251,9 @@ const extractFunctionCallCodes = (
   );
 };
 
+/**
+ * 文字列配列(string[][][])から、空の型情報オブジェクト(ExtractFunctionCallsResult)を持つ配列へと復元する処理
+ */
 const restoreExtractFunctionCallsResult = (
   data: string[][][]
 ): ExtractFunctionCallsResult[][][] => {
@@ -244,22 +271,18 @@ const restoreExtractFunctionCallsResult = (
 };
 
 /**
- * パターンの空白文字を正規化し、重複するパターンを統合・整理する関数
- * @param pattern 処理対象のパターン配列 (string[][])
- * @param mode 重複統合を行うかどうか (1: 行う, それ以外: 行わない)
- * @returns 整形後のパターン配列 (string[][])
+ * パターンの空白文字を正規化し、包含関係にある重複パターン(短い方)を削除して整理する関数
  */
 const formatAndIntegratePattern = (
   pattern: string[][],
 ): string[][] => {
-  // 1. 空白・タブ・改行の削除と正規化（全体の配列をmapで一気に処理）
+  // 1. 空白・タブ・改行の削除と正規化
   let formattedPattern = pattern.map(subPattern =>
     subPattern.map(item => item.trim().replace(/\s+/g, ' '))
   );
   let tmp_pattern = formattedPattern.map(arr1d => [...arr1d]);
-  // クライアント内でのパターンの重複統合
+  
   let indicesToRemove: number[] = [];
-  // 一致するインデックスのペアを調査
   for (let j = 0; j < tmp_pattern.length; j++) {
     for (let k = j + 1; k < tmp_pattern.length; k++) {
       if (isCompareElement(tmp_pattern[j], tmp_pattern[k])) {
@@ -272,21 +295,22 @@ const formatAndIntegratePattern = (
     }
   }
 
-  // 後ろから削除しないとインデックスがずれるため，削除するインデックスを降順にソートし、重複を排除
   indicesToRemove.sort((a, b) => b - a);
   indicesToRemove = [...new Set(indicesToRemove)];
 
-  // 要素の削除
   if (indicesToRemove.length > 0) {
     for (const index of indicesToRemove) {
       formattedPattern.splice(index, 1);
     }
   }
-  // ---dの順番を整形
+  
   formattedPattern = patternUtils.alignNumbersInPattern(formattedPattern).after;
   return formattedPattern;
 };
 
+/**
+ * 2つの配列(arr1, arr2)が包含関係にある、または完全に一致するかを判定する処理
+ */
 function isCompareElement(arr1: string[], arr2: string[]): boolean {
   if (arr1.length !== arr2.length) {
     let long: string[] = [];
@@ -310,6 +334,9 @@ function isCompareElement(arr1: string[], arr2: string[]): boolean {
   return false;
 }
 
+/**
+ * short配列の要素が、順不同で全てlong配列に含まれているかをチェックする処理
+ */
 function isEqualCheck(short: string[], long: string[]): boolean {
   let judge: boolean[] = [];
   for (let i = 0; i < short.length; i++) {
@@ -325,42 +352,52 @@ function isEqualCheck(short: string[], long: string[]): boolean {
   }
   return judge.every(val => val);
 }
-// パターンの---数字の部分を正規化して同一視するための関数
-const getNormalizedSignature = (pattern: string[]): string => {
-  let str = pattern.join('\n');
-  const matches = str.match(/---\d+/g);
-  if (matches) {
-    const uniqueVars = Array.from(new Set(matches));
-    uniqueVars.forEach((v, index) => {
-      const regex = new RegExp(v + '(?!\\d)', 'g');
-      str = str.replace(regex, `__VAR_${index + 1}__`);
-    });
-  }
-  return str;
-};
-// クライアント内で同一のパターンを削除する
-const deduplicatePatterns = (clientPatterns: string[][]): string[][] => {
-  const uniqueMap = new Map<string, string[]>();
 
-  for (const pattern of clientPatterns) {
-    const sig = getNormalizedSignature(pattern);
+/** 
+ * 抽象化処理後の最終的なパターン群(string[][][])に対し、
+ * クライアント(string[][])の内部にあるブロック(string[])間の重複のみを統合する処理
+ */
+const deduplicateFinalPatterns = (patterns: string[][][]): string[][][] => {
+  // --- ブロック(string[])から数字を無視したシグネチャを作る関数 ---
+  const getNormalizedBlockSignature = (block: string[]): string => {
+    let str = block.join('\n');
+    const matches = str.match(/variable\d+/g);
+    if (matches) {
+      const uniqueVars = Array.from(new Set(matches));
+      uniqueVars.forEach((v, index) => {
+        const regex = new RegExp(v + '(?!\\d)', 'g');
+        str = str.replace(regex, `__VAR_${index + 1}__`);
+      });
+    }
+    return str;
+  };
+
+  // --- ブロック内のvariable数字の最小値を取得する関数 ---
+  const getMinNum = (b: string[]) => {
+    const bStr = b.join('\n');
+    const nums = (bStr.match(/variable\d+/g) || []).map(s => parseInt(s.replace('variable', ''), 10));
+    return nums.length > 0 ? Math.min(...nums) : Infinity;
+  };
+
+  // 各クライアントごとに、内部のブロック重複を排除して返す
+  return patterns.map(clientPattern => {
+    const uniqueMap = new Map<string, string[]>();
     
-    if (!uniqueMap.has(sig)) {
-      uniqueMap.set(sig, pattern);
-    } else {
-      const existingPattern = uniqueMap.get(sig)!;
-      const existingNums = (existingPattern.join('\n').match(/---\d+/g) || []).map(s => parseInt(s.replace('---', ''), 10));
-      const currentNums = (pattern.join('\n').match(/---\d+/g) || []).map(s => parseInt(s.replace('---', ''), 10));
-
-      const minExisting = existingNums.length > 0 ? Math.min(...existingNums) : Infinity;
-      const minCurrent = currentNums.length > 0 ? Math.min(...currentNums) : Infinity;
-
-      if (minCurrent < minExisting) {
-        uniqueMap.set(sig, pattern);
+    for (const block of clientPattern) {
+      const sig = getNormalizedBlockSignature(block);
+      
+      if (!uniqueMap.has(sig)) {
+        uniqueMap.set(sig, block);
+      } else {
+        const existingBlock = uniqueMap.get(sig)!;
+        if (getMinNum(block) < getMinNum(existingBlock)) {
+          uniqueMap.set(sig, block); // 数字が小さい方で上書き
+        }
       }
     }
-  }
-  return Array.from(uniqueMap.values());
+    
+    return Array.from(uniqueMap.values());
+  });
 };
 
 export default {
@@ -370,5 +407,5 @@ export default {
   extractFunctionCallCodes,
   restoreExtractFunctionCallsResult,
   formatAndIntegratePattern,
-  deduplicatePatterns
+  deduplicateFinalPatterns
 };

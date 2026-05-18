@@ -1,8 +1,6 @@
-datasets
 node_modules
 .DS_Store
 scripts/clone_repo.sh
-scripts/clone_dataset.sh
 package-lock.json
 output
 allrepos
@@ -15,3 +13,6 @@ src/core/argAndMethod/sample
 alldataset_clients
 alldataset_clients_sub
 docs.md
+datasets/test_result.json
+datasets/input
+src/**/*.md
