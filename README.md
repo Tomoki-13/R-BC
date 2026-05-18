@@ -1,108 +1,124 @@
-# r-bc(research backward compatibility)
+# r-bc (research backward compatibility)
 
-このプロジェクトは、ライブラリのアップデート前後でのテスト結果をもとに、該当するクライアントリポジトリを自動でクローンし、AST（抽象構文木）を用いて関数・メソッドの利用パターンを抽出・検出するツールです。
+ライブラリのバージョンアップに伴う後方互換性の破壊を静的解析で検出するツールです。
+アップデート前後のクライアントリポジトリを自動クローンし、AST（抽象構文木）を用いて関数・メソッドの利用パターンを抽出・マッチングします。
+「後方互換性の損失に影響を受けるリポジトリ」と「影響を受けないリポジトリ」の双方に対してパターンを照合することで、検出精度を評価できます。
 
-## 前提条件 (Prerequisites)
+## 前提条件
 
 - Node.js (v16以上推奨)
 - Git
-- TypeScript実行環境 (`ts-node` 等)
+- make
 
 ## 環境変数の設定
 
-GitHubのAPI制限を回避するため、また非公開リポジトリをクローンするために、GitHubの Personal Access Token (PAT) を設定することを推奨します。
+GitHubのAPI制限を回避するため、また非公開リポジトリをクローンするために Personal Access Token (PAT) を設定してください。
 
-1. プロジェクトルートに `.env` ファイルを作成します。
-2. `.env.sample` を参考に、自身のトークンを設定してください。
-
-```env
-# .env
-# GitHubのPersonal Access Token (PAT) を設定します。
+```bash
+# プロジェクトルートに .env を作成（.env.sample を参考に）
 GITHUB_TOKEN=your_github_token_here
 ```
 
-## ディレクトリ構成
+---
 
-処理を実行すると、以下のようなディレクトリ構成が生成されます。
+## 実行手順（Makefile）
+
+### Step 0. 初回セットアップ
+
+```bash
+make init    # npm install + datasets/test_result.json の取得
+make setup   # alldataset_clients/ へのクライアントリポジトリのクローン・前処理
+```
+
+### Step 1. パターン抽出・検出
+
+`datasets/targets.json` に記載されたライブラリ・バージョンペアを対象に実行します。
+
+```bash
+make call-f  # mode0: 関数呼び出しパターンのみでマッチング
+make type-f  # mode1: 引数の型まで含めてマッチング
+make obj-f   # mode2: 型 + object キーの部分集合でマッチング（最も厳密）
+```
+
+`datasets/test_result.json` の全ペアを対象にする場合は `-f` を `-a` に変えてください（例: `make obj-a`）。
+`src/index.ts` 内の `INLINE_TARGETS` を使う場合は `-d` を使います（例: `make obj-d`）。
+
+### Makefile コマンド一覧
+
+| コマンド | 内容 |
+|---------|------|
+| `make init` | npm install + test_result.json の取得 |
+| `make setup` | クライアントリポジトリのクローン・前処理 |
+| `make call-f` | mode0 / targets.json |
+| `make type-f` | mode1 / targets.json |
+| `make obj-f` | mode2 / targets.json |
+| `make call-d` | mode0 / INLINE_TARGETS（index.ts 内に直接記述） |
+| `make type-d` | mode1 / INLINE_TARGETS |
+| `make obj-d` | mode2 / INLINE_TARGETS |
+| `make call-a` | mode0 / test_result.json 全件 |
+| `make type-a` | mode1 / test_result.json 全件 |
+| `make obj-a` | mode2 / test_result.json 全件 |
+
+---
+
+## 出力ファイル構成
+
+実行すると `output/` 配下にモードごとのディレクトリが生成されます。
 
 ```text
-├── allrepos2/               # クローンされたクライアントリポジトリ群
-│    └── [LibraryName]/
-│         └── [Version]/
-│              ├── failure/  # テストが失敗したリポジトリ
-│              └── success/  # テストが成功したリポジトリ
-├── datasets/
-│    └── test_result.json    # 元となるデータセット
-├── output/
-│    ├── clonedata/          # クローン結果の集計CSV
-│    └── type-method/        # パターン抽出・検出結果 (日付ごとに保存)
-├── scripts/
-│    ├── clone_clients.ts    # クローン実行用スクリプト
-│    └── index_advance.ts    # パターン抽出・検出実行用スクリプト
-
+output/
+├── method/                          # mode0 の出力
+├── type-method/                     # mode1 の出力
+└── type-method-object/              # mode2 の出力
+     └── YYYY-MM-DD-HH-MM-SS/
+          ├── execution_summary_YYYY-MM-DD-HH-MM-SS.csv   # 全ライブラリの集計CSV
+          └── {LibraryName}_{Version}/
+               ├── createPattern/
+               │    ├── failure_rawpattern.json            # 抽出された生パターン
+               │    ├── failure_patternList.json           # マッチング用正規表現パターン
+               │    └── failure_libFunctionCoverage.json   # ライブラリ関数のカバレッジ情報
+               └── detectByPattern/
+                    ├── failure_detect.json                # failure側の検出結果（サマリ）
+                    ├── failure_matchResults.json          # failure側のパターン別マッチ詳細
+                    ├── success_detect.json                # success側の検出結果（サマリ）
+                    ├── success_matchResults.json          # success側のパターン別マッチ詳細
+                    └── successcombine_preCount.json       # failure＋successの結果(重複許容)
 ```
 
-## 実行手順
+### 主要ファイルの内容
 
-全体の処理は大きく分けて **「1. リポジトリのクローン」** と **「2. パターンの抽出・検出」** の2ステップに分かれています。
+- **`failure_rawpattern.json`**: failure リポジトリから抽出した関数呼び出しパターン。`---N` 形式のプレースホルダと実際のコードスニペットを含む。
+- **`failure_patternList.json`**: マッチングに使用する正規表現パターンのリスト。
+- **`failure_detect.json` / `success_detect.json`**: 検出されたクライアント一覧、検出数、テスト有無などのサマリ。
+- **`failure_matchResults.json` / `success_matchResults.json`**: どのクライアントのどのファイルでどのパターンが何回マッチしたかの詳細。
+- **`execution_summary_*.csv`**: 全ライブラリ・バージョンペアの検出数を横断集計したCSV。
 
-### Step 1. 対象リポジトリの自動クローン
+---
 
-`test_result.json` を読み込み、アップデートの前後で比較可能なクライアント（古いバージョンで成功し、新しいバージョンが存在するもの）を `allrepos2/` 配下にクローンします。
+## 検出モードの違い
 
-**実行コマンド:**
+| mode | コマンド suffix | 内容 | 検出数の傾向 |
+|------|---------------|------|------------|
+| 0 | `-f/-d/-a` の `call-*` | 関数呼び出しパターンのみ | 多（型制約なし） |
+| 1 | `type-*` | 引数の型まで含めて一致 | 中 |
+| 2 | `obj-*` | 型 + object キーの部分集合 | 少（最も厳密） |
+
+---
+
+## 安定版の提供（2026-04 時点）
+
+コミット `46cafe749faebdbc6a76988246a1d6282d79f052` 時点で安定で動作している
 
 ```bash
-npx ts-node scripts/clone_clients.ts
+npm install
+cd scripts
+bash clone_dataset.sh   # datasets/test_result.json を取得
+cd ..
 
+cd src
+npx ts-node setup.ts       # クライアントリポジトリのクローン・前処理
+npx ts-node index_full_method.ts
 ```
 
-* **処理内容:**
-* 条件を満たすペアを抽出し、`success` / `failure` のディレクトリに分けてクローンします。
-* 軽量化のため、クローン後に `package-lock.json` や `node_modules` を削除し、指定のコミットIDへチェックアウトします。
-* GitHubへの負荷軽減のため、クローンごとに数秒のインターバル（sleep）を挟みます。
-* どちらかのクライアントが存在しなかった無効なペアは自動的に削除されます。
-
-
-* **出力結果:**
-* クローンが完了すると、`output/clonedata/` 配下に結果をまとめたCSVファイル（成立したペアと、除外されたペアの2種類）が出力されます。
-
-
-### Step 2. パターン生成と検出の実行
-
-クローンされたリポジトリのソースコードをAST解析し、関数の利用パターンの抽出と、他リポジトリでの利用パターンのマッチング（検出）を行います。
-
-**実行コマンド:**
-
-```bash
-npx ts-node scripts/index_advance.ts
-
-```
-
-* **処理内容:**
-* `test_result.json` から再度対象ライブラリとバージョンを読み解き、`allrepos2/` 内の `failure` ディレクトリから「どう使われているか」の利用パターン（AST）を作成します (`createPattern`)。
-* そのパターンを元に、`success` ディレクトリのリポジトリに対してパターンの検出（マッチング）を行います (`support_detectByPattern`)。
-
-
-* **出力結果:**
-* `output/type-method/[日付]/[ライブラリ名_バージョン]/` 配下に JSON 形式で抽出パターンとマッチ結果が出力されます。
-
-
-
-## 出力データの見方
-
-* **`output/clonedata/clone_summary_YYYYMMDD_HHMMSS.csv`**:
-正常にクローンでき、ペアとして成立したライブラリ、バージョン、およびそれぞれのクライアント数を確認できます。
-* **`output/clonedata/excluded_summary_YYYYMMDD_HHMMSS.csv`**:
-クローンできなかった、または条件に満たず除外されたライブラリとバージョンのリストです。
-* **`output/type-method/.../matchResults.json`**:
-どのクライアントでどのパターンが何回出現したかの詳細なAST解析結果です。
-
-
-### ポイント
-* 実行コマンドのパス（`scripts/clone_clients.ts`など）は、実際のプロジェクトのファイル配置場所に合わせて適宜書き換えてください。
-* 開発用（uuid絞り込み）のコメントアウトについても触れており、今後全データを回す際につまずかないように配慮しています。
-* `.env.sample` の説明も `README.md` に直接組み込んであります。
-### 安定版の提供
-scripts/clone_dataset.sh -> src/setup.ts -> index_full_method.ts　の順で実行してください！
-コミットID:46cafe749faebdbc6a76988246a1d6282d79f052
+> **注意:** `scripts/clone_dataset.sh` が存在しないので、現在のリポジトリの `scripts/clone_dataset.sh` をコピーして使用してください。
+上記の内容は，現在の「make call-a」コマンドの出力に該当します。

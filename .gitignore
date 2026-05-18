@@ -16,3 +16,4 @@ docs.md
 datasets/test_result.json
 datasets/input
 src/**/*.md
+PROGRESS.md

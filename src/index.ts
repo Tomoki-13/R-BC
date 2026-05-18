@@ -13,31 +13,37 @@ import output_json from './utils/output_json';
 import { ExtractFunctionCallsResult } from './types/ExtractFunctionCallsResult';
 
 // =============================================================
-// INPUT — 実行前にここだけ確認・変更する
-// [1] インライン: INLINE_TARGETS に配列を設定（最優先）
-// [2] ファイル: TARGETS_PATH にパスを設定（[1] が null のとき使用）
-// [3] 全データ: 両方 null にすると TEST_RESULT_PATH から自動抽出
-// モード: 0=関数のみ / 1=型完全一致 / 2=型＋objectキー部分一致まで検出
-const INLINE_TARGETS: TargetInput[] | null = null;
-// const INLINE_TARGETS: TargetInput[] | null = [{ libName: 'uuid', preVersion: '7.0.3', postVersion: '8.0.0-beta.0' }];
-// const TARGETS_PATH: string | null = path.resolve(__dirname, '../datasets/targets.json');
-const TARGETS_PATH: string | null = null;
-const TEST_RESULT_PATH: string = path.resolve(__dirname, '../datasets/test_result.json');
-const DETECTION_MODE: number = 0;
-// モードに応じて出力先を自動切替: 0 → method / 1 → type-method / 2 → type-method-object
-const OUTPUT_BASE: string = path.resolve(process.cwd(),
-  DETECTION_MODE === 0 ? '../output/test/method' :
-  DETECTION_MODE === 1 ? '../output/test/type-method' :
-                         '../output/test/type-method-object'
-);
+// INPUT:
 // =============================================================
+type InputSource = 'direct' | 'file' | 'auto';
+const DETECTION_MODE: number = Number(process.argv[2] ?? 2);  // 0=関数のみ / 1=型完全一致 / 2=型一致+objectキー部分一致
+const Input: InputSource = (process.argv[3] as InputSource) ?? 'file';
+//   direct: 下の INLINE_TARGETS に直接記述したターゲットを使用
+//   file  : datasets/targets.json から読み込む
+//   auto  : datasets/test_result.json から全ペアを自動抽出
+
+// Input='direct' のときに使うターゲット
+const INLINE_TARGETS: TargetInput[] = [
+  { libName: 'uuid', preVersion: '7.0.3', postVersion: '8.0.0-beta.0' },
+];
+// =============================================================
+
+// 以下は固定（通常変更不要）
+const TARGETS_PATH = path.resolve(__dirname, '../datasets/targets.json');
+const TEST_RESULT_PATH = path.resolve(__dirname, '../datasets/test_result.json');
+// モードに応じて出力先を自動切替: 0 → method / 1 → type-method / 2 → type-method-object
+const OUTPUT_BASE: string = path.resolve(__dirname,
+  DETECTION_MODE === 0 ? '../output/method' :
+  DETECTION_MODE === 1 ? '../output/type-method' :
+                         '../output/type-method-object'
+);
 
 (async () => {
   let targets: TargetInput[];
 
-  if (INLINE_TARGETS !== null) {
+  if (Input === 'direct') {
     targets = INLINE_TARGETS;
-  } else if (TARGETS_PATH !== null) {
+  } else if (Input === 'file') {
     try {
       targets = loadTargetsFromFile(TARGETS_PATH);
     } catch (error) {
@@ -95,7 +101,7 @@ const OUTPUT_BASE: string = path.resolve(process.cwd(),
         patternAnalyzedCount = createRes.summary.analyzedClients;
       } else {
         // 型あり: 引数の型情報も含めて解析
-        const createRes = await createPattern(getPatternDir, libName, create_outputDir);
+        const createRes = await createPattern(getPatternDir, libName, create_outputDir, DETECTION_MODE);
         lastpatterns = createRes.convertedPattern;
         patternAnalyzedCount = createRes.stats.validClients;
       }
