@@ -348,10 +348,10 @@ async function analyzeArguments(
       for (const usageItem of usages) {
         for (const codeSnippet of usageItem.code) {
           // 三項演算子があれば then/else 両ブランチを展開して追加
-          // for (const { type, context } of resolveToTypeContextPairs(codeSnippet)) {
-          //   argType_tmp.push(type);
-          //   argContexts_tmp.push(context);
-          // }
+          for (const { type, context } of resolveToTypeContextPairs(codeSnippet)) {
+            argType_tmp.push(type);
+            argContexts_tmp.push(context);
+          }
         }
       }
       finalArgTypes[index].push(...argType_tmp);
@@ -380,8 +380,11 @@ async function analyzeArguments(
         for (const codeSnippet of usageItem.code) {
           const propValue = extractPropertyValueFromObjectCode(codeSnippet, propName);
           if (propValue !== null) {
-            finalArgTypes[index].push(inferTypeFromCodeWithKeys(propValue));
-            finalArgContexts[index].push(cleanCodeSnippet(propValue));
+            // プロパティ値が三項演算子の場合は両ブランチを展開
+            for (const { type, context } of resolveToTypeContextPairs(propValue)) {
+              finalArgTypes[index].push(type);
+              finalArgContexts[index].push(context);
+            }
           }
         }
       }
@@ -402,8 +405,11 @@ async function analyzeArguments(
       // arg.start! を渡すことで、複数クラスが存在する場合も呼び出し地点のクラスに限定する
       const thisValues = collectThisPropertyValues(parsed, propName, fileContent, arg.start!);
       for (const valueCode of thisValues) {
-        finalArgTypes[index].push(inferTypeFromCodeWithKeys(valueCode));
-        finalArgContexts[index].push(cleanCodeSnippet(valueCode));
+        // コンストラクタ代入値が三項演算子の場合は両ブランチを展開
+        for (const { type, context } of resolveToTypeContextPairs(valueCode)) {
+          finalArgTypes[index].push(type);
+          finalArgContexts[index].push(context);
+        }
       }
       if (finalArgTypes[index].length === 0) {
         const snippet = String(fileContent.substring(arg.start!, arg.end!) + '');
@@ -421,10 +427,13 @@ async function analyzeArguments(
 
     } else {
       // ケース4: 数値・文字列リテラルや演算式など — コード文字列から型を推論
+      //          三項演算子の場合は then/else 両ブランチを展開して追加
       if (arg.start !== undefined && arg.end !== undefined) {
         const snippet = String(fileContent.substring(arg.start, arg.end) + '');
-        finalArgTypes[index].push(inferTypeFromCode(snippet));
-        finalArgContexts[index].push(cleanCodeSnippet(snippet));
+        for (const { type, context } of resolveToTypeContextPairs(snippet)) {
+          finalArgTypes[index].push(type);
+          finalArgContexts[index].push(context);
+        }
       } else {
         console.warn('arg.start or arg.end is undefined');
       }
@@ -434,19 +443,46 @@ async function analyzeArguments(
 }
 
 /**
- * ObjectExpression ASTノードからトップレベルのプロパティキー一覧を抽出する
+ * ObjectExpression ASTノードからトップレベルのプロパティキー一覧を抽出する。
+ *
+ * 対応キー形式:
+ *   { foo: val }              → 'foo'           （通常 Identifier キー）
+ *   { 'foo': val }            → 'foo'           （StringLiteral キー）
+ *   { [Symbol.iterator]: val} → '[Symbol.xxx]'  （computed Symbol キー）
+ *   { ['foo']: val }          → 'foo'           （computed 文字列キー、通常キーと等価）
+ *   { fn() {} }               → 'fn'            （ObjectMethod）
  */
 function extractObjectPropertyKeys(node: t.ObjectExpression): string[] {
   const keys: string[] = [];
   for (const prop of node.properties) {
-    if (t.isObjectProperty(prop) && !prop.computed) {
-      if (t.isIdentifier(prop.key)) {
-        keys.push(prop.key.name);
-      } else if (t.isStringLiteral(prop.key)) {
-        keys.push(prop.key.value);
+    if (t.isObjectProperty(prop)) {
+      if (!prop.computed) {
+        // 通常キー: { foo: val } / { 'foo': val }
+        if (t.isIdentifier(prop.key)) {
+          keys.push(prop.key.name);
+        } else if (t.isStringLiteral(prop.key)) {
+          keys.push(prop.key.value);
+        }
+      } else {
+        // computed キー: { [Symbol.xxx]: val } / { ['foo']: val }
+        if (
+          t.isMemberExpression(prop.key) &&
+          t.isIdentifier(prop.key.object, { name: 'Symbol' }) &&
+          t.isIdentifier(prop.key.property)
+        ) {
+          keys.push(`[Symbol.${(prop.key.property as t.Identifier).name}]`);
+        } else if (t.isStringLiteral(prop.key)) {
+          keys.push(prop.key.value);
+        }
       }
-    } else if (t.isObjectMethod(prop) && !prop.computed && t.isIdentifier(prop.key)) {
-      keys.push(prop.key.name);
+    } else if (t.isObjectMethod(prop)) {
+      if (!prop.computed && t.isIdentifier(prop.key)) {
+        keys.push(prop.key.name);
+      } else if (prop.computed && t.isMemberExpression(prop.key) &&
+                 t.isIdentifier(prop.key.object, { name: 'Symbol' }) &&
+                 t.isIdentifier(prop.key.property)) {
+        keys.push(`[Symbol.${(prop.key.property as t.Identifier).name}]`);
+      }
     }
   }
   return keys;
@@ -469,14 +505,11 @@ function inferTypeFromCodeWithKeys(code: string): string {
 
   const cleaned = cleanCodeSnippet(code).trim();
 
-  // LOOK: Object.assign / Object.create など — 第1引数のオブジェクトリテラルからキーを抽出
+  // LOOK: Object.assign / Object.create など — 全引数のオブジェクトリテラルからキーをマージして抽出
   if (/^[\w$]+\.(assign|create|fromEntries|merge)\s*\(/.test(cleaned)) {
-    const firstObj = extractFirstObjectArgFromCall(cleaned);
-    if (firstObj) {
-      const keys = extractKeysFromObjectCode(firstObj);
-      if (keys.length > 0) return `object:{${keys.join(',')}}`;
-    }
-    return 'object';
+    const objArgs = extractAllObjectArgsFromCall(cleaned);
+    const allKeys = [...new Set(objArgs.flatMap(obj => extractKeysFromObjectCode(obj)))];
+    return allKeys.length > 0 ? `object:{${allKeys.join(',')}}` : 'object';
   }
 
   // 直接オブジェクトリテラル（{ ...spread, key: val } も含む）
@@ -515,7 +548,20 @@ function extractKeysFromObjectCode(code: string): string[] {
       const colonIdx = token.indexOf(':');
       if (colonIdx > 0) {
         const keyPart = token.slice(0, colonIdx).trim().replace(/^['"`]|['"`]$/g, '');
-        if (/^[\w$]+$/.test(keyPart)) keys.push(keyPart);
+        if (/^[\w$]+$/.test(keyPart)) {
+          // 通常のキー: { foo: val }
+          keys.push(keyPart);
+        } else {
+          // computed symbol key: { [Symbol.iterator]: val } → "[Symbol.iterator]"
+          const symbolMatch = keyPart.match(/^\[Symbol\.(\w+)\]$/);
+          if (symbolMatch) {
+            keys.push(`[Symbol.${symbolMatch[1]}]`);
+          } else {
+            // computed string key: { ['foo']: val } — 通常キーと等価なのでそのまま
+            const strKeyMatch = keyPart.match(/^\[['"`](\w+)['"`]\]$/);
+            if (strKeyMatch) keys.push(strKeyMatch[1]);
+          }
+        }
       } else if (token && /^[\w$]+$/.test(token)) {
         // shorthand property: { foo }
         keys.push(token);
@@ -569,35 +615,56 @@ function extractPropertyValueFromObjectCode(code: string, propName: string): str
 }
 
 /**
- * 関数呼び出し式（Object.assign(...)など）から最初のオブジェクトリテラル引数を抽出する。
+ * 関数呼び出し式からオブジェクトリテラル引数（{...}）を全て抽出する。
+ * Object.assign({ a: 1 }, { b: 2 }) → ['{ a: 1 }', '{ b: 2 }']
  *
- * e.g. 'Object.assign({ cwd: dir }, opts)' → '{ cwd: dir }'
+ * トップレベルのカンマで引数に分割し、{...} で始まる引数のみを返す。
  */
-function extractFirstObjectArgFromCall(code: string): string | null {
+function extractAllObjectArgsFromCall(code: string): string[] {
   const parenIdx = code.indexOf('(');
-  if (parenIdx === -1) return null;
+  if (parenIdx === -1) return [];
 
-  const braceStart = code.indexOf('{', parenIdx);
-  if (braceStart === -1) return null;
-
+  // 外側の () の範囲を特定する
   let depth = 0;
+  let parenEnd = -1;
   let inStr = false;
   let strChar = '';
 
-  for (let i = braceStart; i < code.length; i++) {
+  for (let i = parenIdx; i < code.length; i++) {
     const ch = code[i];
     if (inStr) {
       if (ch === strChar && code[i - 1] !== '\\') inStr = false;
       continue;
     }
     if (ch === '"' || ch === "'" || ch === '`') { inStr = true; strChar = ch; continue; }
-    if (ch === '{') { depth++; continue; }
-    if (ch === '}') {
-      depth--;
-      if (depth === 0) return code.slice(braceStart, i + 1);
+    if (ch === '(') { depth++; continue; }
+    if (ch === ')') { depth--; if (depth === 0) { parenEnd = i; break; } }
+  }
+  if (parenEnd === -1) return [];
+
+  // トップレベルのカンマで引数に分割する
+  const argsStr = code.slice(parenIdx + 1, parenEnd);
+  const args: string[] = [];
+  let argStart = 0;
+  depth = 0; inStr = false; strChar = '';
+
+  for (let i = 0; i <= argsStr.length; i++) {
+    const ch = i < argsStr.length ? argsStr[i] : ','; // 末尾を , とみなして最後の引数を flush
+    if (inStr) {
+      if (ch === strChar && argsStr[i - 1] !== '\\') inStr = false;
+      continue;
+    }
+    if (ch === '"' || ch === "'" || ch === '`') { inStr = true; strChar = ch; continue; }
+    if (ch === '(' || ch === '[' || ch === '{') { depth++; continue; }
+    if (ch === ')' || ch === ']' || ch === '}') { depth--; continue; }
+    if (ch === ',' && depth === 0) {
+      args.push(argsStr.slice(argStart, i).trim());
+      argStart = i + 1;
     }
   }
-  return null;
+
+  // オブジェクトリテラル形式の引数のみ返す
+  return args.filter(arg => arg.startsWith('{') && arg.endsWith('}'));
 }
 
 /**
@@ -706,6 +773,89 @@ function inferTypeFromCode(
   if (/[\+\-\*\/%]/.test(cleanCode) && !/['"`]/.test(cleanCode)) return 'number';
 
   return 'unknown';
+}
+
+/**
+ * 三項演算子 `cond ? thenBranch : elseBranch` をトップレベルで分割する。
+ * ネスト（括弧・オブジェクト・配列）内の `?` や `:` は無視する。
+ * 三項演算子でなければ null を返す。
+ *
+ * 除外パターン:
+ *   - オプショナルチェーン `?.`  → `?` の直後が `.`
+ *   - Nullish 合体演算子 `??`   → `?` が連続
+ */
+function splitTernaryBranches(code: string): [string, string] | null {
+  const cleaned = cleanCodeSnippet(code).trim();
+  let depth = 0;
+  let inStr = false;
+  let strChar = '';
+  let questionIdx = -1;
+
+  for (let i = 0; i < cleaned.length; i++) {
+    const ch = cleaned[i];
+    if (inStr) {
+      if (ch === strChar && cleaned[i - 1] !== '\\') inStr = false;
+      continue;
+    }
+    if (ch === '"' || ch === "'" || ch === '`') { inStr = true; strChar = ch; continue; }
+    if (ch === '(' || ch === '[' || ch === '{') { depth++; continue; }
+    if (ch === ')' || ch === ']' || ch === '}') { depth--; continue; }
+    if (
+      ch === '?' && depth === 0 &&
+      cleaned[i + 1] !== '.' &&             // オプショナルチェーン ?. を除外
+      cleaned[i + 1] !== '?' &&             // nullish 合体 ?? の1文字目を除外
+      (i === 0 || cleaned[i - 1] !== '?')   // nullish 合体 ?? の2文字目を除外
+    ) {
+      questionIdx = i;
+      break;
+    }
+  }
+
+  if (questionIdx === -1) return null;
+
+  // `?` 以降でトップレベルの `:` を探して then/else に分割する
+  const afterQ = cleaned.slice(questionIdx + 1).trim();
+  depth = 0; inStr = false; strChar = '';
+
+  for (let i = 0; i < afterQ.length; i++) {
+    const ch = afterQ[i];
+    if (inStr) {
+      if (ch === strChar && afterQ[i - 1] !== '\\') inStr = false;
+      continue;
+    }
+    if (ch === '"' || ch === "'" || ch === '`') { inStr = true; strChar = ch; continue; }
+    if (ch === '(' || ch === '[' || ch === '{') { depth++; continue; }
+    if (ch === ')' || ch === ']' || ch === '}') { depth--; continue; }
+    if (ch === ':' && depth === 0) {
+      return [afterQ.slice(0, i).trim(), afterQ.slice(i + 1).trim()];
+    }
+  }
+  return null;
+}
+
+/**
+ * コードスニペットを型・コンテキストのペア配列に変換する。
+ * 三項演算子があれば then/else 両ブランチを再帰的に展開して複数エントリを返す。
+ * それ以外は inferTypeFromCodeWithKeys による単一エントリ。
+ *
+ * 例:
+ *   'isNum ? 42 : "text"'      → [{ type: 'number', context: '42' },
+ *                                  { type: 'string', context: '"text"' }]
+ *   'a ? b ? 1 : 2 : "x"'     → [{ type:'number', context:'1' },
+ *                                  { type:'number', context:'2' },
+ *                                  { type:'string', context:'"x"' }]  （ネスト三項も展開）
+ *   '{ a: 1 }'                 → [{ type: 'object:{a}', context: '{ a: 1 }' }]
+ */
+function resolveToTypeContextPairs(code: string): { type: string; context: string }[] {
+  const branches = splitTernaryBranches(code);
+  if (branches) {
+    // then/else 両ブランチを再帰的に展開（ネスト三項にも対応）
+    return [
+      ...resolveToTypeContextPairs(branches[0]),
+      ...resolveToTypeContextPairs(branches[1]),
+    ];
+  }
+  return [{ type: inferTypeFromCodeWithKeys(code), context: cleanCodeSnippet(code) }];
 }
 
 /**

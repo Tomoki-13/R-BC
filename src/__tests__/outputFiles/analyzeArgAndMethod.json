@@ -116,8 +116,50 @@
   "tracks Object.assign argument": [
     {
       "FunctionCallCode": "sortLib(opts)",
-      "argTypes": [["object:{locale,numeric}"]],
+      "argTypes": [["object:{locale,numeric,extra}"]],
       "argContexts": [["Object.assign({ locale: 'ja', numeric: true }, { extra: 'ok' })"]]
+    }
+  ],
+  "tracks ternary direct argument": [
+    {
+      "FunctionCallCode": "myLib(flag ? 42 : 'fallback')",
+      "argTypes": [["number", "string"]],
+      "argContexts": [["42", "'fallback'"]]
+    }
+  ],
+  "tracks ternary via variable argument": [
+    {
+      "FunctionCallCode": "myLib(val)",
+      "argTypes": [["object:{debug}", "string"]],
+      "argContexts": [["{ debug: true }", "'noop'"]]
+    }
+  ],
+  "tracks computed key argument": [
+    {
+      "FunctionCallCode": "myLib({\n  normal: 1,\n  [Symbol.iterator]: function* () {},\n  ['aliased']: true,\n})",
+      "argTypes": [["object:{normal,[Symbol.iterator],aliased}"]],
+      "argContexts": [["{ normal: 1, [Symbol.iterator]: function* () {}, ['aliased']: true, }"]]
+    }
+  ],
+  "tracks ternary in obj.prop value": [
+    {
+      "FunctionCallCode": "myLib(config.val)",
+      "argTypes": [["number", "string"]],
+      "argContexts": [["42", "'fallback'"]]
+    }
+  ],
+  "tracks ternary in this.property value": [
+    {
+      "FunctionCallCode": "myLib(this.value)",
+      "argTypes": [["object:{mode}", "string"]],
+      "argContexts": [["{ mode: 'fast' }", "'default'"]]
+    }
+  ],
+  "tracks computed key via variable": [
+    {
+      "FunctionCallCode": "myLib(opts)",
+      "argTypes": [["object:{[Symbol.iterator],alias,normal}"]],
+      "argContexts": [["{ [Symbol.iterator]: function() {}, ['alias']: true, normal: 1 }"]]
     }
   ]
 }

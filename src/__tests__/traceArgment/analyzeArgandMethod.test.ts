@@ -106,12 +106,65 @@ describe('analyzeArgAndMethod test', () => {
     expect(normalizeResults(result)).toEqual(expected);
   });
 
-  // Feature 3: Object.assign 引数 — 第1引数リテラルからキーを抽出して object:{key,...} 型を返せるか検証
-  // e.g. sortLib(opts) where opts = Object.assign({ locale: 'ja', numeric: true }, ...) → argTypes: [['object:{locale,numeric}']]
+  // Feature 3: Object.assign 引数 — 全引数のリテラルからキーをマージして object:{key,...} 型を返せるか検証
+  // e.g. sortLib(opts) where opts = Object.assign({ locale: 'ja', numeric: true }, { extra: 'ok' })
+  //   → argTypes: [['object:{locale,numeric,extra}']]
   test('tracks Object.assign argument', async () => {
     const expected = jsonData['tracks Object.assign argument'];
     const file = path.resolve(__dirname, '../inputFiles/analyzeArgAndMethod/object_assign.js');
     const result = await analyzeArgAndMethod(file, 'sortLib', rev_groupedDependencies);
+    expect(normalizeResults(result)).toEqual(expected);
+  });
+
+  // 三項演算子（ケース4直接）: fn(cond ? a : b) → then/else 両ブランチの型を取得できるか検証
+  test('tracks ternary direct argument', async () => {
+    const expected = jsonData['tracks ternary direct argument'];
+    const file = path.resolve(__dirname, '../inputFiles/analyzeArgAndMethod/ternary_direct.js');
+    const result = await analyzeArgAndMethod(file, 'myLib', rev_groupedDependencies);
+    expect(normalizeResults(result)).toEqual(expected);
+  });
+
+  // 三項演算子（変数経由・ケース1）: const val = cond ? obj : 'str'; fn(val) → 両ブランチを展開できるか検証
+  test('tracks ternary via variable argument', async () => {
+    const expected = jsonData['tracks ternary via variable argument'];
+    const file = path.resolve(__dirname, '../inputFiles/analyzeArgAndMethod/ternary_via_variable.js');
+    const result = await analyzeArgAndMethod(file, 'myLib', rev_groupedDependencies);
+    expect(normalizeResults(result)).toEqual(expected);
+  });
+
+  // computed key（ケース3 AST直接）: { [Symbol.iterator]: fn, ['aliased']: val } → キーを取得できるか検証
+  test('tracks computed key argument', async () => {
+    const expected = jsonData['tracks computed key argument'];
+    const file = path.resolve(__dirname, '../inputFiles/analyzeArgAndMethod/computed_key.js');
+    const result = await analyzeArgAndMethod(file, 'myLib', rev_groupedDependencies);
+    expect(normalizeResults(result)).toEqual(expected);
+  });
+
+  // 三項演算子 × ケース1.5: obj.prop の値が三項の場合
+  // config = { val: flag ? 42 : 'fallback' } → myLib(config.val) → ['number', 'string']
+  test('tracks ternary in obj.prop value', async () => {
+    const expected = jsonData['tracks ternary in obj.prop value'];
+    const file = path.resolve(__dirname, '../inputFiles/analyzeArgAndMethod/ternary_prop_value.js');
+    const result = await analyzeArgAndMethod(file, 'myLib', rev_groupedDependencies);
+    expect(normalizeResults(result)).toEqual(expected);
+  });
+
+  // 三項演算子 × ケース2: this.property の代入値が三項の場合
+  // this.value = flag ? { mode: 'fast' } : 'default' → myLib(this.value) → ['object:{mode}', 'string']
+  test('tracks ternary in this.property value', async () => {
+    const expected = jsonData['tracks ternary in this.property value'];
+    const file = path.resolve(__dirname, '../inputFiles/analyzeArgAndMethod/ternary_this_property.js');
+    const result = await analyzeArgAndMethod(file, 'myLib', rev_groupedDependencies);
+    expect(normalizeResults(result)).toEqual(expected);
+  });
+
+  // computed key × ケース1（変数経由）: 変数に代入されたオブジェクトの computed key を
+  // 文字列ヒューリスティック（extractKeysFromObjectCode）で抽出できるか検証
+  // opts = { [Symbol.iterator]: fn, ['alias']: true, normal: 1 } → object:{[Symbol.iterator],alias,normal}
+  test('tracks computed key via variable', async () => {
+    const expected = jsonData['tracks computed key via variable'];
+    const file = path.resolve(__dirname, '../inputFiles/analyzeArgAndMethod/computed_key_via_variable.js');
+    const result = await analyzeArgAndMethod(file, 'myLib', rev_groupedDependencies);
     expect(normalizeResults(result)).toEqual(expected);
   });
 });
