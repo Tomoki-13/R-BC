@@ -137,7 +137,7 @@ export async function extractLibFunctionCoverage(
 
   console.log('========== extractLibFunctionCoverage ============');
   console.log('lib:', libName);
-  console.log('coverage functions:', allFunctions);
+  // console.log('coverage functions:', allFunctions);
   console.log('output:', outputPath);
   console.log('==================================================');
 
