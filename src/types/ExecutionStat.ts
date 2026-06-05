@@ -3,6 +3,8 @@ export interface ExecutionStat {
   library: string;
   preVersion: string;
   postVersion: string;
+  /** パターンフィルタの種別: 'all'=全パターン使用 / 'no_unknown'=全unknownパターン除外 */
+  patternFilter: 'all' | 'no_unknown';
   totalFailureDirs: number;
   patternAnalyzedClientsCount: number;
   createdPatternCount: number;
@@ -24,13 +26,14 @@ export interface ExecutionStat {
 }
 
 export const CSV_HEADER =
-  'ID,Library,PreVersion,PostVersion,ClonedFailureCount,PatternAnalyzedClients,CreatedPatternsCount,' +
+  'ID,Library,PreVersion,PostVersion,PatternFilter,' +
+  'ClonedFailureCount,PatternAnalyzedClients,CreatedPatternsCount,' +
   'FailureDetectedCount,FailureValid,FailureNoTest,FailureStandard,FailureNoScript,FailureNoPkg,' +
   'ClonedSuccessCount,SuccessDetectedCount,SuccessUsedPatternCount,' +
   'SuccessValid,SuccessNoTest,SuccessStandard,SuccessNoScript,SuccessNoPkg,OutputPath\n';
 
 export const statToCsvRow = (stat: ExecutionStat): string =>
-  `${stat.id},${stat.library},${stat.preVersion},${stat.postVersion},` +
+  `${stat.id},${stat.library},${stat.preVersion},${stat.postVersion},${stat.patternFilter},` +
   `${stat.totalFailureDirs},${stat.patternAnalyzedClientsCount},${stat.createdPatternCount},` +
   `${stat.failureDetectedClientsCount},${stat.failureValid},${stat.failureNoTest},${stat.failureStandard},${stat.failureNoScript},${stat.failureNoPkg},` +
   `${stat.totalSuccessDirs},${stat.successDetectedClientsCount},${stat.successUsedPatternCount},` +

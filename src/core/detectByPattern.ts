@@ -88,6 +88,16 @@ export const detectByPattern = async (
   let sumDetectClient: number = 0;
   let detectedClientNames: string[] = [];
 
+  /** 全クライアントの生AST結果（検出有無にかかわらず） */
+  type ClientRawEntry = {
+    client: string;
+    detected: boolean;
+    usesLibrary: boolean;  // ライブラリの import/require が見つかったか
+    testStatus: string;
+    pattern: ExtractFunctionCallsResult[];
+  };
+  const allClientRaw: ClientRawEntry[] = [];
+
   const matchAlldirs: string[] = await getSubDir(matchDir);
   const totalDirs = matchAlldirs.length;
 
@@ -105,7 +115,10 @@ export const detectByPattern = async (
     const allFiles: string[] = await getAllFiles(subdir);
     // ASTベースの解析
     const raw_extract_pattern: ExtractFunctionCallsResult[][] = await useAst(allFiles, libName, 0);
-    if (raw_extract_pattern.length > 0) {
+    const usesLibrary = raw_extract_pattern.length > 0;
+    let wasDetected = false;
+
+    if (usesLibrary) {
       if (dup === false) {
         // 単一検出: 最初にマッチしたパターンのみ採用
         // TODO: 重複検出を考慮して同じ関数内で完結させたい
@@ -127,6 +140,7 @@ export const detectByPattern = async (
 
           sumDetectClient++;
           detectedClientNames.push(relativeClientPath);
+          wasDetected = true;
         }
 
       } else if (dup === true) {
@@ -157,9 +171,19 @@ export const detectByPattern = async (
 
           sumDetectClient++;
           detectedClientNames.push(relativeClientPath);
+          wasDetected = true;
         }
       }
     }
+
+    // 検出有無にかかわらず全クライアントの生パターンを記録
+    allClientRaw.push({
+      client: relativeClientPath,
+      detected: wasDetected,
+      usesLibrary,
+      testStatus: test,
+      pattern: raw_extract_pattern.flat(),
+    });
   }
 
   process.stdout.write('\n');
@@ -179,6 +203,9 @@ export const detectByPattern = async (
   };
 
   fs.writeFileSync(output_json.getUniqueOutputPath(outputDir, path.basename(matchDir), 'matchResults'), JSON.stringify(matchClientPatternJson, null, 2), 'utf8');
+
+  // 全クライアントの生AST結果を保存（検出有無問わず）
+  fs.writeFileSync(output_json.getUniqueOutputPath(outputDir, path.basename(matchDir), 'allRaw'), JSON.stringify(allClientRaw, null, 2), 'utf8');
 
   fs.writeFileSync(output_json.getUniqueOutputPath(outputDir, path.basename(matchDir), 'detect'), JSON.stringify(output, null, 2), 'utf8');
   if (matchDir.includes('success')) {

@@ -14,7 +14,6 @@ mkdir -p datasets
 git clone https://github.com/Wakayama-SocSEL/Matsuda.git ./datasets/Matsuda
 
 cp -p ./datasets/Matsuda/output/test_result.json ./datasets/
-
 rm -rf ./datasets/Matsuda
 
 echo "successfully cloned datasets"

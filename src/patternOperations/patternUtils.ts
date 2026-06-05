@@ -1,3 +1,5 @@
+import { ExtractFunctionCallsResult } from '../types/ExtractFunctionCallsResult';
+
 //パターンを長さでソートする関数
 function sortRespattern(respattern: string[][][]): string[][][] {
   respattern.sort((a, b) => a.length - b.length);
@@ -144,11 +146,41 @@ function convertTmpToFinal(line: string, variableMap: Map<string, string>): stri
   return updatedLine;
 }
 
+/**
+ * 全 slot が unknown のみで構成される呼び出しを含むパターンを除外
+ *
+ * 各 argTypes の判定:
+ *   - []                              0引数呼び出し                → 残す
+ *   - [[]]                            import/require 行            → 残す（対象外）
+ *   - [['string']]                    具体型                       → 残す
+ *   - [['unknown'], ['object:{cwd}']] 混在 (slot 1 に具体型)        → 残す
+ *   - [['unknown', 'string']]         slot 内に concrete 混在       → 残す
+ *   - [['unknown']]                   全 slot unknown のみ          → 除外
+ *   - [['unknown'], ['unknown']]      全 slot unknown のみ          → 除外
+ *
+ * 注意: pattern 単位の判定。chain 内に1つでも除外条件の呼び出しがあれば
+ * その pattern 全体を除外する。
+ */
+function filterOnlyUnknownPatterns(
+  patterns: ExtractFunctionCallsResult[][][]
+): ExtractFunctionCallsResult[][][] {
+  return patterns.filter(chain =>
+    chain.flat().every(call => {
+      if (call.argTypes.length === 0) return true;
+      if (call.argTypes.length === 1 && call.argTypes[0].length === 0) return true;
+      return call.argTypes.some(slot =>
+        slot.some(t => t !== 'unknown' && t !== '')
+      );
+    })
+  );
+}
+
 export default {
   sortRespattern,
   removeDuplicate,
   removeSubpattern,
   alignNumbersInPattern,
   removeCallOnly,
-  removecase
+  removecase,
+  filterOnlyUnknownPatterns
 };
