@@ -1,0 +1,5 @@
+node_modules/
+dist/
+sandbox/node_modules/
+sandbox/_test_script.js
+output/

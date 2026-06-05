@@ -1,0 +1,8 @@
+{
+  "name": "rbc-sandbox",
+  "version": "0.1.0",
+  "private": true,
+  "dependencies": {
+    "uuid": "7.0.0-beta.0"
+  }
+}
