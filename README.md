@@ -1,8 +1,33 @@
-# r-bc (research backward compatibility)
+# R-BC (Research Backward Compatibility)
 
 ライブラリのバージョンアップに伴う後方互換性の破壊を静的解析で検出するツールです。
 アップデート前後のクライアントリポジトリを自動クローンし、AST（抽象構文木）を用いて関数・メソッドの利用パターンを抽出・マッチングします。
 「後方互換性の損失に影響を受けるリポジトリ」と「影響を受けないリポジトリ」の双方に対してパターンを照合することで、検出精度を評価できます。
+
+---
+
+## ⚠️ データ配置とリポジトリ構成について
+
+本リポジトリは現在、**親ディレクトリ（メタリポ `BCPatternGen`）配下の共有ディレクトリ** を入出力先として参照する構成に再構成しています。
+
+- 入力データ: `BCPatternGen/datasets/`, `BCPatternGen/clonedata/alldataset_clients/`
+- 出力データ: `BCPatternGen/outputs/latest/R-BC/`
+
+このため、**現在この R-BC を単体クローンしての実行はサポートされていません**（実行すると 1 つ上の階層にディレクトリを作成して動こうとし、ユーザの作業環境に影響を与える可能性があります）。
+
+### 単体実行を行いたい場合
+
+メタリポ統合前の安定版コミットをご利用ください:
+
+```bash
+git checkout 35657eca255e5202af998269a717fa6f7e90d954
+```
+
+このコミット時点では、R-BC ディレクトリ内に閉じて動作します。
+
+### 今後の予定
+
+単体実行への対応も予定しています。
 
 ## 前提条件
 
@@ -63,26 +88,29 @@ make obj-f   # mode2: 型 + object キーの部分集合でマッチング（最
 
 ## 出力ファイル構成
 
-実行すると `output/` 配下にモードごとのディレクトリが生成されます。
+出力はメタリポ配下の `../outputs/` に書かれます。
+まず `history/`（実行ごとのアーカイブ）に書き込み、Makefile が `latest/`（毎回上書き）にコピーします。普段は `latest/` を参照します。
 
 ```text
-output/
-├── method/                          # mode0 の出力
-├── type-method/                     # mode1 の出力
-└── type-method-object/              # mode2 の出力
-     └── YYYY-MM-DD-HH-MM-SS/
-          ├── execution_summary_YYYY-MM-DD-HH-MM-SS.csv   # 全ライブラリの集計CSV
-          └── {LibraryName}_{Version}/
-               ├── createPattern/
-               │    ├── failure_rawpattern.json            # 抽出された生パターン
-               │    ├── failure_patternList.json           # マッチング用正規表現パターン
-               │    └── failure_libFunctionCoverage.json   # ライブラリ関数のカバレッジ情報
-               └── detectByPattern/
-                    ├── failure_detect.json                # failure側の検出結果（サマリ）
-                    ├── failure_matchResults.json          # failure側のパターン別マッチ詳細
-                    ├── success_detect.json                # success側の検出結果（サマリ）
-                    ├── success_matchResults.json          # success側のパターン別マッチ詳細
-                    └── successcombine_preCount.json       # failure＋successの結果(重複許容)
+outputs/
+├── latest/R-BC/                          # 最新結果（毎回上書き、ClientFixTrace もここを参照）
+│   ├── method/                           # mode0
+│   ├── type-method/                      # mode1
+│   └── type-method-object/               # mode2
+│        ├── execution_summary_<RUN_ID>.csv          # 全ライブラリの集計CSV
+│        └── {LibraryName}_{Version}/
+│             ├── createPattern/
+│             │    ├── failure_rawpattern.json            # 抽出された生パターン
+│             │    ├── failure_patternList.json           # マッチング用正規表現パターン
+│             │    └── failure_libFunctionCoverage.json   # ライブラリ関数のカバレッジ情報
+│             └── detectByPattern/
+│                  ├── failure_detect.json                # failure側の検出結果（サマリ）
+│                  ├── failure_matchResults.json          # failure側のパターン別マッチ詳細
+│                  ├── success_detect.json                # success側の検出結果（サマリ）
+│                  ├── success_matchResults.json          # success側のパターン別マッチ詳細
+│                  └── successcombine_preCount.json       # failure＋successの結果(重複許容)
+│
+└── history/R-BC/<mode>/<RUN_ID>/         # 実行ごとのアーカイブ（latest と同じ中身）
 ```
 
 ### 主要ファイルの内容

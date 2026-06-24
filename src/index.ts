@@ -29,14 +29,20 @@ const INLINE_TARGETS: TargetInput[] = [
 ];
 // =============================================================
 
-// 以下は固定（通常変更不要）
-const TARGETS_PATH = path.resolve(__dirname, '../datasets/targets.json');
-const TEST_RESULT_PATH = path.resolve(__dirname, '../datasets/test_result.json');
+// 入出力パスは親ディレクトリ（BCPatternGen メタリポ）配下を参照する
+// 単体実行は現在サポートされない（README 参照）
+const TARGETS_PATH = path.resolve(__dirname, '../../datasets/targets.json');
+const TEST_RESULT_PATH = path.resolve(__dirname, '../../datasets/test_result.json');
+
+// 実行 ID: Meta Makefile からの BCPG_RUN_ID があればそれを使用、なければ実行時に生成
+// 出力はまず outputs/history/R-BC/<mode>/<RUN_ID>/ に書き、Meta Makefile が後で outputs/latest/R-BC/ にコピーする
+const RUN_ID: string = process.env.BCPG_RUN_ID ?? output_json.formatDateTime(new Date());
+
 // モードに応じて出力先を自動切替: 0 → method / 1 → type-method / 2 → type-method-object
 const OUTPUT_BASE: string = path.resolve(__dirname,
-  DETECTION_MODE === 0 ? '../output/method' :
-  DETECTION_MODE === 1 ? '../output/type-method' :
-                         '../output/type-method-object'
+  DETECTION_MODE === 0 ? `../../outputs/history/R-BC/method/${RUN_ID}` :
+  DETECTION_MODE === 1 ? `../../outputs/history/R-BC/type-method/${RUN_ID}` :
+                         `../../outputs/history/R-BC/type-method-object/${RUN_ID}`
 );
 
 (async () => {
@@ -65,8 +71,8 @@ const OUTPUT_BASE: string = path.resolve(__dirname,
     return;
   }
 
-  const now = new Date();
-  const date = output_json.formatDateTime(now);
+  // RUN_ID をそのまま日時文字列として利用（CSV ファイル名等）
+  const date = RUN_ID;
   const executionStats: ExecutionStat[] = [];
   const noUnknownExecutionStats: ExecutionStat[] = [];  // 全unknownパターン除外後の集計
   let idCounter = 1;
@@ -77,15 +83,16 @@ const OUTPUT_BASE: string = path.resolve(__dirname,
     const { libName, preVersion, postVersion } = target;
     const cleanVersion = postVersion.replace(/[^a-zA-Z0-9]/g, '');
 
-    const getPatternDir = path.resolve(__dirname, `../alldataset_clients/${libName}/${cleanVersion}/failure`);
-    const matchDir = path.resolve(__dirname, `../alldataset_clients/${libName}/${cleanVersion}/success`);
+    const getPatternDir = path.resolve(__dirname, `../../clonedata/alldataset_clients/${libName}/${cleanVersion}/failure`);
+    const matchDir = path.resolve(__dirname, `../../clonedata/alldataset_clients/${libName}/${cleanVersion}/success`);
 
     if (!fs.existsSync(getPatternDir) || !fs.existsSync(matchDir)) {
       console.log(`Skipping ${libName} ${cleanVersion}: directories not found.`);
       continue;
     }
 
-    const outputDir = path.join(OUTPUT_BASE, date, `${libName}_${cleanVersion}`);
+    // date は OUTPUT_BASE（history/R-BC/<mode>/<RUN_ID>）に既に含まれるため outputDir は <lib>_<ver> のみ
+    const outputDir = path.join(OUTPUT_BASE, `${libName}_${cleanVersion}`);
     const create_outputDir = outputDir + '/createPattern';
     const detect_outputDir = outputDir + '/detectByPattern';
     output_json.createOutputDirectory(create_outputDir);
@@ -205,7 +212,7 @@ const OUTPUT_BASE: string = path.resolve(__dirname,
     if (global.gc) global.gc();
   }
 
-  const csvDir = path.join(OUTPUT_BASE, date);
+  const csvDir = OUTPUT_BASE;
   if (!fs.existsSync(csvDir)) fs.mkdirSync(csvDir, { recursive: true });
 
   if (executionStats.length === 0 && noUnknownExecutionStats.length === 0) {

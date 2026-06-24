@@ -24,8 +24,10 @@ interface CloneStats {
 }
 
 // 実行環境の設定
+// 入出力パスは親ディレクトリ（BCPatternGen メタリポ）配下を参照する
+// 単体実行は現在サポートされない（README 参照）
 const WORK_DIR = process.cwd();
-const ALL_REPOS_DIR = path.join(WORK_DIR, '../alldataset_clients');
+const ALL_REPOS_DIR = path.join(WORK_DIR, '../clonedata/alldataset_clients');
 const JSON_FILE = path.join(WORK_DIR, '../datasets', 'test_result.json');
 
 // トークン設定（.envから取得、なければ空文字にして非公開リポジトリ以外をクローン）
@@ -278,7 +280,7 @@ async function cloneRepos(repos: any[], targetDir: string) {
 
   // 統計情報のCSV出力
   if (cloneStatsList.length > 0 || excludedStatsList.length > 0) {
-    const baseCsvDir = path.join(WORK_DIR, '../output/clonedata');
+    const baseCsvDir = path.join(WORK_DIR, '../outputs/latest/R-BC/clonedata');
     const now = new Date();
     const dateStr = now.toISOString().replace(/T/, '_').replace(/:/g, '').split('.')[0];
     const csvDir = path.join(baseCsvDir, dateStr);
