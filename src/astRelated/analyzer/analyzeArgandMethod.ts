@@ -24,7 +24,7 @@ export const analyzeArgAndMethod = async (
   filePath: string,
   funcName: string,
   funcDepend: InboundFunctionDependencies[],
-  visited: Map<string, number> = new Map(), // 循環依存による無限再帰を防ぎつつ、数回（ここでは3回）の循環を許容するためのマップ
+  visited: Map<string, number> = new Map(), // 循環依存による無限再帰を防ぎつつ、数回（ここでは10回）の循環を許容するためのマップ
   resultCache: Map<string, ExtractFunctionCallsResult[]> = new Map() // LOOK: 訪問上限到達時に前回結果を返すためのキャッシュ（[]返しによる情報ロスを防ぐ）
 ): Promise<ExtractFunctionCallsResult[]> => {
   const visitKey = `${filePath}::${funcName}`;

@@ -82,15 +82,17 @@ export const createPattern = async (
   // 変換後パターンの作成（集約前）
   const convertedPatterns: ExtractFunctionCallsResult[][][] = patternConversion.typeAwareAbstStr(respattern);
 
-  // 集約前パターンを保存（修正依頼クライアントから抽出したままのパターン）
+  // 集約前パターンを保存
   const failurePath = output_json.getUniqueOutputPath(outputDir, path.basename(patternDir), 'failureClient_preAgg_patternList');
   fs.writeFileSync(failurePath, JSON.stringify(convertedPatterns, null, 4), 'utf8');
 
   // LOOK: mode=0 は createOnlyCall 側で独自の集約パイプラインを持つためスキップ
   // mode 1/2 のみ typeAwarePatternMatch ベースの集約を適用する
-  const lastpatterns = mode >= 1
-    ? await aggregateTypedPatterns(convertedPatterns, mode)
-    : convertedPatterns;
+  const lastpatterns = convertedPatterns;
+  // TODO:仮実装
+  // const lastpatterns = mode >= 1
+  //   ? await aggregateTypedPatterns(convertedPatterns, mode)
+  //   : convertedPatterns;
 
   const outputPath2 = output_json.getUniqueOutputPath(outputDir, path.basename(patternDir), 'patternList');
   fs.writeFileSync(outputPath2, JSON.stringify(lastpatterns, null, 4), 'utf8');

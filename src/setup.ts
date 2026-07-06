@@ -2,7 +2,6 @@ import fs from 'fs';
 import path from 'path';
 import { execSync } from 'child_process';
 import dotenv from 'dotenv';
-//TODO: ディレクトリ分けして整理する
 
 // .envファイルの読み込み（存在しない場合は無視）
 dotenv.config();

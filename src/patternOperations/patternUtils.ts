@@ -158,8 +158,8 @@ function convertTmpToFinal(line: string, variableMap: Map<string, string>): stri
  *   - [['unknown']]                   全 slot unknown のみ          → 除外
  *   - [['unknown'], ['unknown']]      全 slot unknown のみ          → 除外
  *
- * 注意: pattern 単位の判定。chain 内に1つでも除外条件の呼び出しがあれば
- * その pattern 全体を除外する。
+ * 注意: pattern 単位の判定。
+ * chain 内に1つでも除外条件の呼び出しがあれば その pattern 全体を除外する。
  */
 function filterOnlyUnknownPatterns(
   patterns: ExtractFunctionCallsResult[][][]
